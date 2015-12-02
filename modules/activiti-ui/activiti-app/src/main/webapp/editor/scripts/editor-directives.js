@@ -95,6 +95,11 @@ angular.module('activitiModeler').directive('formBuilderElement', ['$rootScope',
                     "show": ['dropdown', 'radio-buttons']
                 },
                 {
+                    "id": "format",
+                    "name": $translate.instant('FORM-BUILDER.TABS.FORMAT'),
+                    "show": ['formatted-text']
+                },
+                {
                     "id": "upload",
                     "name": $translate.instant('FORM-BUILDER.TABS.UPLOAD-OPTIONS'),
                     "show": ['upload']

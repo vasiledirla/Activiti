@@ -132,19 +132,20 @@ angular.module('activitiModeler')
                     field.options = [
                         {name: $translate.instant('FORM-BUILDER.COMPONENT.RADIO-BUTTON-DEFAULT')}
                     ];
-                }
-
-                if (fieldId === 'dropdown') {
+                } else if (fieldId === 'dropdown') {
                     field.options = [
                         {name: $translate.instant('FORM-BUILDER.COMPONENT.DROPDOWN-DEFAULT-EMPTY-SELECTION')}
                     ];
                     field.value = field.options[0];
                     field.hasEmptyValue = true;
+                } else if (fieldId === 'formatted-text') {
+                    field.fieldType = 'FormattedTextFieldRepresentation';
                 }
 
                 if (field.type === 'readonly-text') {
                     field.value = $translate.instant('FORM-BUILDER.COMPONENT.DISPLAY-TEXT-DEFAULT');
                 }
+
 
                 return field;
             };
@@ -205,6 +206,7 @@ angular.module('activitiModeler')
 
             $scope.palletteElements = [
                 {'type': 'text', 'title': $translate.instant('FORM-BUILDER.PALLETTE.TEXT'), 'icon': 'images/form-builder/textfield-icon.png', 'width': 1},
+                {'type': 'formatted-text', 'title': $translate.instant('FORM-BUILDER.PALLETTE.FORMATTED-TEXT'), 'icon': 'images/form-builder/formatted-textfield-icon.png', 'width': 1},
                 {'type': 'multi-line-text', 'title': $translate.instant('FORM-BUILDER.PALLETTE.MULTILINE-TEXT'), 'icon': 'images/form-builder/multi-line-textfield-icon.png', 'width': 1},
                 {'type': 'integer', 'title': $translate.instant('FORM-BUILDER.PALLETTE.NUMBER'), 'icon': 'images/form-builder/numberfield-icon.png', 'width': 1},
                 {'type': 'boolean', 'title': $translate.instant('FORM-BUILDER.PALLETTE.CHECKBOX'), 'icon': 'images/form-builder/booleanfield-icon.png', 'width': 1},

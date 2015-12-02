@@ -33,7 +33,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
  * @author Joram Barrez
  */
 @JsonTypeInfo(use = Id.NAME, include = As.PROPERTY, property = "fieldType", defaultImpl = FormFieldRepresentation.class)
-@JsonSubTypes({ @Type(ContainerRepresentation.class) })
+@JsonSubTypes({ @Type(ContainerRepresentation.class) , @Type(FormattedTextFieldRepresentation.class) })
 public class FormFieldRepresentation {
 
     protected String id;

@@ -87,6 +87,71 @@
                     </div>
                 </div>
 
+                <div ng-if="(activeTab.id == 'format') && (formElement.type === 'formatted-text')">
+
+                    <div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label translate="FORM-BUILDER.COMPONENT.FORMATTER-TYPE"></label>
+                                    <select class="form-control" ng-model="formElement.formatterType" ng-change="changeFormatterType(formElement)">
+                                        <option>RegExp</option>
+                                        <option>Number</option>
+                                        <option>Text</option>
+                                        <option>Phone</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div ng-if="formElement.formatterType=='RegExp'">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label translate="FORM-BUILDER.COMPONENT.FORMAT" ng-show="formElement.type != 'readonly-text'"></label>
+                                    <input type="text" class="form-control" ng-model="formElement.format" auto-focus>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div ng-if="formElement.formatterType=='RegExp' || formElement.formatterType=='Text'">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label translate="FORM-BUILDER.COMPONENT.ACCEPTED-CHARS" ng-show="formElement.type != 'readonly-text'"></label>
+                                    <input type="text" class="form-control" ng-model="formElement.acceptedChars" auto-focus>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div ng-if="formElement.formatterType=='Number'">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label translate="FORM-BUILDER.COMPONENT.DECIMALS-COUNT" ng-show="formElement.type != 'readonly-text'"></label>
+                                    <input type="text" class="form-control" ng-model="formElement.decimalsCount" auto-focus>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div ng-if="formElement.formatterType=='Number'">
+                        <div class="form-group">
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" ng-model="formElement.allowNegatives">
+                                    {{'FORM-BUILDER.COMPONENT.ALLOW-NEGATIVES' | translate}}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+
                 <div ng-if="activeTab.id == 'upload' && formElement.type === 'upload'">
                     <div class="form-group">
                         <div class="checkbox">

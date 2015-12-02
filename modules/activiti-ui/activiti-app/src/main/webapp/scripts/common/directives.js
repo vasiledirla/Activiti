@@ -1336,3 +1336,128 @@ activitiModule.
             }
         };
     });
+
+activitiModule
+    .directive('ngTrim', function () {
+        return {
+            require: 'ngModel',
+            priority: 300,
+            link: function (scope, iElem, iAttrs, ngModel) {
+                if (iAttrs.ngTrim === 'false') {
+                    ngModel.$parsers.unshift(function () {
+                        return iElem.val();
+                    });
+                }
+            }
+        }
+    });
+
+activitiModule.
+directive('formattedTextField', function () {
+
+    return {
+        require: 'ngModel',
+        scope: {
+            formattedTextField: '=formattedTextField'
+        },
+
+        link: function (scope, element, attrs, modelCtrl) {
+
+            function transformNumber(field, inputValue) {
+                var transformedInput = inputValue;
+
+                var invalidCharsRegExp = /([^0-9\.])/g;
+
+                if (field.allowNegatives && inputValue && inputValue.indexOf('-') == 0) {
+                    transformedInput = inputValue.substr(1).replace(invalidCharsRegExp, '');
+                    transformedInput = '-' + transformedInput;
+                } else {
+                    transformedInput = inputValue.replace(invalidCharsRegExp, '');
+                }
+                if (field.decimalsCount > 0) {
+                    if ((transformedInput.length > 1 && transformedInput.startsWith('0'))
+                        || transformedInput.length > 2 && transformedInput.startsWith('-0')) {
+                        transformedInput = transformedInput.substring(0, transformedInput.length - 1) + "." + transformedInput[transformedInput.length - 1];
+                    }
+                } else {
+                    if (transformedInput.startsWith('-0')) {
+                        transformedInput = "-";
+                    } else if (transformedInput.startsWith('0')) {
+                        transformedInput = "";
+                    }
+                }
+
+                var decimalsToDelete = 0;
+                var decimalPointPosition = transformedInput.indexOf('.');
+                if (field.decimalsCount > 0) {
+                var integerArea = "0";
+                if (decimalPointPosition >= 0) {
+                    integerArea = transformedInput.substring(0, decimalPointPosition);
+
+                    if (integerArea.length ==0 || integerArea === '-'){
+                        integerArea = integerArea + "0";
+                    }
+
+                    var decimalsArea = transformedInput.substring(decimalPointPosition + 1);
+
+                    decimalsArea = decimalsArea.replace(".", '');
+
+                    transformedInput = integerArea + "." + decimalsArea;
+                }
+
+                var decimalsCount = transformedInput.length - decimalPointPosition - 1;
+
+
+                    if (decimalPointPosition >= 0) {
+                        decimalsToDelete = decimalsCount - field.decimalsCount;
+                        if (decimalsToDelete < 0) decimalsToDelete = 0;
+                    }
+                } else {
+                    if (decimalPointPosition >=0) {
+                        decimalsToDelete = transformedInput.length - decimalPointPosition;
+                    }
+                }
+
+                transformedInput = transformedInput.substr(0, transformedInput.length - decimalsToDelete);
+                return transformedInput;
+            }
+
+            console.log("scope.formattedTextField.formatterType=" + scope.formattedTextField.formatterType);
+            modelCtrl.$parsers.push(function (inputValue) {
+
+                var transformedInput = inputValue;
+                if (scope.formattedTextField.formatterType === 'Number') {
+                    transformedInput = transformNumber(scope.formattedTextField, inputValue);
+
+                } else if (scope.formattedTextField.formatterType === 'Phone') {
+                    var invalidCharsRegExp = /([^0-9\(\)\-\+\)])/g;
+                    transformedInput = inputValue.replace(invalidCharsRegExp, '');
+
+                } else if (scope.formattedTextField.formatterType === 'Text') {
+                    var allowedFormat = new RegExp("^[a-zA-Z\s]*$");
+
+                    if (allowedFormat.test(inputValue) == false) {
+                        transformedInput = inputValue.substr(0, inputValue.length - 1)
+                    }
+
+                } else if (scope.formattedTextField.formatterType === 'RegExp') {
+                    var allowedFormat = new RegExp("^" + scope.formattedTextField.format + "$");
+
+                    if (allowedFormat.test(inputValue) == false) {
+                        transformedInput = inputValue.substr(0, inputValue.length - 1)
+                    }
+
+                }  else {
+                    console.log("scope.formattedTextField.formatterType=" + scope.formattedTextField.formatterType);
+                }
+
+                if (transformedInput != inputValue) {
+                    modelCtrl.$setViewValue(transformedInput);
+                    modelCtrl.$render();
+                }
+
+                return transformedInput;
+            });
+        }
+    };
+});

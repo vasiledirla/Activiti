@@ -611,6 +611,7 @@
     "FORM-BUILDER": {
         "PALLETTE": {
             "TEXT": "Text",
+            "FORMATTED-TEXT": "Formatted Text",
             "CONTAINER": "Container",
             "MULTILINE-TEXT": "Multiline text",
             "NUMBER": "Number",
@@ -629,6 +630,7 @@
         "TABS": {
             "GENERAL": "General",
             "OPTIONS": "Options",
+            "FORMAT": "Format",
             "UPLOAD-OPTIONS": "Upload options",
             "TABLE-COLUMNS": "Table columns",
             "URL-OPTIONS": "Url options",
@@ -697,7 +699,12 @@
             "PROPERTY-UNSELECTED" : "No property selected",
             "DISPLAY-TEXT": "Display text",
             "AMOUNT-CURRENCY-PROPERTY": "Currency",
-            "AMOUNT-ENABLE-FRACTIONS": "Enable fractions"
+            "AMOUNT-ENABLE-FRACTIONS": "Enable fractions",
+            "FORMATTER-TYPE": "Formatter type",
+            "DECIMALS-COUNT": "Decimals count",
+            "ALLOW-NEGATIVES": "Allow negatives",
+            "FORMAT": "Format",
+            "ACCEPTED-CHARS": "Accepted Chars"
         },
         "OPTIONS": {
             "MANUAL": "Manual",
