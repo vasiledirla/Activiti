@@ -12,21 +12,22 @@
  */
 package org.activiti.engine.impl.cmd;
 
-import java.io.Serializable;
-
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
+import org.activiti.engine.impl.persistence.entity.AsyncJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
+
 /**
  * @author Tijs Rademakers
  */
-public class ExecuteAsyncJobCmd implements Command<Object>, Serializable {
+public class ExecuteAsyncJobCmd extends JobCmd<Object> implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
@@ -35,10 +36,11 @@ public class ExecuteAsyncJobCmd implements Command<Object>, Serializable {
   protected JobEntity job;
 
   public ExecuteAsyncJobCmd(JobEntity job) {
+    super("message");
     this.job = job;
   }
 
-  public Object execute(CommandContext commandContext) {
+  public Object executeCommand(CommandContext commandContext) {
 
     if (job == null) {
       throw new ActivitiIllegalArgumentException("job is null");
@@ -48,7 +50,7 @@ public class ExecuteAsyncJobCmd implements Command<Object>, Serializable {
       log.debug("Executing async job {}", job.getId());
     }
 
-    commandContext.getJobEntityManager().execute(job);
+    getJobEntityManager().execute(job);
 
     if (commandContext.getEventDispatcher().isEnabled()) {
       commandContext.getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_EXECUTION_SUCCESS, job));

@@ -34,7 +34,7 @@ public class JobExecutorCmdExceptionTest extends PluggableActivitiTestCase {
 
       public String execute(CommandContext commandContext) {
         MessageEntity message = createTweetExceptionMessage();
-        commandContext.getJobEntityManager().send(message);
+        commandContext.getAsyncJobEntityManager().send(message);
         return message.getId();
       }
     });
@@ -72,7 +72,7 @@ public class JobExecutorCmdExceptionTest extends PluggableActivitiTestCase {
 
       public String execute(CommandContext commandContext) {
         MessageEntity message = createTweetExceptionMessage();
-        commandContext.getJobEntityManager().send(message);
+        commandContext.getAsyncJobEntityManager().send(message);
         return message.getId();
       }
     });

@@ -21,25 +21,29 @@ import org.activiti.engine.impl.asyncexecutor.AcquiredJobEntities;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.TimerJobEntityManager;
+import org.activiti.engine.runtime.Job;
 
 /**
  * @author Tijs Rademakers
+ * @author Vasile Dirla
  */
-public class AcquireTimerJobsCmd implements Command<AcquiredJobEntities> {
+public class AcquireTimerJobsCmd extends JobCmd<AcquiredJobEntities> {
 
   private final String lockOwner;
   private final int lockTimeInMillis;
   private final int maxJobsPerAcquisition;
 
   public AcquireTimerJobsCmd(String lockOwner, int lockTimeInMillis, int maxJobsPerAcquisition) {
+    super(Job.TIMER);
     this.lockOwner = lockOwner;
     this.lockTimeInMillis = lockTimeInMillis;
     this.maxJobsPerAcquisition = maxJobsPerAcquisition;
   }
 
-  public AcquiredJobEntities execute(CommandContext commandContext) {
+  public AcquiredJobEntities executeCommand(CommandContext commandContext) {
     AcquiredJobEntities acquiredJobs = new AcquiredJobEntities();
-    List<JobEntity> jobs = commandContext.getJobEntityManager().findNextTimerJobsToExecute(new Page(0, maxJobsPerAcquisition));
+    List<JobEntity> jobs = ((TimerJobEntityManager)getJobEntityManager()).findNextTimerJobsToExecute(new Page(0, maxJobsPerAcquisition));
 
     for (JobEntity job : jobs) {
       if (job != null && !acquiredJobs.contains(job.getId())) {

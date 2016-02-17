@@ -13,30 +13,31 @@
 
 package org.activiti.engine.impl.cmd;
 
-import java.io.Serializable;
-
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.ActivitiObjectNotFoundException;
 import org.activiti.engine.compatibility.Activiti5CompatibilityHandler;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
-import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.util.Activiti5Util;
 import org.activiti.engine.runtime.Job;
 
+import java.io.Serializable;
+
 /**
  * @author Falko Menge
+ * @author Vasile Dirla
  */
-public class SetJobRetriesCmd implements Command<Void>, Serializable {
+public class SetJobRetriesCmd extends JobCmd<Void> implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
   private final String jobId;
   private final int retries;
 
-  public SetJobRetriesCmd(String jobId, int retries) {
+  public SetJobRetriesCmd(String jobType, String jobId, int retries) {
+    super(jobType);
     if (jobId == null || jobId.length() < 1) {
       throw new ActivitiIllegalArgumentException("The job id is mandatory, but '" + jobId + "' has been provided.");
     }
@@ -47,16 +48,21 @@ public class SetJobRetriesCmd implements Command<Void>, Serializable {
     this.retries = retries;
   }
 
-  public Void execute(CommandContext commandContext) {
-    JobEntity job = commandContext.getJobEntityManager().findById(jobId);
+
+  public SetJobRetriesCmd(String jobId, int retries) {
+    this(Job.GENERIC, jobId, retries);
+  }
+
+  public Void executeCommand(CommandContext commandContext) {
+    JobEntity job = getJobEntityManager().findById(jobId);
     if (job != null) {
-      
+
       if (Activiti5Util.isActiviti5ProcessDefinitionId(commandContext, job.getProcessDefinitionId())) {
-        Activiti5CompatibilityHandler activiti5CompatibilityHandler = Activiti5Util.getActiviti5CompatibilityHandler(); 
+        Activiti5CompatibilityHandler activiti5CompatibilityHandler = Activiti5Util.getActiviti5CompatibilityHandler();
         activiti5CompatibilityHandler.setJobRetries(job.getId(), retries);
         return null;
       }
-      
+
       job.setRetries(retries);
 
       if (commandContext.getEventDispatcher().isEnabled()) {

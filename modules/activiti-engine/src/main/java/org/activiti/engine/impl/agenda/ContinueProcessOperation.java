@@ -169,7 +169,7 @@ public class ContinueProcessOperation extends AbstractOperation {
   }
 
   protected void scheduleJob(boolean exclusive) {
-    MessageEntity message = commandContext.getJobEntityManager().createMessage();
+    MessageEntity message = commandContext.getAsyncJobEntityManager().createMessage();
     message.setExecutionId(execution.getId());
     message.setProcessInstanceId(execution.getProcessInstanceId());
     message.setProcessDefinitionId(execution.getProcessDefinitionId());
@@ -181,7 +181,7 @@ public class ContinueProcessOperation extends AbstractOperation {
       message.setTenantId(execution.getTenantId());
     }
 
-    commandContext.getJobEntityManager().send(message);
+    commandContext.getAsyncJobEntityManager().send(message);
   }
 
   protected void executeBoundaryEvents(Collection<BoundaryEvent> boundaryEvents, ExecutionEntity execution) {

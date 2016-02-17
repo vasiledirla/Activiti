@@ -13,33 +13,39 @@
 
 package org.activiti.engine.impl.cmd;
 
-import java.io.Serializable;
-
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.ActivitiObjectNotFoundException;
-import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.runtime.Job;
 
+import java.io.Serializable;
+
 /**
  * @author Frederik Heremans
+ * @author Vasile Dirla
  */
-public class GetJobExceptionStacktraceCmd implements Command<String>, Serializable {
+public class GetJobExceptionStacktraceCmd extends JobCmd<String> implements Serializable {
 
   private static final long serialVersionUID = 1L;
   private String jobId;
 
-  public GetJobExceptionStacktraceCmd(String jobId) {
+  public GetJobExceptionStacktraceCmd(String jobType, String jobId) {
+    super(jobType);
     this.jobId = jobId;
   }
 
-  public String execute(CommandContext commandContext) {
+  public GetJobExceptionStacktraceCmd(String jobId) {
+    super(Job.GENERIC);
+    this.jobId = jobId;
+  }
+
+  public String executeCommand(CommandContext commandContext) {
     if (jobId == null) {
       throw new ActivitiIllegalArgumentException("jobId is null");
     }
 
-    JobEntity job = commandContext.getJobEntityManager().findById(jobId);
+    JobEntity job = getJobEntityManager().findById(jobId);
 
     if (job == null) {
       throw new ActivitiObjectNotFoundException("No job found with id " + jobId, Job.class);

@@ -90,7 +90,7 @@ public class TimerUtil {
 
     TimerEntity timer = null;
     if (duedate != null) {
-      timer = Context.getCommandContext().getJobEntityManager().createTimer();
+      timer = Context.getCommandContext().getTimerJobEntityManager().createTimer();
       timer.setJobHandlerType(jobHandlerType);
       timer.setJobHandlerConfiguration(jobHandlerConfig);
       timer.setExclusive(true);

@@ -136,7 +136,7 @@ public class DeploymentEntityManagerImpl extends AbstractEntityManager<Deploymen
   }
   
   protected void removeTimerStartJobs(ProcessDefinition processDefinition) {
-    List<Job> timerStartJobs = getJobEntityManager()
+    List<Job> timerStartJobs = getTimerJobEntityManager()
         .findJobsByTypeAndProcessDefinitionId(TimerStartEventJobHandler.TYPE, processDefinition.getId());
     if (timerStartJobs != null && timerStartJobs.size() > 0) {
       for (Job timerStartJob : timerStartJobs) {
@@ -144,7 +144,7 @@ public class DeploymentEntityManagerImpl extends AbstractEntityManager<Deploymen
           getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, timerStartJob, null, null, processDefinition.getId()));
         }
 
-        getJobEntityManager().delete((JobEntity) timerStartJob);
+        getTimerJobEntityManager().delete((JobEntity) timerStartJob);
       }
     }
   }
@@ -198,8 +198,8 @@ public class DeploymentEntityManagerImpl extends AbstractEntityManager<Deploymen
       if (previousProcessDefinition.getTenantId() != null) {
         timer.setTenantId(previousProcessDefinition.getTenantId());
       }
- 
-      getJobEntityManager().schedule(timer);
+
+      getTimerJobEntityManager().schedule(timer);
     }
   }
 

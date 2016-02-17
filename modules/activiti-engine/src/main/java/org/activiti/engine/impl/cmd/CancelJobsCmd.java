@@ -22,30 +22,43 @@ import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.runtime.Job;
 
 /**
  * Send job cancelled event and delete job
  * 
  * @author Tom Baeyens
+ * @author Vasile Dirla
  */
-public class CancelJobsCmd implements Command<Void>, Serializable {
+public class CancelJobsCmd extends JobCmd<Void> implements Serializable {
 
   private static final long serialVersionUID = 1L;
   List<String> jobIds;
 
-  public CancelJobsCmd(List<String> jobIds) {
+  public CancelJobsCmd(String jobType, List<String> jobIds) {
+    super(jobType);
     this.jobIds = jobIds;
   }
 
+
+  public CancelJobsCmd(List<String> jobIds) {
+    this(Job.GENERIC, jobIds);
+  }
+
   public CancelJobsCmd(String jobId) {
+    this(Job.GENERIC, jobId);
+  }
+
+  public CancelJobsCmd(String jobType, String jobId) {
+    super(jobType);
     this.jobIds = new ArrayList<String>();
     jobIds.add(jobId);
   }
 
-  public Void execute(CommandContext commandContext) {
+  public Void executeCommand(CommandContext commandContext) {
     JobEntity jobToDelete = null;
     for (String jobId : jobIds) {
-      jobToDelete = commandContext.getJobEntityManager().findById(jobId);
+      jobToDelete = getJobEntityManager().findById(jobId);
 
       if (jobToDelete != null) {
         // When given job doesn't exist, ignore
@@ -53,7 +66,7 @@ public class CancelJobsCmd implements Command<Void>, Serializable {
           commandContext.getProcessEngineConfiguration().getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, jobToDelete));
         }
 
-        commandContext.getJobEntityManager().delete(jobToDelete);
+        getJobEntityManager().delete(jobToDelete);
       }
     }
     return null;

@@ -36,6 +36,6 @@ public class GetUnlockedTimersByDuedateCmd implements Command<List<TimerEntity>>
   }
 
   public List<TimerEntity> execute(CommandContext commandContext) {
-    return Context.getCommandContext().getJobEntityManager().findUnlockedTimersByDuedate(duedate, page);
+    return Context.getCommandContext().getTimerJobEntityManager().findUnlockedTimersByDuedate(duedate, page);
   }
 }

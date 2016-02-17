@@ -12,12 +12,6 @@
  */
 package org.activiti.engine.impl.cmd;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-
 import org.activiti.bpmn.model.FlowElement;
 import org.activiti.bpmn.model.ServiceTask;
 import org.activiti.engine.ActivitiException;
@@ -28,7 +22,6 @@ import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.calendar.DurationHelper;
 import org.activiti.engine.impl.cfg.TransactionContext;
 import org.activiti.engine.impl.cfg.TransactionState;
-import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.jobexecutor.JobAddedNotification;
 import org.activiti.engine.impl.jobexecutor.JobExecutor;
@@ -38,25 +31,33 @@ import org.activiti.engine.impl.persistence.entity.MessageEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+
 /**
  * @author Saeid Mirzaei
  * @author Joram Barrez
+ * @author Vasile Dirla
  */
 
-public class JobRetryCmd implements Command<Object> {
+public class JobRetryCmd extends JobCmd<Object> {
 
   private static final Logger log = LoggerFactory.getLogger(JobRetryCmd.class.getName());
 
   protected String jobId;
   protected Throwable exception;
 
-  public JobRetryCmd(String jobId, Throwable exception) {
+  public JobRetryCmd(String jobType, String jobId, Throwable exception) {
+    super(jobType);
     this.jobId = jobId;
     this.exception = exception;
   }
 
-  public Object execute(CommandContext commandContext) {
-    JobEntity job = commandContext.getJobEntityManager().findById(jobId);
+  public Object executeCommand(CommandContext commandContext) {
+    JobEntity job = getJobEntityManager().findById(jobId);
     if (job == null) {
       return null;
     }
@@ -93,7 +94,8 @@ public class JobRetryCmd implements Command<Object> {
         job.setDuedate(durationHelper.getDateAfter());
 
         if (job.getExceptionMessage() == null) { // is it the first exception
-          log.debug("Applying JobRetryStrategy '" + failedJobRetryTimeCycleValue + "' the first time for job " + job.getId() + " with " + durationHelper.getTimes() + " retries");
+          log.debug("Applying JobRetryStrategy '" + failedJobRetryTimeCycleValue + "' the first time for job " + job.getId() + " with " + durationHelper
+                  .getTimes() + " retries");
           // then change default retries to the ones configured
           job.setRetries(durationHelper.getTimes());
 

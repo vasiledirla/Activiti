@@ -45,7 +45,13 @@ alter table ACT_RU_VARIABLE
 
 alter table ACT_RU_JOB
     drop foreign key ACT_FK_JOB_EXCEPTION;
-    
+
+alter table ACT_RU_ASYNC_JOB
+    drop foreign key ACT_FK_ASYNC_JOB_EXCEPTION;
+
+alter table ACT_RU_TIMER_JOB
+    drop foreign key ACT_FK_TIMER_JOB_EXCEPTION;
+
 alter table ACT_RU_EVENT_SUBSCR
     drop foreign key ACT_FK_EVENT_EXEC;
 
@@ -77,6 +83,8 @@ drop table ACT_RU_IDENTITYLINK;
 drop table ACT_RU_TASK;
 drop table ACT_RU_EXECUTION;
 drop table ACT_RU_JOB;
+drop table ACT_RU_TIMER_JOB;
+drop table ACT_RU_ASYNC_JOB;
 drop table ACT_RU_EVENT_SUBSCR;
 drop table ACT_EVT_LOG;
 drop table ACT_PROCDEF_INFO;

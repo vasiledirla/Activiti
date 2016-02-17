@@ -36,7 +36,7 @@ public class AcquireAsyncJobsDueCmd implements Command<AcquiredJobEntities> {
 
   public AcquiredJobEntities execute(CommandContext commandContext) {
     AcquiredJobEntities acquiredJobs = new AcquiredJobEntities();
-    List<JobEntity> jobs = commandContext.getJobEntityManager().findAsyncJobsDueToExecute(new Page(0, asyncExecutor.getMaxAsyncJobsDuePerAcquisition()));
+    List<JobEntity> jobs = commandContext.getAsyncJobEntityManager().findAsyncJobsDueToExecute(new Page(0, asyncExecutor.getMaxAsyncJobsDuePerAcquisition()));
 
     for (JobEntity job : jobs) {
       lockJob(commandContext, job, asyncExecutor.getAsyncJobLockTimeInMillis());

@@ -52,14 +52,15 @@ import org.slf4j.LoggerFactory;
  * @author Tom Baeyens
  * @author Daniel Meyer
  * @author Joram Barrez
+ * @author Vasile Dirla
  */
-public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> implements JobEntityManager {
+public class TimerJobEntityManagerImpl extends AbstractEntityManager<JobEntity> implements TimerJobEntityManager {
   
-  private static final Logger logger = LoggerFactory.getLogger(JobEntityManagerImpl.class);
+  private static final Logger logger = LoggerFactory.getLogger(TimerJobEntityManagerImpl.class);
   
   protected JobDataManager jobDataManager;
   
-  public JobEntityManagerImpl(ProcessEngineConfigurationImpl processEngineConfiguration, JobDataManager jobDataManager) {
+  public TimerJobEntityManagerImpl(ProcessEngineConfigurationImpl processEngineConfiguration, JobDataManager jobDataManager) {
     super(processEngineConfiguration);
     this.jobDataManager = jobDataManager;
   }
@@ -68,12 +69,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
   protected DataManager<JobEntity> getDataManager() {
     return jobDataManager;
   }
-  
-  @Override
-  public MessageEntity createMessage() {
-    return jobDataManager.createMessage();
-  }
-  
+
   @Override
   public TimerEntity createTimer() {
     return jobDataManager.createTimer();
@@ -199,10 +195,6 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
     return jobDataManager.findNextTimerJobsToExecute(page);
   }
 
-  @Override
-  public List<JobEntity> findAsyncJobsDueToExecute(Page page) {
-    return jobDataManager.findAsyncJobsDueToExecute(page);
-  }
 
   @Override
   public List<JobEntity> findJobsByLockOwner(String lockOwner, int start, int maxNrOfJobs) {
@@ -363,7 +355,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
         if (newTimer != null && isValidTime(timerEntity, newTimer)) {
           TimerEntity te = createTimer(timerEntity);
           te.setDuedate(newTimer);
-          getJobEntityManager().schedule(te);
+          getTimerJobEntityManager().schedule(te);
         }
       }
     }

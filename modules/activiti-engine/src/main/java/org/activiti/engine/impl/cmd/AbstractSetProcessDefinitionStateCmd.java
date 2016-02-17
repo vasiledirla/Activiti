@@ -147,7 +147,7 @@ public abstract class AbstractSetProcessDefinitionStateCmd implements Command<Vo
       
       if (Activiti5Util.isActiviti5ProcessDefinition(commandContext, processDefinition)) continue;
       
-      TimerEntity timer = commandContext.getJobEntityManager().createTimer();
+      TimerEntity timer = commandContext.getTimerJobEntityManager().createTimer();
       timer.setProcessDefinitionId(processDefinition.getId());
 
       // Inherit tenant identifier (if applicable)
@@ -158,7 +158,7 @@ public abstract class AbstractSetProcessDefinitionStateCmd implements Command<Vo
       timer.setDuedate(executionDate);
       timer.setJobHandlerType(getDelayedExecutionJobHandlerType());
       timer.setJobHandlerConfiguration(TimerChangeProcessDefinitionSuspensionStateJobHandler.createJobHandlerConfiguration(includeProcessInstances));
-      commandContext.getJobEntityManager().schedule(timer);
+      commandContext.getTimerJobEntityManager().schedule(timer);
     }
   }
 

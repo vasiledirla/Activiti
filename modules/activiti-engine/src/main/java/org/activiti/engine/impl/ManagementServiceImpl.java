@@ -12,27 +12,12 @@
  */
 package org.activiti.engine.impl;
 
-import java.sql.Connection;
-import java.util.List;
-import java.util.Map;
-
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.JobNotFoundException;
 import org.activiti.engine.ManagementService;
 import org.activiti.engine.event.EventLogEntry;
-import org.activiti.engine.impl.cmd.CustomSqlExecution;
-import org.activiti.engine.impl.cmd.DeleteEventLogEntry;
-import org.activiti.engine.impl.cmd.DeleteJobCmd;
-import org.activiti.engine.impl.cmd.ExecuteCustomSqlCmd;
-import org.activiti.engine.impl.cmd.ExecuteJobsCmd;
-import org.activiti.engine.impl.cmd.GetEventLogEntriesCmd;
-import org.activiti.engine.impl.cmd.GetJobExceptionStacktraceCmd;
-import org.activiti.engine.impl.cmd.GetPropertiesCmd;
-import org.activiti.engine.impl.cmd.GetTableCountCmd;
-import org.activiti.engine.impl.cmd.GetTableMetaDataCmd;
-import org.activiti.engine.impl.cmd.GetTableNameCmd;
-import org.activiti.engine.impl.cmd.SetJobRetriesCmd;
+import org.activiti.engine.impl.cmd.*;
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.db.DbSqlSession;
 import org.activiti.engine.impl.db.DbSqlSessionFactory;
@@ -43,7 +28,12 @@ import org.activiti.engine.impl.jobexecutor.JobExecutorContext;
 import org.activiti.engine.impl.jobexecutor.SingleJobExecutorContext;
 import org.activiti.engine.management.TableMetaData;
 import org.activiti.engine.management.TablePageQuery;
+import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.JobQuery;
+
+import java.sql.Connection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Tom Baeyens

@@ -22,7 +22,7 @@ import java.util.TreeSet;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
-import org.activiti.engine.impl.persistence.entity.JobEntityManager;
+import org.activiti.engine.impl.persistence.entity.TimerJobEntityManager;
 
 /**
  * @author Tom Baeyens
@@ -33,7 +33,7 @@ public class JobExecutorTest extends JobExecutorTestCase {
     CommandExecutor commandExecutor = processEngineConfiguration.getCommandExecutor();
     commandExecutor.execute(new Command<Void>() {
       public Void execute(CommandContext commandContext) {
-        JobEntityManager jobManager = commandContext.getJobEntityManager();
+        TimerJobEntityManager jobManager = commandContext.getTimerJobEntityManager();
         jobManager.send(createTweetMessage("message-one"));
         jobManager.send(createTweetMessage("message-two"));
         jobManager.send(createTweetMessage("message-three"));

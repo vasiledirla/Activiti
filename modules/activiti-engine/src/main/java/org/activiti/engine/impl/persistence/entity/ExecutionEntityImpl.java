@@ -532,7 +532,7 @@ public class ExecutionEntityImpl extends VariableScopeImpl implements ExecutionE
   
   protected void ensureJobsInitialized() {
     if (jobs == null) {
-      jobs = Context.getCommandContext().getJobEntityManager().findJobsByExecutionId(id);
+      jobs = Context.getCommandContext().getGenericJobEntityManager().findJobsByExecutionId(id);
     }
   }
 

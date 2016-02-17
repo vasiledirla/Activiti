@@ -27,7 +27,7 @@ import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.activiti.engine.impl.persistence.entity.JobEntityManager;
+import org.activiti.engine.impl.persistence.entity.TimerJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
@@ -98,8 +98,8 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     // Create one message
     messageId = commandExecutor.execute(new Command<String>() {
       public String execute(CommandContext commandContext) {
-        MessageEntity message = commandContext.getJobEntityManager().createMessage();
-        commandContext.getJobEntityManager().send(message);
+        MessageEntity message = commandContext.getAsyncJobEntityManager().createMessage();
+        commandContext.getAsyncJobEntityManager().send(message);
         return message.getId();
       }
     });
@@ -108,7 +108,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
   @Override
   protected void tearDown() throws Exception {
     repositoryService.deleteDeployment(deploymentId, true);
-    commandExecutor.execute(new CancelJobsCmd(messageId));
+    commandExecutor.execute(new CancelJobsCmd(Job.MESSAGE, messageId));
     super.tearDown();
   }
 
@@ -416,9 +416,9 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     CommandExecutor commandExecutor = processEngineConfiguration.getCommandExecutor();
     commandExecutor.execute(new Command<Void>() {
       public Void execute(CommandContext commandContext) {
-        JobEntityManager jobManager = commandContext.getJobEntityManager();
+        TimerJobEntityManager jobManager = commandContext.getTimerJobEntityManager();
 
-        timerEntity = commandContext.getJobEntityManager().createTimer();
+        timerEntity = jobManager.createTimer();
         timerEntity.setLockOwner(UUID.randomUUID().toString());
         timerEntity.setDuedate(new Date());
         timerEntity.setRetries(0);
@@ -443,9 +443,9 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     CommandExecutor commandExecutor = processEngineConfiguration.getCommandExecutor();
     commandExecutor.execute(new Command<Void>() {
       public Void execute(CommandContext commandContext) {
-        JobEntityManager jobManager = commandContext.getJobEntityManager();
+        TimerJobEntityManager jobManager = commandContext.getTimerJobEntityManager();
 
-        timerEntity = commandContext.getJobEntityManager().createTimer();
+        timerEntity = jobManager.createTimer();
         timerEntity.setLockOwner(UUID.randomUUID().toString());
         timerEntity.setDuedate(new Date());
         timerEntity.setRetries(0);
@@ -467,7 +467,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     commandExecutor.execute(new Command<Void>() {
       public Void execute(CommandContext commandContext) {
 
-        commandContext.getJobEntityManager().delete(timerEntity);
+        commandContext.getTimerJobEntityManager().delete(timerEntity);
         return null;
       }
     });

@@ -22,18 +22,23 @@ import org.slf4j.LoggerFactory;
  * @author Joram Barrez
  */
 
-public class DeleteJobCmd implements Command<Object>, Serializable {
+public class DeleteJobCmd extends JobCmd<Object> implements Serializable {
 
   private static final Logger log = LoggerFactory.getLogger(DeleteJobCmd.class);
   private static final long serialVersionUID = 1L;
 
   protected String jobId;
 
-  public DeleteJobCmd(String jobId) {
+  public DeleteJobCmd(String jobType, String jobId) {
+    super(jobType);
     this.jobId = jobId;
   }
 
-  public Object execute(CommandContext commandContext) {
+  public DeleteJobCmd(String jobId) {
+    this(Job.GENERIC, jobId);
+  }
+
+  public Object executeCommand(CommandContext commandContext) {
     JobEntity jobToDelete = getJobToDelete(commandContext);
     
     if (Activiti5Util.isActiviti5ProcessDefinitionId(commandContext, jobToDelete.getProcessDefinitionId())) {
@@ -44,7 +49,7 @@ public class DeleteJobCmd implements Command<Object>, Serializable {
 
     sendCancelEvent(jobToDelete);
 
-    commandContext.getJobEntityManager().delete(jobToDelete);
+    getJobEntityManager().delete(jobToDelete);
     return null;
   }
 
@@ -62,7 +67,7 @@ public class DeleteJobCmd implements Command<Object>, Serializable {
       log.debug("Deleting job {}", jobId);
     }
 
-    JobEntity job = commandContext.getJobEntityManager().findById(jobId);
+    JobEntity job = getJobEntityManager().findById(jobId);
     if (job == null) {
       throw new ActivitiObjectNotFoundException("No job found with id '" + jobId + "'", Job.class);
     }

@@ -16,6 +16,7 @@ package org.activiti.engine.runtime;
 import java.util.Date;
 
 import org.activiti.engine.ManagementService;
+import org.activiti.engine.impl.persistence.entity.JobEntity;
 
 /**
  * Represents one job (timer, message, etc.).
@@ -23,6 +24,10 @@ import org.activiti.engine.ManagementService;
  * @author Joram Barrez
  */
 public interface Job {
+
+  String TIMER = "timer";
+  String MESSAGE = "message";
+  String GENERIC = "generic";
 
   /**
    * Returns the unique identifier for this job.

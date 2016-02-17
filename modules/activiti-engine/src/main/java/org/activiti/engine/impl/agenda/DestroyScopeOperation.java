@@ -5,14 +5,7 @@ import java.util.Collection;
 import org.activiti.bpmn.model.FlowElement;
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.impl.interceptor.CommandContext;
-import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
-import org.activiti.engine.impl.persistence.entity.ExecutionEntityManager;
-import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.activiti.engine.impl.persistence.entity.JobEntityManager;
-import org.activiti.engine.impl.persistence.entity.TaskEntity;
-import org.activiti.engine.impl.persistence.entity.TaskEntityManager;
-import org.activiti.engine.impl.persistence.entity.VariableInstanceEntity;
-import org.activiti.engine.impl.persistence.entity.VariableInstanceEntityManager;
+import org.activiti.engine.impl.persistence.entity.*;
 
 /**
  * @author Joram Barrez
@@ -67,10 +60,16 @@ public class DestroyScopeOperation extends AbstractOperation {
     }
 
     // Delete all scope jobs
-    JobEntityManager jobEntityManager = commandContext.getJobEntityManager();
-    Collection<JobEntity> jobsForExecution = jobEntityManager.findJobsByExecutionId(parentScopeExecution.getId());
+    TimerJobEntityManager timerJobEntityManager = commandContext.getTimerJobEntityManager();
+    Collection<JobEntity> jobsForExecution = timerJobEntityManager.findJobsByExecutionId(parentScopeExecution.getId());
     for (JobEntity job : jobsForExecution) {
-      jobEntityManager.delete(job);
+      timerJobEntityManager.delete(job);
+    }
+
+    AsyncJobEntityManager asyncJobEntityManager = commandContext.getAsyncJobEntityManager();
+    Collection<JobEntity> asyncJobsForExecution = asyncJobEntityManager.findJobsByExecutionId(parentScopeExecution.getId());
+    for (JobEntity job : asyncJobsForExecution) {
+      asyncJobEntityManager.delete(job);
     }
     
     // Remove variables associated with this scope

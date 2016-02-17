@@ -134,7 +134,7 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
   }
   
   protected void unacquireJob(final JobEntity job, CommandContext commandContext) {
-    commandContext.getJobEntityManager().unacquireJob(job.getId());
+    commandContext.getAsyncJobEntityManager().unacquireJob(job.getId());
   }
   
   /** Starts the async executor */

@@ -18,6 +18,7 @@ import org.activiti.engine.impl.cmd.ExecuteJobsCmd;
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.runtime.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +92,7 @@ public class ExecuteJobsRunnable implements Runnable {
 
         String currentJobId = currentProcessorJobQueue.remove(0);
         try {
-          commandExecutor.execute(new ExecuteJobsCmd(currentJobId));
+          commandExecutor.execute(new ExecuteJobsCmd(Job.GENERIC,  currentJobId));
         } catch (Throwable e) {
           log.error("exception during job execution: {}", e.getMessage(), e);
         } finally {

@@ -426,14 +426,14 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
     }
 
     // Delete jobs
-    JobEntityManager jobEntityManager = getJobEntityManager();
-    Collection<JobEntity> jobsForExecution = jobEntityManager.findJobsByExecutionId(executionEntity.getId());
+
+    GenericJobEntityManager genericJobEntityManager = getGenericJobEntityManager();
+    Collection<JobEntity> jobsForExecution = genericJobEntityManager.findJobsByExecutionId(executionEntity.getId());
     for (JobEntity job : jobsForExecution) {
-      getJobEntityManager().delete(job);
+      getGenericJobEntityManager().delete(job);
       if (getEventDispatcher().isEnabled()) {
         getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, job));
       }
-//      jobEntityManager.delete(job, false); // false -> jobs fire the events themselves TODO: is this right?
     }
 
     // Delete event subscriptions

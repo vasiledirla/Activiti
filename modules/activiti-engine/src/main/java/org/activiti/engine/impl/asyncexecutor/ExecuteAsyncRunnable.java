@@ -148,11 +148,11 @@ public class ExecuteAsyncRunnable implements Runnable {
   protected void unacquireJob() {
     CommandContext commandContext = Context.getCommandContext();
     if (commandContext != null) {
-      commandContext.getJobEntityManager().unacquireJob(job.getId());
+      commandContext.getAsyncJobEntityManager().unacquireJob(job.getId());
     } else {
       commandExecutor.execute(new Command<Void>() {
         public Void execute(CommandContext commandContext) {
-          commandContext.getJobEntityManager().unacquireJob(job.getId());
+          commandContext.getAsyncJobEntityManager().unacquireJob(job.getId());
           return null;
         }
       });
@@ -172,7 +172,7 @@ public class ExecuteAsyncRunnable implements Runnable {
         
         CommandConfig commandConfig = commandExecutor.getDefaultConfig().transactionRequiresNew();
         FailedJobCommandFactory failedJobCommandFactory = commandContext.getFailedJobCommandFactory();
-        Command<Object> cmd = failedJobCommandFactory.getCommand(job.getId(), exception);
+        Command<Object> cmd = failedJobCommandFactory.getCommand(job.getJobType(), job.getId(), exception);
 
         log.trace("Using FailedJobCommandFactory '" + failedJobCommandFactory.getClass() + "' and command of type '" + cmd.getClass() + "'");
         commandExecutor.execute(commandConfig, cmd);

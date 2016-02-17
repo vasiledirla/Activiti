@@ -24,27 +24,29 @@ import org.activiti.engine.impl.jobexecutor.AcquiredJobs;
 import org.activiti.engine.impl.jobexecutor.JobExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
+import org.activiti.engine.runtime.Job;
 
 /**
  * @author Nick Burch
  * @author Daniel Meyer
  */
-public class AcquireJobsCmd implements Command<AcquiredJobs> {
+public class AcquireJobsCmd extends JobCmd<AcquiredJobs> {
 
   private final JobExecutor jobExecutor;
 
   public AcquireJobsCmd(JobExecutor jobExecutor) {
+    super(Job.GENERIC);
     this.jobExecutor = jobExecutor;
   }
 
-  public AcquiredJobs execute(CommandContext commandContext) {
+  public AcquiredJobs executeCommand(CommandContext commandContext) {
 
     String lockOwner = jobExecutor.getLockOwner();
     int lockTimeInMillis = jobExecutor.getLockTimeInMillis();
     int maxNonExclusiveJobsPerAcquisition = jobExecutor.getMaxJobsPerAcquisition();
 
     AcquiredJobs acquiredJobs = new AcquiredJobs();
-    List<JobEntity> jobs = commandContext.getJobEntityManager().findNextJobsToExecute(new Page(0, maxNonExclusiveJobsPerAcquisition));
+    List<JobEntity> jobs = getJobEntityManager().findNextJobsToExecute(new Page(0, maxNonExclusiveJobsPerAcquisition));
 
     for (JobEntity job : jobs) {
       List<String> jobIds = new ArrayList<String>();
@@ -58,7 +60,7 @@ public class AcquireJobsCmd implements Command<AcquiredJobs> {
 
           // acquire all exclusive jobs in the same process instance
           // (includes the current job)
-          List<JobEntity> exclusiveJobs = commandContext.getJobEntityManager().findExclusiveJobsToExecute(job.getProcessInstanceId());
+          List<JobEntity> exclusiveJobs = getJobEntityManager().findExclusiveJobsToExecute(job.getProcessInstanceId());
           for (JobEntity exclusiveJob : exclusiveJobs) {
             if (exclusiveJob != null) {
               lockJob(commandContext, exclusiveJob, lockOwner, lockTimeInMillis);

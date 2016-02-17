@@ -31,17 +31,19 @@ public class FailedJobListener implements TransactionListener {
 
   protected CommandExecutor commandExecutor;
   protected String jobId;
+  protected String jobType;
   protected Throwable exception;
 
-  public FailedJobListener(CommandExecutor commandExecutor, String jobId) {
+  public FailedJobListener(CommandExecutor commandExecutor, String jobId, String jobType) {
     this.commandExecutor = commandExecutor;
     this.jobId = jobId;
+    this.jobType = jobType;
   }
 
   public void execute(CommandContext commandContext) {
     CommandConfig commandConfig = commandExecutor.getDefaultConfig().transactionRequiresNew();
     FailedJobCommandFactory failedJobCommandFactory = commandContext.getFailedJobCommandFactory();
-    Command<Object> cmd = failedJobCommandFactory.getCommand(jobId, exception);
+    Command<Object> cmd = failedJobCommandFactory.getCommand(jobType, jobId, exception);
 
     log.trace("Using FailedJobCommandFactory '" + failedJobCommandFactory.getClass() + "' and command of type '" + cmd.getClass() + "'");
     commandExecutor.execute(commandConfig, cmd);

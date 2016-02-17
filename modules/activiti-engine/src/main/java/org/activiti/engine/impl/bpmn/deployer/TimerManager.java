@@ -40,16 +40,16 @@ public class TimerManager {
     List<Job> jobsToDelete = null;
 
     if (processDefinition.getTenantId() != null && !ProcessEngineConfiguration.NO_TENANT_ID.equals(processDefinition.getTenantId())) {
-      jobsToDelete = Context.getCommandContext().getJobEntityManager().findJobsByTypeAndProcessDefinitionKeyAndTenantId(
+      jobsToDelete = Context.getCommandContext().getTimerJobEntityManager().findJobsByTypeAndProcessDefinitionKeyAndTenantId(
           TimerStartEventJobHandler.TYPE, processDefinition.getKey(), processDefinition.getTenantId());
     } else {
-      jobsToDelete = Context.getCommandContext().getJobEntityManager()
+      jobsToDelete = Context.getCommandContext().getTimerJobEntityManager()
           .findJobsByTypeAndProcessDefinitionKeyNoTenantId(TimerStartEventJobHandler.TYPE, processDefinition.getKey());
     }
 
     if (jobsToDelete != null) {
       for (Job job :jobsToDelete) {
-        new CancelJobsCmd(job.getId()).execute(Context.getCommandContext());
+        new CancelJobsCmd(Job.TIMER, job.getId()).execute(Context.getCommandContext());
       }
     }
   }
@@ -57,7 +57,7 @@ public class TimerManager {
   protected void scheduleTimers(ProcessDefinitionEntity processDefinition, Process process) {
     List<TimerEntity> timers = getTimerDeclarations(processDefinition, process);
     for (TimerEntity timer : timers) {
-      Context.getCommandContext().getJobEntityManager().schedule(timer);
+      Context.getCommandContext().getTimerJobEntityManager().schedule(timer);
     }
   }
   

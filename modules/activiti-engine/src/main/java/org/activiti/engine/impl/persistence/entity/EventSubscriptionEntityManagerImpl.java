@@ -254,7 +254,7 @@ public class EventSubscriptionEntityManagerImpl extends AbstractEntityManager<Ev
 
   protected void scheduleEventAsync(EventSubscriptionEntity eventSubscriptionEntity, Object payload) {
 
-    MessageEntity message = getJobEntityManager().createMessage();
+    MessageEntity message = getAsyncJobEntityManager().createMessage();
     message.setJobHandlerType(ProcessEventJobHandler.TYPE);
     message.setJobHandlerConfiguration(eventSubscriptionEntity.getId());
     message.setTenantId(eventSubscriptionEntity.getTenantId());
@@ -270,7 +270,7 @@ public class EventSubscriptionEntityManagerImpl extends AbstractEntityManager<Ev
     // message.setEventPayload(payload);
     // }
 
-    getJobEntityManager().send(message);
+    getAsyncJobEntityManager().send(message);
   }
   
   protected List<SignalEventSubscriptionEntity> toSignalEventSubscriptionEntityList(List<EventSubscriptionEntity> result) {
