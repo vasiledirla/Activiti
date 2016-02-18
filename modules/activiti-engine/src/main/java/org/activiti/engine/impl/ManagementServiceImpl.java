@@ -26,6 +26,8 @@ import org.activiti.engine.impl.interceptor.CommandConfig;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.jobexecutor.JobExecutorContext;
 import org.activiti.engine.impl.jobexecutor.SingleJobExecutorContext;
+import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.TimerJobEntityImpl;
 import org.activiti.engine.management.TableMetaData;
 import org.activiti.engine.management.TablePageQuery;
 import org.activiti.engine.runtime.Job;
@@ -55,7 +57,30 @@ public class ManagementServiceImpl extends ServiceImpl implements ManagementServ
     return commandExecutor.execute(new GetTableMetaDataCmd(tableName));
   }
 
-  public void executeJob(String jobId) {
+  @Override
+  public void executeJob(Job job) {
+    if (job == null) {
+      throw new ActivitiIllegalArgumentException("job is null");
+    }
+
+    JobExecutorContext jobExecutorContext = new SingleJobExecutorContext();
+    Context.setJobExecutorContext(jobExecutorContext);
+    try {
+
+      commandExecutor.execute(new ExecuteJobsCmd((JobEntity)job));
+    }
+    catch (RuntimeException e) {
+      if ((e instanceof JobNotFoundException)) {
+        throw e;
+      } else {
+        throw new ActivitiException("Job " + job.getId() + " failed", e);
+      }
+    } finally {
+      Context.removeJobExecutorContext();
+    }
+  }
+
+  public void executeTimerJob(String jobId) {
     
     if (jobId == null) {
       throw new ActivitiIllegalArgumentException("JobId is null");
@@ -64,7 +89,7 @@ public class ManagementServiceImpl extends ServiceImpl implements ManagementServ
     JobExecutorContext jobExecutorContext = new SingleJobExecutorContext();
     Context.setJobExecutorContext(jobExecutorContext);
     try {
-      commandExecutor.execute(new ExecuteJobsCmd(jobId));
+      commandExecutor.execute(new ExecuteJobsCmd(Job.TIMER, jobId));
     }
     catch (RuntimeException e) {
       if ((e instanceof JobNotFoundException)) {
@@ -76,6 +101,29 @@ public class ManagementServiceImpl extends ServiceImpl implements ManagementServ
       Context.removeJobExecutorContext();
     }
   }
+
+  public void executeAsyncJob(String jobId) {
+
+    if (jobId == null) {
+      throw new ActivitiIllegalArgumentException("JobId is null");
+    }
+
+    JobExecutorContext jobExecutorContext = new SingleJobExecutorContext();
+    Context.setJobExecutorContext(jobExecutorContext);
+    try {
+      commandExecutor.execute(new ExecuteJobsCmd(Job.MESSAGE, jobId));
+    }
+    catch (RuntimeException e) {
+      if ((e instanceof JobNotFoundException)) {
+        throw e;
+      } else {
+        throw new ActivitiException("Job " + jobId + " failed", e);
+      }
+    } finally {
+      Context.removeJobExecutorContext();
+    }
+  }
+
 
   public void deleteJob(String jobId) {
     commandExecutor.execute(new DeleteJobCmd(jobId));
@@ -150,5 +198,6 @@ public class ManagementServiceImpl extends ServiceImpl implements ManagementServ
   public void deleteEventLogEntry(long logNr) {
     commandExecutor.execute(new DeleteEventLogEntry(logNr));
   }
+
 
 }

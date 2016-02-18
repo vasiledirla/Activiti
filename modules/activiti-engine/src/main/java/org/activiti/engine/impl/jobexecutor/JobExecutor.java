@@ -141,7 +141,7 @@ public abstract class JobExecutor {
 
   /* Need to be implemented by concrete subclasses */
 
-  public abstract void executeJobs(List<String> jobIds);
+  public abstract void executeJobs(List<JobEntity> jobs);
 
   protected abstract void startExecutingJobs();
 

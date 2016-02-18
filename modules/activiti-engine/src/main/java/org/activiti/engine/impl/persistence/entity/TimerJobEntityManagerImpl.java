@@ -35,6 +35,7 @@ import org.activiti.engine.impl.calendar.CycleBusinessCalendar;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.activiti.engine.impl.cfg.TransactionListener;
 import org.activiti.engine.impl.cfg.TransactionState;
+import org.activiti.engine.impl.db.JobQueryParameterObject;
 import org.activiti.engine.impl.el.NoExecutionVariableScope;
 import org.activiti.engine.impl.jobexecutor.AsyncJobAddedNotification;
 import org.activiti.engine.impl.jobexecutor.JobAddedNotification;
@@ -301,9 +302,7 @@ public class TimerJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
   
   @Override
   public void execute(JobEntity jobEntity) {
-    if (jobEntity instanceof MessageEntity) {
-      executeMessageJob(jobEntity);
-    } else if (jobEntity instanceof TimerEntity) {
+    if (jobEntity instanceof TimerEntity) {
       executeTimerJob((TimerEntity) jobEntity);
     } 
   }
@@ -493,5 +492,9 @@ public class TimerJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
   public void setJobDataManager(JobDataManager jobDataManager) {
     this.jobDataManager = jobDataManager;
   }
-  
+
+  @Override
+  public JobEntity findById(String jobId) {
+    return jobDataManager.selectJob(new JobQueryParameterObject(jobId, Job.TIMER));
+  }
 }

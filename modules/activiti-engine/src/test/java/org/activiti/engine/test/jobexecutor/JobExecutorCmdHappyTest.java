@@ -48,7 +48,7 @@ public class JobExecutorCmdHappyTest extends JobExecutorTestCase {
 
     assertEquals(0, tweetHandler.getMessages().size());
 
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
 
     assertEquals("i'm coding a test", tweetHandler.getMessages().get(0));
     assertEquals(1, tweetHandler.getMessages().size());

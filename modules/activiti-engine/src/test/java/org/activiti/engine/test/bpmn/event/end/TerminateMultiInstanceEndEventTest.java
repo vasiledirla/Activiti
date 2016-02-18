@@ -224,7 +224,7 @@ public class TerminateMultiInstanceEndEventTest extends PluggableActivitiTestCas
     // Firing the timer --> inner MI gets destroyed
     List<Job> timers = managementService.createJobQuery().list();
     assertEquals(nrOfBTasksCompleted, timers.size());
-    managementService.executeJob(timers.get(0).getId());
+    managementService.executeJob(timers.get(0));
     
     // We only comnpleted 3 B's. 3 other ones should be destroyed too (as one inner multi instance are 6 instances of B)
     bTasks = taskService.createTaskQuery().processInstanceId(processInstance.getId()).taskName("B").list();
@@ -277,7 +277,7 @@ public class TerminateMultiInstanceEndEventTest extends PluggableActivitiTestCas
     // Firing the timer --> inner MI gets destroyed
     List<Job> timers = managementService.createJobQuery().list();
     assertEquals(1, timers.size());
-    managementService.executeJob(timers.get(0).getId());
+    managementService.executeJob(timers.get(0));
     
     bTasks = taskService.createTaskQuery().processInstanceId(processInstance.getId()).taskName("B").list();
     assertEquals(0, bTasks.size());

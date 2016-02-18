@@ -112,7 +112,7 @@ public class AsyncTaskTest extends PluggableActivitiTestCase {
     }
 
     try {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
       fail();
     } catch (Exception e) {
       // exception expected

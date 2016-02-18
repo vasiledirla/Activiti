@@ -18,7 +18,6 @@ import java.util.GregorianCalendar;
 import java.util.List;
 
 import org.activiti.engine.impl.Page;
-import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.jobexecutor.AcquiredJobs;
 import org.activiti.engine.impl.jobexecutor.JobExecutor;
@@ -48,9 +47,11 @@ public class AcquireJobsCmd extends JobCmd<AcquiredJobs> {
     AcquiredJobs acquiredJobs = new AcquiredJobs();
     List<JobEntity> jobs = getJobEntityManager().findNextJobsToExecute(new Page(0, maxNonExclusiveJobsPerAcquisition));
 
+
     for (JobEntity job : jobs) {
-      List<String> jobIds = new ArrayList<String>();
-      if (job != null && !acquiredJobs.contains(job.getId())) {
+//      List<String> jobIds = new ArrayList<String>();
+      List<JobEntity> jobEntities = new ArrayList<JobEntity>();
+      if (job != null && !acquiredJobs.contains(job)) {
         if (job instanceof MessageEntity && job.isExclusive() && job.getProcessInstanceId() != null) {
           // wait to get exclusive jobs within 100ms
           try {
@@ -64,18 +65,18 @@ public class AcquireJobsCmd extends JobCmd<AcquiredJobs> {
           for (JobEntity exclusiveJob : exclusiveJobs) {
             if (exclusiveJob != null) {
               lockJob(commandContext, exclusiveJob, lockOwner, lockTimeInMillis);
-              jobIds.add(exclusiveJob.getId());
+              jobEntities.add(exclusiveJob);
             }
           }
 
         } else {
           lockJob(commandContext, job, lockOwner, lockTimeInMillis);
-          jobIds.add(job.getId());
+          jobEntities.add(job);
         }
 
       }
 
-      acquiredJobs.addJobIdBatch(jobIds);
+      acquiredJobs.addJobBatch(jobEntities);
     }
 
     return acquiredJobs;

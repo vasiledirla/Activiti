@@ -13,6 +13,8 @@
 
 package org.activiti.engine.impl.jobexecutor;
 
+import org.activiti.engine.impl.persistence.entity.JobEntity;
+
 import java.util.List;
 
 /**
@@ -21,9 +23,10 @@ import java.util.List;
  * </p>
  * 
  * @author Daniel Meyer
+ * @author Vasile Dirla
  */
 public interface RejectedJobsHandler {
 
-  public void jobsRejected(JobExecutor jobExecutor, List<String> jobIds);
+   void jobsRejected(JobExecutor jobExecutor, List<JobEntity> jobs);
 
 }

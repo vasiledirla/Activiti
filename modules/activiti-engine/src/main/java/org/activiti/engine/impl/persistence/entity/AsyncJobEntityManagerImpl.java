@@ -13,10 +13,6 @@
 
 package org.activiti.engine.impl.persistence.entity;
 
-import org.activiti.bpmn.model.Event;
-import org.activiti.bpmn.model.EventDefinition;
-import org.activiti.bpmn.model.FlowElement;
-import org.activiti.bpmn.model.TimerEventDefinition;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.JobQueryImpl;
@@ -26,6 +22,7 @@ import org.activiti.engine.impl.calendar.CycleBusinessCalendar;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.activiti.engine.impl.cfg.TransactionListener;
 import org.activiti.engine.impl.cfg.TransactionState;
+import org.activiti.engine.impl.db.JobQueryParameterObject;
 import org.activiti.engine.impl.jobexecutor.AsyncJobAddedNotification;
 import org.activiti.engine.impl.jobexecutor.JobAddedNotification;
 import org.activiti.engine.impl.jobexecutor.JobHandler;
@@ -204,6 +201,11 @@ public class AsyncJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
   @Override
   public void unacquireJob(String jobId) {
     jobDataManager.unacquireJob(jobId);
+  }
+
+  @Override
+  public JobEntity findById(String jobId) {
+    return jobDataManager.selectJob(new JobQueryParameterObject(jobId, Job.MESSAGE));
   }
 
   @Override

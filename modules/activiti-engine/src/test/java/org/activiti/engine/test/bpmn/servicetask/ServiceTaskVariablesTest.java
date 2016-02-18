@@ -80,11 +80,11 @@ public class ServiceTaskVariablesTest extends PluggableActivitiTestCase {
     
     Job job = managementService.createJobQuery().singleResult();
     assertNotNull(job);
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
     
     job = managementService.createJobQuery().singleResult();
     assertNotNull(job);
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
     
     assertTrue(isOkInDelegate2);
     assertTrue(isOkInDelegate3);

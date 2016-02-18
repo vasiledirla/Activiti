@@ -92,7 +92,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
     // Timer will fire in 2 hours
     processEngineConfiguration.getClock().setCurrentTime(new Date(testStartTime.getTime() + ((2 * 60 * 60 * 1000) + 5000)));
     Job timer = managementService.createJobQuery().timers().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task task = taskService.createTaskQuery().singleResult();
     assertEquals("task outside subprocess", task.getName());
@@ -173,7 +173,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
     // This didn't happen before 5.11 (new jobs kept being created). See
     // ACT-1427
     Job job = managementService.createJobQuery().singleResult();
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
     assertEquals(1, managementService.createJobQuery().count());
     assertEquals(1, taskService.createTaskQuery().count());
   }
@@ -205,7 +205,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
 			
 			currentTime = new Date(currentTime.getTime() + twentyFourHours + (60 * 1000));
 			processEngineConfiguration.getClock().setCurrentTime(currentTime);
-			managementService.executeJob(managementService.createJobQuery().executable().singleResult().getId());
+			managementService.executeJob(managementService.createJobQuery().executable().singleResult());
 		}
 		
 	}

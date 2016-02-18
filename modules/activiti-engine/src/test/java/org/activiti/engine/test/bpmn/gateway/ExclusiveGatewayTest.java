@@ -200,7 +200,7 @@ public class ExclusiveGatewayTest extends PluggableActivitiTestCase {
     Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(job);
     
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
     Task task = taskService.createTaskQuery().processInstanceId(processInstance.getId()).singleResult();
     assertEquals("Input is one", task.getName());
   }

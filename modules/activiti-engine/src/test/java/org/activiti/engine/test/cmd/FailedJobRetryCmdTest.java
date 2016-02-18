@@ -29,7 +29,7 @@ public class FailedJobRetryCmdTest extends PluggableActivitiTestCase {
     Job job = managementService.createJobQuery().singleResult();
 
     try {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
     } catch (Exception e) {
     }
 

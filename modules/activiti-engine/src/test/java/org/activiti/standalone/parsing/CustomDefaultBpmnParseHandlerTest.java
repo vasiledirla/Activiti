@@ -34,7 +34,7 @@ public class CustomDefaultBpmnParseHandlerTest extends ResourceActivitiTestCase 
     assertEquals(0, taskService.createTaskQuery().count());
     assertEquals(1, managementService.createJobQuery().count());
 
-    managementService.executeJob(managementService.createJobQuery().singleResult().getId());
+    managementService.executeJob(managementService.createJobQuery().singleResult());
     assertEquals(1, taskService.createTaskQuery().count());
   }
 

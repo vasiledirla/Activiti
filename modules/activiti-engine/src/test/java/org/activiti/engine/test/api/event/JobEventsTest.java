@@ -74,7 +74,7 @@ public class JobEventsTest extends PluggableActivitiTestCase {
     tomorrow.add(Calendar.DAY_OF_YEAR, 1);
     processEngineConfiguration.getClock().setCurrentTime(tomorrow.getTime());
 //    waitForJobExecutorToProcessAllJobs(2000, 100);
-    managementService.executeJob(managementService.createJobQuery().singleResult().getId());
+    managementService.executeJob(managementService.createJobQuery().singleResult());
 
     // Check delete-event has been dispatched
     assertEquals(3, listener.getEventsReceived().size());
@@ -283,7 +283,7 @@ public class JobEventsTest extends PluggableActivitiTestCase {
     tomorrow.add(Calendar.DAY_OF_YEAR, 1);
     processEngineConfiguration.getClock().setCurrentTime(tomorrow.getTime());
     try {
-      managementService.executeJob(theJob.getId());
+      managementService.executeJob(theJob);
       fail("Expected exception");
     } catch (Exception e) {
       // exception expected

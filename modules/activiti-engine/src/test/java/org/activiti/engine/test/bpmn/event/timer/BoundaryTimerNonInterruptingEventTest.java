@@ -51,7 +51,7 @@ public class BoundaryTimerNonInterruptingEventTest extends PluggableActivitiTest
     processEngineConfiguration.getClock().setCurrentTime(new Date(startTime.getTime() + ((60 * 60 * 1000) + 5000)));
     Job job = managementService.createJobQuery().executable().singleResult();
     assertNotNull(job);
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
 
     // we still have one timer more to fire
     assertEquals(1L, jobQuery.count());
@@ -144,7 +144,7 @@ public class BoundaryTimerNonInterruptingEventTest extends PluggableActivitiTest
     assertEquals(2, taskService.createTaskQuery().count());
 
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
     assertEquals(3, taskService.createTaskQuery().count());
 
     // Complete task that was reached by non interrupting timer
@@ -166,7 +166,7 @@ public class BoundaryTimerNonInterruptingEventTest extends PluggableActivitiTest
     assertEquals(2, taskService.createTaskQuery().count());
 
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
     assertEquals(3, taskService.createTaskQuery().count());
 
     // Complete 2 tasks that will trigger the join
@@ -230,7 +230,7 @@ public class BoundaryTimerNonInterruptingEventTest extends PluggableActivitiTest
 
     // Simulate timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     tq = taskService.createTaskQuery().taskAssignee("kermit");
 
@@ -289,7 +289,7 @@ public class BoundaryTimerNonInterruptingEventTest extends PluggableActivitiTest
     assertEquals(4, taskService.createTaskQuery().count());
 
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
     assertEquals(5, taskService.createTaskQuery().count());
 
     // Complete 4 tasks that will trigger the join
@@ -316,7 +316,7 @@ public class BoundaryTimerNonInterruptingEventTest extends PluggableActivitiTest
     assertEquals(4, taskService.createTaskQuery().count());
 
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
     assertEquals(5, taskService.createTaskQuery().count());
 
     Task task = taskService.createTaskQuery().taskDefinitionKey("sub1task1").singleResult();

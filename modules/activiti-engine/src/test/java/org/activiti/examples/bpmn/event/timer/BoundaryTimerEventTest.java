@@ -35,7 +35,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
 
     // Manually execute the job
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     // The timer has fired, and the second task (secondlinesupport) now
     // exists

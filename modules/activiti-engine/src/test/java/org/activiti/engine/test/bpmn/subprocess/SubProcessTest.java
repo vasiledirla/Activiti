@@ -94,7 +94,7 @@ public class SubProcessTest extends PluggableActivitiTestCase {
     // When the timer is fired (after 2 hours), two concurrent paths should
     // be created
     Job job = managementService.createJobQuery().singleResult();
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
 
     List<Task> tasksAfterTimer = taskQuery.list();
     assertEquals(2, tasksAfterTimer.size());
@@ -221,7 +221,7 @@ public class SubProcessTest extends PluggableActivitiTestCase {
 
     Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
 
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
 
     // The inner subprocess should be destroyed, and the tsk after the timer
     // should be active
@@ -310,7 +310,7 @@ public class SubProcessTest extends PluggableActivitiTestCase {
     // Date(startTime.getTime() + (2 * 60 * 60 * 1000 ) + 1000));
     // waitForJobExecutorToProcessAllJobs(5000L, 50L);
     Job job = managementService.createJobQuery().singleResult();
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
 
     Task taskAfterTimer = taskQuery.singleResult();
     assertEquals("Task after timer", taskAfterTimer.getName());

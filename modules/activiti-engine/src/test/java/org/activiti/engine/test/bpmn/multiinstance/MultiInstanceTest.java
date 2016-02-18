@@ -118,7 +118,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -206,7 +206,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -520,7 +520,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -577,7 +577,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -629,7 +629,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -733,7 +733,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -808,7 +808,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -882,7 +882,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -928,7 +928,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -964,7 +964,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
 
     // Fire timer
     Job timer = managementService.createJobQuery().singleResult();
-    managementService.executeJob(timer.getId());
+    managementService.executeJob(timer);
 
     Task taskAfterTimer = taskService.createTaskQuery().singleResult();
     assertEquals("taskAfterTimer", taskAfterTimer.getTaskDefinitionKey());
@@ -1036,7 +1036,7 @@ public class MultiInstanceTest extends PluggableActivitiTestCase {
     // Execute all timers one by one (single thread vs thread pool of job
     // executor, which leads to optimisticlockingexceptions!)
     for (Job timer : timers) {
-      managementService.executeJob(timer.getId());
+      managementService.executeJob(timer);
     }
 
     // All tasks should be canceled

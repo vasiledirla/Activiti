@@ -61,9 +61,18 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     }
   }
 
-  public void testExecuteJobUnexistingJob() {
+  public void testExecuteJobUnexistingAsyncJob() {
     try {
-      managementService.executeJob("unexistingjob");
+      managementService.executeAsyncJob("unexistingAsyncjob");
+      fail("ActivitiException expected");
+    } catch (JobNotFoundException jnfe) {
+      assertTextPresent("No job found with id", jnfe.getMessage());
+      assertEquals(Job.class, jnfe.getObjectClass());
+    }
+  }
+  public void testExecuteJobUnexistingTimerJob() {
+    try {
+      managementService.executeTimerJob("unexistingTimerjob");
       fail("ActivitiException expected");
     } catch (JobNotFoundException jnfe) {
       assertTextPresent("No job found with id", jnfe.getMessage());
@@ -83,7 +92,7 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     assertNotNull("No job found for process instance", timerJob);
 
     try {
-      managementService.executeJob(timerJob.getId());
+      managementService.executeJob(timerJob);
       fail("RuntimeException from within the script task expected");
     } catch (RuntimeException re) {
       assertTextPresent("This is an exception thrown from scriptTask", re.getCause().getMessage());
@@ -232,7 +241,7 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     }
 
     // Clean up
-    managementService.executeJob(timerJob.getId());
+    managementService.executeJob(timerJob);
   }
 
   // https://jira.codehaus.org/browse/ACT-1816:

@@ -133,7 +133,7 @@ public class SignalThrowingEventListenerTest extends PluggableActivitiTestCase {
       Job signalJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
 
       try {
-        managementService.executeJob(signalJob.getId());
+        managementService.executeJob(signalJob);
         fail("Exception expected");
       } catch (ActivitiException ae) {
         // Ignore, expected exception
@@ -149,7 +149,7 @@ public class SignalThrowingEventListenerTest extends PluggableActivitiTestCase {
       assertEquals(1, taskService.createTaskQuery().processInstanceId(processInstance.getId()).count());
 
       try {
-        managementService.executeJob(failedJob.getId());
+        managementService.executeJob(failedJob);
         fail("Exception expected");
       } catch (ActivitiException ae) {
         // Ignore, expected exception
@@ -179,7 +179,7 @@ public class SignalThrowingEventListenerTest extends PluggableActivitiTestCase {
       Job signalJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
 
       try {
-        managementService.executeJob(signalJob.getId());
+        managementService.executeJob(signalJob);
         fail("Exception expected");
       } catch (ActivitiException ae) {
         // Ignore, expected exception
@@ -195,7 +195,7 @@ public class SignalThrowingEventListenerTest extends PluggableActivitiTestCase {
       assertEquals(0, taskService.createTaskQuery().processInstanceId(processInstance.getId()).count());
 
       try {
-        managementService.executeJob(failedJob.getId());
+        managementService.executeJob(failedJob);
         fail("Exception expected");
       } catch (ActivitiException ae) {
         // Ignore, expected exception

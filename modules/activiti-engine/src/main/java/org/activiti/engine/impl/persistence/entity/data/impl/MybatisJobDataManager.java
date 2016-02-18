@@ -21,6 +21,7 @@ import java.util.Map;
 import org.activiti.engine.impl.JobQueryImpl;
 import org.activiti.engine.impl.Page;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.activiti.engine.impl.db.JobQueryParameterObject;
 import org.activiti.engine.impl.persistence.CachedEntityMatcher;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntityImpl;
@@ -79,6 +80,12 @@ public class MybatisJobDataManager extends AbstractDataManager<JobEntity> implem
   public List<JobEntity> findNextJobsToExecute(Page page) {
     Date now = getClock().getCurrentTime();
     return getDbSqlSession().selectList("selectNextJobsToExecute", now, page);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public JobEntity selectJob(JobQueryParameterObject jobIdentifier) {
+    return (JobEntity) getDbSqlSession().selectOne("selectJob", jobIdentifier);
   }
 
   @Override

@@ -17,6 +17,7 @@ import java.util.List;
 
 import org.activiti.engine.impl.JobQueryImpl;
 import org.activiti.engine.impl.Page;
+import org.activiti.engine.impl.db.JobQueryParameterObject;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
@@ -30,7 +31,9 @@ public interface JobDataManager extends DataManager<JobEntity> {
   TimerEntity createTimer();
   
   MessageEntity createMessage();
-  
+
+  JobEntity selectJob(JobQueryParameterObject jobSelector);
+
   List<JobEntity> findNextJobsToExecute(Page page);
 
   List<JobEntity> findNextTimerJobsToExecute(Page page);

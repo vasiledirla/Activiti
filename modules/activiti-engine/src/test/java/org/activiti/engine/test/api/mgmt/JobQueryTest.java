@@ -22,7 +22,7 @@ import java.util.UUID;
 
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ActivitiIllegalArgumentException;
-import org.activiti.engine.impl.cmd.CancelJobsCmd;
+import org.activiti.engine.impl.cmd.CancelAsyncJobsCmd;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
@@ -108,7 +108,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
   @Override
   protected void tearDown() throws Exception {
     repositoryService.deleteDeployment(deploymentId, true);
-    commandExecutor.execute(new CancelJobsCmd(Job.MESSAGE, messageId));
+    commandExecutor.execute(new CancelAsyncJobsCmd(messageId));
     super.tearDown();
   }
 
@@ -171,9 +171,9 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     verifyQueryResults(query, 3);
 
     // Setting the clock before the start of the process instance, makes
-    // none of the jobs executable
+    // none of the timer jobs executable (but there is one async job - which is always executable)
     processEngineConfiguration.getClock().setCurrentTime(testStartTime);
-    verifyQueryResults(query, 0);
+    verifyQueryResults(query, 1);
   }
 
   public void testQueryByOnlyTimers() {
@@ -197,13 +197,13 @@ public class JobQueryTest extends PluggableActivitiTestCase {
 
   public void testQueryByDuedateLowerThan() {
     JobQuery query = managementService.createJobQuery().duedateLowerThan(testStartTime);
-    verifyQueryResults(query, 0);
-
-    query = managementService.createJobQuery().duedateLowerThan(new Date(timerOneFireTime.getTime() + ONE_SECOND));
     verifyQueryResults(query, 1);
 
-    query = managementService.createJobQuery().duedateLowerThan(new Date(timerTwoFireTime.getTime() + ONE_SECOND));
+    query = managementService.createJobQuery().duedateLowerThan(new Date(timerOneFireTime.getTime() + ONE_SECOND));
     verifyQueryResults(query, 2);
+
+    query = managementService.createJobQuery().duedateLowerThan(new Date(timerTwoFireTime.getTime() + ONE_SECOND));
+    verifyQueryResults(query, 3);
 
     query = managementService.createJobQuery().duedateLowerThan(new Date(timerThreeFireTime.getTime() + ONE_SECOND));
     verifyQueryResults(query, 4);
@@ -220,7 +220,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     verifyQueryResults(query, 2);
 
     query = managementService.createJobQuery().duedateHigherThan(timerThreeFireTime);
-    verifyQueryResults(query, 0);
+    verifyQueryResults(query, 1);
   }
 
   @Deployment(resources = { "org/activiti/engine/test/api/mgmt/ManagementServiceTest.testGetJobExceptionStacktrace.bpmn20.xml" })
@@ -354,7 +354,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     commandExecutor.execute(new Command<Void>() {
 
       public Void execute(CommandContext commandContext) {
-        JobEntity timer = commandContext.getDbSqlSession().selectById(JobEntity.class, job.getId());
+        JobEntity timer = commandContext.getTimerJobEntityManager().findById(job.getId());
         timer.setRetries(retries);
         return null;
       }
@@ -373,7 +373,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     assertNotNull("No job found for process instance", timerJob);
 
     try {
-      managementService.executeJob(timerJob.getId());
+      managementService.executeJob(timerJob);
       fail("RuntimeException from within the script task expected");
     } catch (RuntimeException re) {
       assertTextPresent(EXCEPTION_MESSAGE, re.getCause().getMessage());

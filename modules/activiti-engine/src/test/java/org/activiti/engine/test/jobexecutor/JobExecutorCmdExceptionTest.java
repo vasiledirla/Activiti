@@ -43,7 +43,7 @@ public class JobExecutorCmdExceptionTest extends PluggableActivitiTestCase {
     assertEquals(3, job.getRetries());
 
     try {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
       fail("exception expected");
     } catch (Exception e) {
       // exception expected;
@@ -53,7 +53,7 @@ public class JobExecutorCmdExceptionTest extends PluggableActivitiTestCase {
     assertEquals(2, job.getRetries());
 
     try {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
       fail("exception expected");
     } catch (Exception e) {
       // exception expected;
@@ -62,7 +62,7 @@ public class JobExecutorCmdExceptionTest extends PluggableActivitiTestCase {
     job = managementService.createJobQuery().singleResult();
     assertEquals(1, job.getRetries());
 
-    managementService.executeJob(job.getId());
+    managementService.executeJob(job);
   }
 
   public void testJobCommandsWith3Exceptions() {
@@ -81,7 +81,7 @@ public class JobExecutorCmdExceptionTest extends PluggableActivitiTestCase {
     assertEquals(3, job.getRetries());
 
     try {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
       fail("exception expected");
     } catch (Exception e) {
       // exception expected;
@@ -91,7 +91,7 @@ public class JobExecutorCmdExceptionTest extends PluggableActivitiTestCase {
     assertEquals(2, job.getRetries());
 
     try {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
       fail("exception expected");
     } catch (Exception e) {
       // exception expected;
@@ -101,7 +101,7 @@ public class JobExecutorCmdExceptionTest extends PluggableActivitiTestCase {
     assertEquals(1, job.getRetries());
 
     try {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
       fail("exception expected");
     } catch (Exception e) {
       // exception expected;

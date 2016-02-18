@@ -32,7 +32,7 @@ public class ExecuteJobsRunnable implements Runnable {
   private static Logger log = LoggerFactory.getLogger(ExecuteJobsRunnable.class);
 
   protected JobEntity job;
-  protected List<String> jobIds;
+  protected List<JobEntity> jobs;
   protected JobExecutor jobExecutor;
 
   public ExecuteJobsRunnable(JobExecutor jobExecutor, JobEntity job) {
@@ -40,13 +40,13 @@ public class ExecuteJobsRunnable implements Runnable {
     this.job = job;
   }
 
-  public ExecuteJobsRunnable(JobExecutor jobExecutor, List<String> jobIds) {
+  public ExecuteJobsRunnable(JobExecutor jobExecutor, List<JobEntity> jobs) {
     this.jobExecutor = jobExecutor;
-    this.jobIds = jobIds;
+    this.jobs = jobs;
   }
 
   public void run() {
-    if (jobIds != null) {
+    if (jobs != null) {
       handleMultipleJobs();
     }
     if (job != null) {
@@ -81,22 +81,22 @@ public class ExecuteJobsRunnable implements Runnable {
 
   protected void handleMultipleJobs() {
     final MultipleJobsExecutorContext jobExecutorContext = new MultipleJobsExecutorContext();
-    final List<String> currentProcessorJobQueue = jobExecutorContext.getCurrentProcessorJobQueue();
+    final List<JobEntity> currentProcessorJobQueue = jobExecutorContext.getCurrentProcessorJobQueue();
     final CommandExecutor commandExecutor = jobExecutor.getCommandExecutor();
 
-    currentProcessorJobQueue.addAll(jobIds);
+    currentProcessorJobQueue.addAll(jobs);
 
     Context.setJobExecutorContext(jobExecutorContext);
     try {
       while (!currentProcessorJobQueue.isEmpty()) {
 
-        String currentJobId = currentProcessorJobQueue.remove(0);
+        JobEntity currentJob = currentProcessorJobQueue.remove(0);
         try {
-          commandExecutor.execute(new ExecuteJobsCmd(Job.GENERIC,  currentJobId));
+          commandExecutor.execute(new ExecuteJobsCmd(currentJob));
         } catch (Throwable e) {
           log.error("exception during job execution: {}", e.getMessage(), e);
         } finally {
-          jobExecutor.jobDone(currentJobId);
+          jobExecutor.jobDone(currentJob);
         }
       }
     } finally {

@@ -18,7 +18,16 @@
     <delete id="bulkDeleteJob" parameterType="java.util.Collection">
         delete from ${prefix}ACT_RU_ASYNC_JOB where
         <foreach item="job" collection="list" index="index" separator=" or ">
-            (ID_ = #{job.id, jdbcType=VARCHAR}
+            <if test="job.jobType == 'message'">
+                ID_ = #{job.id, jdbcType=VARCHAR}
+            </if>
+        </foreach>
+
+        delete from ${prefix}ACT_RU_TIMER_JOB where
+        <foreach item="job" collection="list" index="index" separator=" or ">
+            <if test="job.jobType == 'timer'">
+                ID_ = #{job.id, jdbcType=VARCHAR}
+            </if>
         </foreach>
     </delete>
 
@@ -44,21 +53,40 @@
         </foreach>
     </delete>
 
+
     <!-- JOB UPDATE STATEMENTS -->
     <update id="updateJobTenantIdForDeployment" parameterType="java.util.Map">
-    update ${prefix}ACT_RU_JOB set
+    update ${prefix}ACT_RU_ASYNC_JOB set
       TENANT_ID_ = #{tenantId, jdbcType=VARCHAR}
     where
       ID_ in (
-        SELECT J.ID_ from ${prefix}ACT_RU_JOB J
+        SELECT J.ID_ from ${prefix}ACT_RU_ASYNC_JOB J
         inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_  = P.ID_
         inner join ${prefix}ACT_RE_DEPLOYMENT D on P.DEPLOYMENT_ID_ = D.ID_ 
         where D.ID_ = #{deploymentId, jdbcType=VARCHAR}
-      ) 
+      )
+
+      update ${prefix}ACT_RU_TIMER_JOB set
+      TENANT_ID_ = #{tenantId, jdbcType=VARCHAR}
+    where
+      ID_ in (
+        SELECT J.ID_ from ${prefix}ACT_RU_TIMER_JOB J
+        inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_  = P.ID_
+        inner join ${prefix}ACT_RE_DEPLOYMENT D on P.DEPLOYMENT_ID_ = D.ID_
+        where D.ID_ = #{deploymentId, jdbcType=VARCHAR}
+      )
   </update>
 
     <update id="updateJobLockForAllJobs" parameterType="java.util.Map">
-    update ${prefix}ACT_RU_JOB set
+     update ${prefix}ACT_RU_ASYNC_JOB set
+      LOCK_OWNER_ = #{lockOwner, jdbcType=VARCHAR},
+      LOCK_EXP_TIME_ = #{lockExpirationTime, jdbcType=TIMESTAMP}
+    where
+      (RETRIES_ &gt; 0)
+      and (DUEDATE_ is null or DUEDATE_ &lt;= #{dueDate, jdbcType=TIMESTAMP})
+      and (LOCK_OWNER_ is null)
+
+      update ${prefix}ACT_RU_TIMER_JOB set
       LOCK_OWNER_ = #{lockOwner, jdbcType=VARCHAR},
       LOCK_EXP_TIME_ = #{lockExpirationTime, jdbcType=TIMESTAMP}
     where
@@ -122,24 +150,50 @@
 
     <!-- JOB SELECT (FOR TIMER AND MESSAGE) -->
 
-    <select id="selectJob" parameterType="string" resultMap="jobResultMap">
-    select * from ${prefix}ACT_RU_JOB where ID_ = #{id, jdbcType=VARCHAR}
-  </select>
+    <select id="selectJob" parameterType="org.activiti.engine.impl.db.JobQueryParameterObject" resultMap="jobResultMap">
+        <if test="jobType == 'timer'">
+            select * from ${prefix}ACT_RU_TIMER_JOB where ID_ = #{id, jdbcType=VARCHAR}
+        </if>
+        <if test="jobType == 'message'">
+            select * from ${prefix}ACT_RU_ASYNC_JOB where ID_ = #{id, jdbcType=VARCHAR}
+        </if>
+    </select>
 
     <select id="selectNextJobsToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
   	${limitBefore}
     select 
-    	RES.* ${limitBetween}    		
-    from ${prefix}ACT_RU_JOB RES    
-    	LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
-    where (RES.RETRIES_ &gt; 0)
-      and (RES.DUEDATE_ is null or RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
-      and (RES.LOCK_OWNER_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
+    	RES.* ${limitBetween}
+
+    select * from (
+    select * from ${prefix}ACT_RU_ASYNC_JOB ASYNC_RES
+    	LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = ASYNC_RES.PROCESS_INSTANCE_ID_
+    where (ASYNC_RES.RETRIES_ &gt; 0)
+      and (ASYNC_RES.DUEDATE_ is null or ASYNC_RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
+      and (ASYNC_RES.LOCK_OWNER_ is null or ASYNC_RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
 	    and (
-	  	    (RES.EXECUTION_ID_ is null)
+	  	    (ASYNC_RES.EXECUTION_ID_ is null)
 	  		  or 
 	  		  (PI.SUSPENSION_STATE_ = 1)
-      )  
+      )
+
+
+      union
+
+     select TIMER_RES.*  select TIMER_RES.* (
+    from ${prefix}ACT_RU_TIMER_JOB TIMER_RES
+    	LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = TIMER_RES.PROCESS_INSTANCE_ID_
+    where (TIMER_RES.RETRIES_ &gt; 0)
+      and (TIMER_RES.DUEDATE_ is null or TIMER_RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
+      and (TIMER_RES.LOCK_OWNER_ is null or TIMER_RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
+	    and (
+	  	    (TIMER_RES.EXECUTION_ID_ is null)
+	  		  or
+	  		  (PI.SUSPENSION_STATE_ = 1)
+      )
+      )
+      ) AS RES
+
+
     ${limitAfter}	    
   </select>
 
@@ -183,21 +237,46 @@
         ${limitBefore}
         select
         RES.* ${limitBetween}
-        from ${prefix}ACT_RU_JOB RES
-        where (RES.LOCK_OWNER_ = #{parameter, jdbcType=VARCHAR})
+
+        select * from (
+        select ASYNC_RES.* from ${prefix}ACT_RU_ASYNC_JOB ASYNC_RES
+        where (ASYNC_RES.LOCK_OWNER_ = #{parameter, jdbcType=VARCHAR})
+
+        union
+
+        select TIMER_RES.* from ${prefix}ACT_RU_TIMER_JOB TIMER_RES
+        where (TIMER_RES.LOCK_OWNER_ = #{parameter, jdbcType=VARCHAR})
+
+        ) as RES
+
         order by ID_ <!-- Need to have some definitive ordering to have a correct check in place during job fetching -->
         ${limitAfter}
     </select>
 
     <select id="selectExclusiveJobsToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
   	${limitBefore}
-    select RES.* ${limitBetween} 
-    from ${prefix}ACT_RU_JOB RES    
+    select RES.* ${limitBetween}
+
+     select * from (
+
+    select ASYNC_RES.* from ${prefix}ACT_RU_ASYNC_JOB ASYNC_RES
     where (RETRIES_ &gt; 0)
       and (DUEDATE_ is null or DUEDATE_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
       and (LOCK_OWNER_ is null or LOCK_EXP_TIME_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
       and (EXCLUSIVE_ = ${boolValue})
-      and (PROCESS_INSTANCE_ID_ = #{parameter.pid})  
+      and (PROCESS_INSTANCE_ID_ = #{parameter.pid})
+
+      UNION
+
+       select TIMER_RES.* from ${prefix}ACT_RU_TIMER_JOB TIMER_RES
+    where (RETRIES_ &gt; 0)
+      and (DUEDATE_ is null or DUEDATE_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
+      and (LOCK_OWNER_ is null or LOCK_EXP_TIME_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
+      and (EXCLUSIVE_ = ${boolValue})
+      and (PROCESS_INSTANCE_ID_ = #{parameter.pid})
+
+      ) as RES
+
     ${limitAfter}
   </select>
 
@@ -278,13 +357,13 @@
         ${limitBefore}
         select RES.* ${limitBetween} FROM (
 
-        <if test="!onlyMessages">
+        <if test="!onlyTimers">
             <include refid="selectAsyncJobByQueryCriteriaSql"/>
         </if>
         <if test="!onlyMessages and !onlyTimers">
             UNION
         </if>
-        <if test="!onlyTimers">
+        <if test="!onlyMessages">
             <include refid="selectTimerJobByQueryCriteriaSql"/>
         </if>
         ) as RES
@@ -293,17 +372,17 @@
     </select>
 
     <select id="selectJobCountByQueryCriteria" parameterType="org.activiti.engine.impl.JobQueryImpl" resultType="long">
-        select sum(RES.counter) from (
-        <if test="!onlyMessages">
-            select count(distinct ASYNC_RES.ID_) as counter from (
+        select SUM(RES.async_cnt + RES.timers_cnt) from (
+        <if test="!onlyTimers">
+            select count(distinct ASYNC_RES.ID_) as async_cnt, 0 as timers_cnt from (
             <include refid="selectAsyncJobByQueryCriteriaSql"/>
             ) as ASYNC_RES
         </if>
         <if test="!onlyMessages and !onlyTimers">
             UNION
         </if>
-        <if test="!onlyTimers">
-            select count(distinct TIMER_RES.ID_) as counter from (
+        <if test="!onlyMessages">
+            select 0 as async_cnt, count(distinct TIMER_RES.ID_) as timers_cnt from (
             <include refid="selectTimerJobByQueryCriteriaSql"/>
             ) as TIMER_RES
         </if>
@@ -312,10 +391,10 @@
 
     <sql id="selectAsyncJobByQueryCriteriaSql">
 
-        select ID_, REV_ , LOCK_OWNER_, LOCK_EXP_TIME_,
+        select ASYNC_RES.ID_, ASYNC_RES.REV_ , ASYNC_RES.LOCK_OWNER_, ASYNC_RES.LOCK_EXP_TIME_,
         EXCLUSIVE_, EXECUTION_ID_,
-        PROCESS_INSTANCE_ID_, PROC_DEF_ID_, RETRIES_,
-        EXCEPTION_STACK_ID_, EXCEPTION_MSG_, HANDLER_TYPE_, HANDLER_CFG_, TENANT_ID_, TYPE_,
+        PROCESS_INSTANCE_ID_, ASYNC_RES.PROC_DEF_ID_, RETRIES_,
+        EXCEPTION_STACK_ID_, EXCEPTION_MSG_, HANDLER_TYPE_, HANDLER_CFG_, ASYNC_RES.TENANT_ID_, ASYNC_RES.TYPE_,
 
         null as DUEDATE_, null as REPEAT_ from ${prefix}ACT_RU_ASYNC_JOB ASYNC_RES
         <if test="executable">
@@ -348,18 +427,7 @@
                 (PI.SUSPENSION_STATE_ = 1)
                 )
             </if>
-            <if test="duedateHigherThan != null">
-                and ASYNC_RES.DUEDATE_ &gt; #{duedateHigherThan}
-            </if>
-            <if test="duedateLowerThan != null">
-                and ASYNC_RES.DUEDATE_ &lt; #{duedateLowerThan}
-            </if>
-            <if test="duedateHigherThanOrEqual != null">
-                and ASYNC_RES.DUEDATE_ &gt;= #{duedateHigherThanOrEqual}
-            </if>
-            <if test="duedateLowerThanOrEqual != null">
-                and ASYNC_RES.DUEDATE_ &lt;= #{duedateLowerThanOrEqual}
-            </if>
+
             <if test="withException">
                 and (ASYNC_RES.EXCEPTION_MSG_ is not null or ASYNC_RES.EXCEPTION_STACK_ID_ is not null)
             </if>
@@ -379,10 +447,10 @@
     </sql>
 
     <sql id="selectTimerJobByQueryCriteriaSql">
-        select ID_, REV_ , LOCK_OWNER_, LOCK_EXP_TIME_,
+        select TIMER_RES.ID_, TIMER_RES.REV_ , LOCK_OWNER_, LOCK_EXP_TIME_,
         EXCLUSIVE_, EXECUTION_ID_,
-        PROCESS_INSTANCE_ID_, PROC_DEF_ID_, RETRIES_,
-        EXCEPTION_STACK_ID_, EXCEPTION_MSG_, HANDLER_TYPE_, HANDLER_CFG_, TENANT_ID_, TYPE_,
+        PROCESS_INSTANCE_ID_, TIMER_RES.PROC_DEF_ID_, RETRIES_,
+        EXCEPTION_STACK_ID_, EXCEPTION_MSG_, HANDLER_TYPE_, HANDLER_CFG_, TIMER_RES.TENANT_ID_, TYPE_,
 
         DUEDATE_, REPEAT_ from ${prefix}ACT_RU_TIMER_JOB TIMER_RES
         <if test="executable">
@@ -764,7 +832,7 @@
     </update>
 
     <update id="unacquireJob" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject">
-    update ${prefix}ACT_RU_JOB
+    update ${prefix}ACT_RU_ASYNC_JOB
     set DUEDATE_ = #{dueDate,jdbcType=TIMESTAMP}, LOCK_OWNER_ = null, LOCK_EXP_TIME_ = null
     where ID_ = #{id,jdbcType=VARCHAR}
   </update>

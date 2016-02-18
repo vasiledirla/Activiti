@@ -14,6 +14,7 @@ package org.activiti.engine.impl.persistence.entity;
 
 import org.activiti.engine.impl.JobQueryImpl;
 import org.activiti.engine.impl.Page;
+import org.activiti.engine.impl.db.JobQueryParameterObject;
 import org.activiti.engine.runtime.Job;
 
 import java.util.List;
@@ -50,4 +51,5 @@ public interface JobEntityManager extends EntityManager<JobEntity> {
   void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
   
   void unacquireJob(String jobId);
+
 }

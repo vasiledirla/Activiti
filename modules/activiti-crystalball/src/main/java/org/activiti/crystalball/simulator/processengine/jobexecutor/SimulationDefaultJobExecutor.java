@@ -19,6 +19,7 @@ import org.activiti.engine.impl.jobexecutor.AcquireJobsRunnable;
 import org.activiti.engine.impl.jobexecutor.DefaultJobExecutor;
 import org.activiti.engine.impl.jobexecutor.ExecuteJobsRunnable;
 import org.activiti.engine.impl.jobexecutor.SimulationAcquireJobsRunnable;
+import org.activiti.engine.impl.persistence.entity.JobEntity;
 
 /**
  * simulation is driven by simulation time. That's why JobExecutor has to be driven by simulation time too.
@@ -43,7 +44,7 @@ public class SimulationDefaultJobExecutor extends DefaultJobExecutor {
    * do not execute new thread - simulation time can move too forward.
    * 
    */
-  public void executeJobs(List<String> jobIds) {
+  public void executeJobs(List<JobEntity> jobIds) {
     (new ExecuteJobsRunnable(this, jobIds)).run();
   }
 

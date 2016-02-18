@@ -408,7 +408,7 @@ public class SignalEventTest extends PluggableActivitiTestCase {
 
     assertEquals(3, managementService.createJobQuery().count());
     for (Job job : managementService.createJobQuery().list()) {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
     }
     assertEquals(3, runtimeService.createProcessInstanceQuery().count());
     assertEquals(3, taskService.createTaskQuery().count());
@@ -430,7 +430,7 @@ public class SignalEventTest extends PluggableActivitiTestCase {
 
     assertEquals(4, managementService.createJobQuery().count());
     for (Job job : managementService.createJobQuery().list()) {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
     }
     assertEquals(7, runtimeService.createProcessInstanceQuery().count());
     assertEquals(7, taskService.createTaskQuery().count());
@@ -489,7 +489,7 @@ public class SignalEventTest extends PluggableActivitiTestCase {
 
     assertEquals(3, managementService.createJobQuery().count());
     for (Job job : managementService.createJobQuery().list()) {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
     }
     assertEquals(3, runtimeService.createProcessInstanceQuery().count());
     assertEquals(3, taskService.createTaskQuery().count());
@@ -511,7 +511,7 @@ public class SignalEventTest extends PluggableActivitiTestCase {
 
     assertEquals(4, managementService.createJobQuery().count());
     for (Job job : managementService.createJobQuery().list()) {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
     }
     assertEquals(7, runtimeService.createProcessInstanceQuery().count());
     assertEquals(7, taskService.createTaskQuery().count());

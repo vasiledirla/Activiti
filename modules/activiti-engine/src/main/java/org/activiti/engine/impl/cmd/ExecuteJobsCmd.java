@@ -49,10 +49,6 @@ public class ExecuteJobsCmd extends JobCmd<Object> implements Serializable {
     super(jobType);
     this.jobId = jobId;
   }
-  public ExecuteJobsCmd(String jobId) {
-    super(Job.GENERIC);
-    this.job = job;
-  }
 
   public ExecuteJobsCmd(JobEntity job) {
     super(job.getJobType());

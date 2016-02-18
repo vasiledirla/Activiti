@@ -12,6 +12,8 @@
  */
 package org.activiti.engine.impl.jobexecutor;
 
+import org.activiti.engine.impl.persistence.entity.JobEntity;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -23,20 +25,26 @@ import java.util.Set;
  */
 public class AcquiredJobs {
 
-  protected List<List<String>> acquiredJobBatches = new ArrayList<List<String>>();
-  protected Set<String> acquiredJobs = new HashSet<String>();
+  protected List<List<JobEntity>> acquiredJobBatches = new ArrayList<List<JobEntity>>();
+  protected Set<JobEntity> acquiredJobs = new HashSet<JobEntity>();
+  protected Set<String> acquiredJobIds = new HashSet<String>();
 
-  public List<List<String>> getJobIdBatches() {
+  public List<List<JobEntity>> getJobIdBatches() {
     return acquiredJobBatches;
   }
 
-  public void addJobIdBatch(List<String> jobIds) {
-    acquiredJobBatches.add(jobIds);
-    acquiredJobs.addAll(jobIds);
+  public void addJobBatch(List<JobEntity> jobs) {
+    acquiredJobBatches.add(jobs);
+    acquiredJobs.addAll(jobs);
+
+    for (JobEntity jobEntity : jobs) {
+      acquiredJobIds.add(jobEntity.getId());
+    }
+
   }
 
-  public boolean contains(String jobId) {
-    return acquiredJobs.contains(jobId);
+  public boolean contains(JobEntity job) {
+    return acquiredJobIds.contains(job.getId());
   }
 
   public int size() {

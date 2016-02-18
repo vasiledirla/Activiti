@@ -112,7 +112,7 @@ public class IntermediateTimerEventTest extends PluggableActivitiTestCase {
     List<Job> jobs = managementService.createJobQuery().executable().list();
     assertEquals(2, jobs.size());
     for (Job job : jobs) {
-      managementService.executeJob(job.getId());
+      managementService.executeJob(job);
     }
 
     assertEquals(0, managementService.createJobQuery().processInstanceId(pi1.getId()).count());
@@ -129,7 +129,7 @@ public class IntermediateTimerEventTest extends PluggableActivitiTestCase {
     // After looping 3 times, the process should end
     for (int i = 0; i < 3; i++) {
       Job timer = managementService.createJobQuery().singleResult();
-      managementService.executeJob(timer.getId());
+      managementService.executeJob(timer);
     }
 
     assertProcessEnded(processInstance.getId());
@@ -142,7 +142,7 @@ public class IntermediateTimerEventTest extends PluggableActivitiTestCase {
     // After looping 3 times, the process should end. Cycle should NOT repeat itself
     for (int i = 0; i < 3; i++) {
       Job timer = managementService.createJobQuery().singleResult();
-      managementService.executeJob(timer.getId());
+      managementService.executeJob(timer);
     }
 
     assertProcessEnded(processInstance.getId());

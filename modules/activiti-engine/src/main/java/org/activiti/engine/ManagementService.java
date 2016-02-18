@@ -20,9 +20,11 @@ import org.activiti.engine.event.EventLogEntry;
 import org.activiti.engine.impl.cmd.CustomSqlExecution;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandConfig;
+import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.management.TableMetaData;
 import org.activiti.engine.management.TablePage;
 import org.activiti.engine.management.TablePageQuery;
+import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.JobQuery;
 
 /**
@@ -69,7 +71,9 @@ public interface ManagementService {
    * @throws ActivitiObjectNotFoundException
    *           when there is no job with the given id.
    */
-  void executeJob(String jobId);
+  void executeAsyncJob(String jobId);
+
+  void executeTimerJob(String jobId);
 
   /**
    * Delete the job with the provided id.
@@ -162,4 +166,5 @@ public interface ManagementService {
    */
   void deleteEventLogEntry(long logNr);
 
+  void executeJob(Job job);
 }

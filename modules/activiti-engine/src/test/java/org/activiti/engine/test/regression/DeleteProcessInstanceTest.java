@@ -82,21 +82,21 @@ public class DeleteProcessInstanceTest extends PluggableActivitiTestCase {
     assertNotNull(jobJava);
 
     try {
-      managementService.executeJob(jobJava.getId());
+      managementService.executeJob(jobJava);
       fail("Expected exception");
     } catch (Exception e) {
       // expected
     }
 
     try {
-      managementService.executeJob(jobJava.getId());
+      managementService.executeJob(jobJava);
       fail("Expected exception");
     } catch (Exception e) {
       // expected
     }
 
     try {
-      managementService.executeJob(jobJava.getId());
+      managementService.executeJob(jobJava);
       fail("Expected exception");
     } catch (Exception e) {
       // expected

@@ -34,6 +34,8 @@ public interface Job {
    */
   String getId();
 
+  String getJobType();
+
   /**
    * Returns the date on which this job is supposed to be processed.
    */

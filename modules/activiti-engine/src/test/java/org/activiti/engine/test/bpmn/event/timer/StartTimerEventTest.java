@@ -18,7 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import org.activiti.engine.impl.cmd.CancelJobsCmd;
+import org.activiti.engine.impl.cmd.CancelTimerJobsCmd;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.impl.util.IoUtil;
@@ -117,11 +117,11 @@ public class StartTimerEventTest extends PluggableActivitiTestCase {
     assertEquals(1, jobQuery.count());
 
     moveByMinutes(6);
-    managementService.executeJob(managementService.createJobQuery().singleResult().getId());
+    managementService.executeJob(managementService.createJobQuery().singleResult());
     assertEquals(1, jobQuery.count());
 
     moveByMinutes(6);
-    managementService.executeJob(managementService.createJobQuery().singleResult().getId());
+    managementService.executeJob(managementService.createJobQuery().singleResult());
     assertEquals(0, jobQuery.count());
 
   }
@@ -412,7 +412,7 @@ public class StartTimerEventTest extends PluggableActivitiTestCase {
   private void cleanDB() {
     String jobId = managementService.createJobQuery().singleResult().getId();
     CommandExecutor commandExecutor = processEngineConfiguration.getCommandExecutor();
-    commandExecutor.execute(new CancelJobsCmd(jobId));
+    commandExecutor.execute(new CancelTimerJobsCmd(jobId));
   }
 
 }

@@ -13,44 +13,33 @@
 
 package org.activiti.engine.impl.cmd;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
-import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.runtime.Job;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Send job cancelled event and delete job
- * 
- * @author Tom Baeyens
+ *
  * @author Vasile Dirla
  */
-public class CancelJobsCmd extends JobCmd<Void> implements Serializable {
+public class CancelAsyncJobsCmd extends JobCmd<Void> implements Serializable {
 
   private static final long serialVersionUID = 1L;
   List<String> jobIds;
 
-  public CancelJobsCmd(String jobType, List<String> jobIds) {
-    super(jobType);
+  public CancelAsyncJobsCmd(List<String> jobIds) {
+    super(Job.MESSAGE);
     this.jobIds = jobIds;
   }
 
-
-  public CancelJobsCmd(List<String> jobIds) {
-    this(Job.GENERIC, jobIds);
-  }
-
-  public CancelJobsCmd(String jobId) {
-    this(Job.GENERIC, jobId);
-  }
-
-  public CancelJobsCmd(String jobType, String jobId) {
-    super(jobType);
+  public CancelAsyncJobsCmd(String jobId) {
+    super(Job.MESSAGE);
     this.jobIds = new ArrayList<String>();
     jobIds.add(jobId);
   }
