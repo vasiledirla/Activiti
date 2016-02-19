@@ -28,6 +28,7 @@ import org.activiti.engine.impl.jobexecutor.JobExecutor;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
+import org.activiti.engine.runtime.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +92,9 @@ public class JobRetryCmd extends JobCmd<Object> {
         DurationHelper durationHelper = new DurationHelper(failedJobRetryTimeCycleValue, processEngineConfig.getClock());
         job.setLockOwner(null);
         job.setLockExpirationTime(null);
-        job.setDuedate(durationHelper.getDateAfter());
+        if (job.getJobType().equalsIgnoreCase(Job.TIMER)) {
+          job.setDuedate(durationHelper.getDateAfter());
+        }
 
         if (job.getExceptionMessage() == null) { // is it the first exception
           log.debug("Applying JobRetryStrategy '" + failedJobRetryTimeCycleValue + "' the first time for job " + job.getId() + " with " + durationHelper
