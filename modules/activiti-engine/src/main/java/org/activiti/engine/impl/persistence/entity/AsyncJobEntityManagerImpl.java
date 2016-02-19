@@ -121,7 +121,7 @@ public class AsyncJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
 
     } catch (InterruptedException e) {
     }
-    getAsyncExecutor().executeAsyncJob(job);
+    getAsyncExecutor().executeJob(job);
   }
 
   protected void hintAsyncExecutor(JobEntity job) {
@@ -199,8 +199,15 @@ public class AsyncJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
   }
 
   @Override
-  public void unacquireJob(String jobId) {
-    jobDataManager.unacquireJob(jobId);
+  public void unacquireAsyncJob(String jobId) {
+    jobDataManager.unacquireJob(Job.MESSAGE, jobId);
+  }
+
+  @Override
+  public void unacquireJob(Job job) {
+    if (job instanceof MessageEntity) {
+      unacquireAsyncJob(job.getId());
+    }
   }
 
   @Override

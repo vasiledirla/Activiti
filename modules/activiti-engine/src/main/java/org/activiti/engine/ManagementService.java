@@ -83,20 +83,28 @@ public interface ManagementService {
    * @throws ActivitiObjectNotFoundException
    *           when there is no job with the given id.
    */
-  void deleteJob(String jobId);
+  void deleteAsyncJob(String jobId);
+
+  void deleteTimerJob(String jobId);
+
+  void deleteJob(Job job);
 
   /**
    * Sets the number of retries that a job has left.
    * 
    * Whenever the JobExecutor fails to execute a job, this value is decremented. When it hits zero, the job is supposed to be dead and not retried again. In that case, this method can be used to
    * increase the number of retries.
-   * 
+   *          the type of the job to be modifed
    * @param jobId
    *          id of the job to modify, cannot be null.
    * @param retries
    *          number of retries.
    */
-  void setJobRetries(String jobId, int retries);
+  void setAsyncJobRetries(String jobId, int retries);
+
+  void setTimerJobRetries(String jobId, int retries);
+
+  void setJobRetries(Job job, int retries);
 
   /**
    * Returns the full stacktrace of the exception that occurs when the job with the given id was last executed. Returns null when the job has no exception stacktrace.
@@ -106,7 +114,11 @@ public interface ManagementService {
    * @throws ActivitiObjectNotFoundException
    *           when no job exists with the given id.
    */
-  String getJobExceptionStacktrace(String jobId);
+  String getAsyncJobExceptionStacktrace(String jobId);
+
+  String getTimerJobExceptionStacktrace(String jobId);
+
+  String getJobExceptionStacktrace(Job job);
 
   /** get the list of properties. */
   Map<String, String> getProperties();

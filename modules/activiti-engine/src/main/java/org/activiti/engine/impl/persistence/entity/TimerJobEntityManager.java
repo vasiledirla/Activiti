@@ -38,4 +38,6 @@ public interface TimerJobEntityManager extends JobEntityManager {
   List<JobEntity> findNextTimerJobsToExecute(Page page);
 
   void send(MessageEntity message);
+
+  void unacquireTimerJob(String jobId);
 }

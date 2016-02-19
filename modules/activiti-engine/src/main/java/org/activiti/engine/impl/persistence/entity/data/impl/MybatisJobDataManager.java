@@ -201,9 +201,10 @@ public class MybatisJobDataManager extends AbstractDataManager<JobEntity> implem
   }
   
   @Override
-  public void unacquireJob(String jobId) {
+  public void unacquireJob(String jobType, String jobId) {
     Map<String, Object> params = new HashMap<String, Object>(2);
     params.put("id", jobId);
+    params.put("jobType", jobType);
     params.put("dueDate", new Date(getProcessEngineConfiguration().getClock().getCurrentTime().getTime()));
     getDbSqlSession().update("unacquireJob", params);
   }

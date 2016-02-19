@@ -36,7 +36,7 @@ public interface AsyncExecutor {
    * to execute. If the offering does not work for some reason, false 
    * will be returned (For example when the job queue is full in the {@link DefaultAsyncJobExecutor}). 
    */
-  boolean executeAsyncJob(JobEntity job);
+  boolean executeJob(JobEntity job);
   
   
   /* Getters and Setters */

@@ -93,7 +93,8 @@ public class BoundaryTimerEventRepeatWithEnd extends PluggableActivitiTestCase {
     try {
       waitForJobExecutorToProcessAllJobs(2000, 200);
     } catch (Exception ex) {
-      fail("Should not have any other jobs because the endDate is reached");
+      jobs = managementService.createJobQuery().list();
+      fail("Should not have any other jobs because the endDate is reached but there are "+jobs.size()+" jobs");
     }
     tasks = taskService.createTaskQuery().list();
     task = tasks.get(0);

@@ -169,7 +169,7 @@ public class TimerJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
 	    
     } catch (InterruptedException e) {
     }
-    getAsyncExecutor().executeAsyncJob(job);
+    getAsyncExecutor().executeJob(job);
   }
 
   protected void hintAsyncExecutor(JobEntity job) {
@@ -188,7 +188,7 @@ public class TimerJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
 
   @Override
   public List<JobEntity> findNextJobsToExecute(Page page) {
-    return jobDataManager.findNextJobsToExecute(page); 
+    return jobDataManager.findNextTimerJobsToExecute(page);
   }
 
   @Override
@@ -256,10 +256,17 @@ public class TimerJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
   public void updateJobTenantIdForDeployment(String deploymentId, String newTenantId) {
     jobDataManager.updateJobTenantIdForDeployment(deploymentId, newTenantId);
   }
-  
+
   @Override
-  public void unacquireJob(String jobId) {
-    jobDataManager.unacquireJob(jobId);
+  public void unacquireTimerJob(String jobId) {
+    jobDataManager.unacquireJob(Job.TIMER, jobId);
+  }
+
+  @Override
+  public void unacquireJob(Job job) {
+    if (job instanceof TimerEntity) {
+      unacquireTimerJob(job.getId());
+    }
   }
 
   @Override
@@ -317,11 +324,6 @@ public class TimerJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
     Map<String, JobHandler> jobHandlers = getProcessEngineConfiguration().getJobHandlers();
     JobHandler jobHandler = jobHandlers.get(jobEntity.getJobHandlerType());
     jobHandler.execute(jobEntity, jobEntity.getJobHandlerConfiguration(), execution, getCommandContext());
-  }
-  
-  protected void executeMessageJob(JobEntity jobEntity) {
-    executeJobHandler(jobEntity);
-    delete(jobEntity);
   }
   
   protected void executeTimerJob(TimerEntity timerEntity) {

@@ -66,8 +66,7 @@ public class ManagementServiceImpl extends ServiceImpl implements ManagementServ
     JobExecutorContext jobExecutorContext = new SingleJobExecutorContext();
     Context.setJobExecutorContext(jobExecutorContext);
     try {
-
-      commandExecutor.execute(new ExecuteJobsCmd((JobEntity)job));
+      commandExecutor.execute(new ExecuteJobsCmd(job.getJobType(), job.getId()));
     }
     catch (RuntimeException e) {
       if ((e instanceof JobNotFoundException)) {
@@ -125,12 +124,31 @@ public class ManagementServiceImpl extends ServiceImpl implements ManagementServ
   }
 
 
-  public void deleteJob(String jobId) {
-    commandExecutor.execute(new DeleteJobCmd(jobId));
+  public void deleteJob(Job job) {
+    if (job == null) {
+      throw new ActivitiIllegalArgumentException("Job is null");
+    }
+    commandExecutor.execute(new DeleteJobCmd(job));
   }
 
-  public void setJobRetries(String jobId, int retries) {
-    commandExecutor.execute(new SetJobRetriesCmd(jobId, retries));
+  public void deleteAsyncJob(String jobId) {
+    commandExecutor.execute(new DeleteJobCmd(Job.MESSAGE, jobId));
+  }
+
+  public void deleteTimerJob(String jobId) {
+    commandExecutor.execute(new DeleteJobCmd(Job.TIMER, jobId));
+  }
+
+  public void setAsyncJobRetries(String jobId, int retries) {
+    commandExecutor.execute(new SetJobRetriesCmd(Job.MESSAGE, jobId, retries));
+  }
+
+  public void setTimerJobRetries(String jobId, int retries) {
+    commandExecutor.execute(new SetJobRetriesCmd(Job.TIMER, jobId, retries));
+  }
+
+  public void setJobRetries(Job job, int retries) {
+    commandExecutor.execute(new SetJobRetriesCmd(job, retries));
   }
 
   public TablePageQuery createTablePageQuery() {
@@ -141,8 +159,19 @@ public class ManagementServiceImpl extends ServiceImpl implements ManagementServ
     return new JobQueryImpl(commandExecutor);
   }
 
-  public String getJobExceptionStacktrace(String jobId) {
-    return commandExecutor.execute(new GetJobExceptionStacktraceCmd(jobId));
+  public String getAsyncJobExceptionStacktrace(String jobId) {
+    return commandExecutor.execute(new GetJobExceptionStacktraceCmd(Job.MESSAGE, jobId));
+  }
+
+  public String getTimerJobExceptionStacktrace(String jobId) {
+    return commandExecutor.execute(new GetJobExceptionStacktraceCmd(Job.TIMER, jobId));
+  }
+
+  public String getJobExceptionStacktrace(Job job) {
+    if (job == null) {
+      throw new ActivitiIllegalArgumentException("job is null");
+    }
+    return commandExecutor.execute(new GetJobExceptionStacktraceCmd(job.getJobType(), job.getId()));
   }
 
   public Map<String, String> getProperties() {

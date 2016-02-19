@@ -54,7 +54,7 @@ public class AcquireTimerJobsRunnable implements Runnable {
 
         boolean allJobsSuccessfullyOffered = true; 
         for (JobEntity job : acquiredJobs.getJobs()) {
-          boolean jobSuccessFullyOffered = asyncExecutor.executeAsyncJob(job);
+          boolean jobSuccessFullyOffered = asyncExecutor.executeJob(job);
           if (!jobSuccessFullyOffered) {
             allJobsSuccessfullyOffered = false;
           }

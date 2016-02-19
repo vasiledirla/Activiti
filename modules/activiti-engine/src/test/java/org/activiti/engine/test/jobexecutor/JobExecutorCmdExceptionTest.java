@@ -110,7 +110,7 @@ public class JobExecutorCmdExceptionTest extends PluggableActivitiTestCase {
     job = managementService.createJobQuery().singleResult();
     assertEquals(0, job.getRetries());
 
-    managementService.deleteJob(job.getId());
+    managementService.deleteJob(job);
   }
 
   protected MessageEntity createTweetExceptionMessage() {

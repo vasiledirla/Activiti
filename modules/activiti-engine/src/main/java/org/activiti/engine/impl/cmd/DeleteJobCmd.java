@@ -34,8 +34,8 @@ public class DeleteJobCmd extends JobCmd<Object> implements Serializable {
     this.jobId = jobId;
   }
 
-  public DeleteJobCmd(String jobId) {
-    this(Job.GENERIC, jobId);
+  public DeleteJobCmd(Job job) {
+    this(job.getJobType(), job.getId());
   }
 
   public Object executeCommand(CommandContext commandContext) {

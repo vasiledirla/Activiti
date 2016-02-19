@@ -36,7 +36,7 @@ public class ExecuteAsyncJobCmd extends JobCmd<Object> implements Serializable {
   protected JobEntity job;
 
   public ExecuteAsyncJobCmd(JobEntity job) {
-    super("message");
+    super(job.getJobType());
     this.job = job;
   }
 

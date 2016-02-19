@@ -50,6 +50,6 @@ public interface JobEntityManager extends EntityManager<JobEntity> {
 
   void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
   
-  void unacquireJob(String jobId);
+  void unacquireJob(Job job);
 
 }

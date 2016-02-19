@@ -57,6 +57,24 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
       managementService.executeJob(null);
       fail("ActivitiException expected");
     } catch (ActivitiIllegalArgumentException re) {
+      assertTextPresent("job is null", re.getMessage());
+    }
+  }
+
+  public void testExecuteAsyncJobNullJobId() {
+    try {
+      managementService.executeAsyncJob(null);
+      fail("ActivitiException expected");
+    } catch (ActivitiIllegalArgumentException re) {
+      assertTextPresent("JobId is null", re.getMessage());
+    }
+  }
+
+  public void testExecuteTimerJobNullJobId() {
+    try {
+      managementService.executeAsyncJob(null);
+      fail("ActivitiException expected");
+    } catch (ActivitiIllegalArgumentException re) {
       assertTextPresent("JobId is null", re.getMessage());
     }
   }
@@ -106,14 +124,14 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     assertTextPresent("This is an exception thrown from scriptTask", timerJob.getExceptionMessage());
 
     // Get the full stacktrace using the managementService
-    String exceptionStack = managementService.getJobExceptionStacktrace(timerJob.getId());
+    String exceptionStack = managementService.getJobExceptionStacktrace(timerJob);
     assertNotNull(exceptionStack);
     assertTextPresent("This is an exception thrown from scriptTask", exceptionStack);
   }
 
-  public void testgetJobExceptionStacktraceUnexistingJobId() {
+  public void testGetAsyncJobExceptionStacktraceUnexistingJobId() {
     try {
-      managementService.getJobExceptionStacktrace("unexistingjob");
+      managementService.getAsyncJobExceptionStacktrace("unexistingjob");
       fail("ActivitiException expected");
     } catch (ActivitiObjectNotFoundException re) {
       assertTextPresent("No job found with id unexistingjob", re.getMessage());
@@ -121,9 +139,28 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     }
   }
 
-  public void testgetJobExceptionStacktraceNullJobId() {
+  public void testGetTimerJobExceptionStacktraceUnexistingJobId() {
     try {
-      managementService.getJobExceptionStacktrace(null);
+      managementService.getTimerJobExceptionStacktrace("unexistingjob");
+      fail("ActivitiException expected");
+    } catch (ActivitiObjectNotFoundException re) {
+      assertTextPresent("No job found with id unexistingjob", re.getMessage());
+      assertEquals(Job.class, re.getObjectClass());
+    }
+  }
+
+  public void testGetTimerJobExceptionStacktraceNullJobId() {
+    try {
+      managementService.getTimerJobExceptionStacktrace(null);
+      fail("ActivitiException expected");
+    } catch (ActivitiIllegalArgumentException re) {
+      assertTextPresent("jobId is null", re.getMessage());
+    }
+  }
+
+  public void testGetAsyncJobExceptionStacktraceNullJobId() {
+    try {
+      managementService.getAsyncJobExceptionStacktrace(null);
       fail("ActivitiException expected");
     } catch (ActivitiIllegalArgumentException re) {
       assertTextPresent("jobId is null", re.getMessage());
@@ -142,15 +179,15 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     assertNotNull("No job found for process instance", timerJob);
     assertEquals(JobEntity.DEFAULT_RETRIES, timerJob.getRetries());
 
-    managementService.setJobRetries(timerJob.getId(), 5);
+    managementService.setJobRetries(timerJob, 5);
 
     timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
     assertEquals(5, timerJob.getRetries());
   }
 
-  public void testSetJobRetriesUnexistingJobId() {
+  public void testSetAsyncJobRetriesUnexistingJobId() {
     try {
-      managementService.setJobRetries("unexistingjob", 5);
+      managementService.setAsyncJobRetries("unexistingjob", 5);
       fail("ActivitiException expected");
     } catch (ActivitiObjectNotFoundException re) {
       assertTextPresent("No job found with id 'unexistingjob'.", re.getMessage());
@@ -158,45 +195,102 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     }
   }
 
-  public void testSetJobRetriesEmptyJobId() {
+  public void testSetTimerJobRetriesUnexistingJobId() {
     try {
-      managementService.setJobRetries("", 5);
+      managementService.setTimerJobRetries("unexistingjob", 5);
+      fail("ActivitiException expected");
+    } catch (ActivitiObjectNotFoundException re) {
+      assertTextPresent("No job found with id 'unexistingjob'.", re.getMessage());
+      assertEquals(Job.class, re.getObjectClass());
+    }
+  }
+
+  public void testSetAsyncJobRetriesEmptyJobId() {
+    try {
+      managementService.setAsyncJobRetries("", 5);
       fail("ActivitiException expected");
     } catch (ActivitiIllegalArgumentException re) {
       assertTextPresent("The job id is mandatory, but '' has been provided.", re.getMessage());
     }
   }
 
-  public void testSetJobRetriesJobIdNull() {
+  public void testSetAsyncJobRetriesJobIdNull() {
     try {
-      managementService.setJobRetries(null, 5);
+      managementService.setAsyncJobRetries(null, 5);
       fail("ActivitiException expected");
     } catch (ActivitiIllegalArgumentException re) {
       assertTextPresent("The job id is mandatory, but 'null' has been provided.", re.getMessage());
     }
   }
 
-  public void testSetJobRetriesNegativeNumberOfRetries() {
+  public void testSetAsyncJobRetriesNegativeNumberOfRetries() {
     try {
-      managementService.setJobRetries("unexistingjob", -1);
+      managementService.setAsyncJobRetries("unexistingjob", -1);
       fail("ActivitiException expected");
     } catch (ActivitiIllegalArgumentException re) {
       assertTextPresent("The number of job retries must be a non-negative Integer, but '-1' has been provided.", re.getMessage());
     }
   }
 
-  public void testDeleteJobNullJobId() {
+
+  public void testSetTimerJobRetriesEmptyJobId() {
     try {
-      managementService.deleteJob(null);
+      managementService.setTimerJobRetries("", 5);
+      fail("ActivitiException expected");
+    } catch (ActivitiIllegalArgumentException re) {
+      assertTextPresent("The job id is mandatory, but '' has been provided.", re.getMessage());
+    }
+  }
+
+  public void testSetTimerJobRetriesJobIdNull() {
+    try {
+      managementService.setTimerJobRetries(null, 5);
+      fail("ActivitiException expected");
+    } catch (ActivitiIllegalArgumentException re) {
+      assertTextPresent("The job id is mandatory, but 'null' has been provided.", re.getMessage());
+    }
+  }
+
+  public void testSetTimerJobRetriesNegativeNumberOfRetries() {
+    try {
+      managementService.setTimerJobRetries("unexistingjob", -1);
+      fail("ActivitiException expected");
+    } catch (ActivitiIllegalArgumentException re) {
+      assertTextPresent("The number of job retries must be a non-negative Integer, but '-1' has been provided.", re.getMessage());
+    }
+  }
+
+
+  public void testDeleteAsyncJobNullJobId() {
+    try {
+      managementService.deleteAsyncJob(null);
       fail("ActivitiException expected");
     } catch (ActivitiIllegalArgumentException re) {
       assertTextPresent("jobId is null", re.getMessage());
     }
   }
 
-  public void testDeleteJobUnexistingJob() {
+  public void testDeleteTimerJobNullJobId() {
     try {
-      managementService.deleteJob("unexistingjob");
+      managementService.deleteTimerJob(null);
+      fail("ActivitiException expected");
+    } catch (ActivitiIllegalArgumentException re) {
+      assertTextPresent("jobId is null", re.getMessage());
+    }
+  }
+
+  public void testDeleteJobNullJob() {
+    try {
+      managementService.deleteJob(null);
+      fail("ActivitiException expected");
+    } catch (ActivitiIllegalArgumentException re) {
+      assertTextPresent("Job is null", re.getMessage());
+    }
+  }
+
+  public void testDeleteAsyncJobUnexistingJob() {
+    try {
+      managementService.deleteAsyncJob("unexistingjob");
       fail("ActivitiException expected");
     } catch (ActivitiObjectNotFoundException ae) {
       assertTextPresent("No job found with id", ae.getMessage());
@@ -204,13 +298,22 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     }
   }
 
+  public void testDeleteTimerJobUnexistingJob() {
+    try {
+      managementService.deleteTimerJob("unexistingjob");
+      fail("ActivitiException expected");
+    } catch (ActivitiObjectNotFoundException ae) {
+      assertTextPresent("No job found with id", ae.getMessage());
+      assertEquals(Job.class, ae.getObjectClass());
+    }
+  }
   @Deployment(resources = { "org/activiti/engine/test/api/mgmt/timerOnTask.bpmn20.xml" })
   public void testDeleteJobDeletion() {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("timerOnTask");
     Job timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
 
     assertNotNull("Task timer should be there", timerJob);
-    managementService.deleteJob(timerJob.getId());
+    managementService.deleteJob(timerJob);
 
     timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
     assertNull("There should be no job now. It was deleted", timerJob);
@@ -234,7 +337,7 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
 
     // Try to delete the job. This should fail.
     try {
-      managementService.deleteJob(timerJob.getId());
+      managementService.deleteJob(timerJob);
       fail();
     } catch (ActivitiException e) {
       // Exception is expected

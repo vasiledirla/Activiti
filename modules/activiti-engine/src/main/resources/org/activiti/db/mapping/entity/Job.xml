@@ -64,7 +64,7 @@
         inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_  = P.ID_
         inner join ${prefix}ACT_RE_DEPLOYMENT D on P.DEPLOYMENT_ID_ = D.ID_ 
         where D.ID_ = #{deploymentId, jdbcType=VARCHAR}
-      )
+      );
 
       update ${prefix}ACT_RU_TIMER_JOB set
       TENANT_ID_ = #{tenantId, jdbcType=VARCHAR}
@@ -84,7 +84,7 @@
     where
       (RETRIES_ &gt; 0)
       and (DUEDATE_ is null or DUEDATE_ &lt;= #{dueDate, jdbcType=TIMESTAMP})
-      and (LOCK_OWNER_ is null)
+      and (LOCK_OWNER_ is null);
 
       update ${prefix}ACT_RU_TIMER_JOB set
       LOCK_OWNER_ = #{lockOwner, jdbcType=VARCHAR},
@@ -99,7 +99,7 @@
     <!-- See http://stackoverflow.com/questions/4429319/you-cant-specify-target-table-for-update-in-from-clause
          Tested this on MySQL 5.6: does NOT use a temporary table (so good, performance) -->
     <update id="updateJobTenantIdForDeployment" databaseId="mysql" parameterType="java.util.Map">
-    update ${prefix}ACT_RU_JOB set
+    update ${prefix}ACT_RU_ASYNC_JOB set
       TENANT_ID_ = #{tenantId, jdbcType=VARCHAR}
     where
       ID_ in (
@@ -107,12 +107,29 @@
           SELECT tempTask.tempId
           FROM (
                 SELECT J.ID_ as tempId
-                FROM  ${prefix}ACT_RU_JOB J
+                FROM  ${prefix}ACT_RU_ASYNC_JOB J
                 inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_  = P.ID_
                 inner join ${prefix}ACT_RE_DEPLOYMENT D on P.DEPLOYMENT_ID_ = D.ID_ 
                 where D.ID_ = #{deploymentId, jdbcType=VARCHAR}
                 
         ) AS tempTask 
+
+    );
+
+       update ${prefix}ACT_RU_TIMER_JOB set
+      TENANT_ID_ = #{tenantId, jdbcType=VARCHAR}
+    where
+      ID_ in (
+
+          SELECT tempTask.tempId
+          FROM (
+                SELECT J.ID_ as tempId
+                FROM  ${prefix}ACT_RU_TIMER_JOB J
+                inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_  = P.ID_
+                inner join ${prefix}ACT_RE_DEPLOYMENT D on P.DEPLOYMENT_ID_ = D.ID_
+                where D.ID_ = #{deploymentId, jdbcType=VARCHAR}
+
+        ) AS tempTask
 
     )
   </update>
@@ -165,7 +182,8 @@
     	RES.* ${limitBetween}
 
     select * from (
-    select * from ${prefix}ACT_RU_ASYNC_JOB ASYNC_RES
+    select ASYNC_RES.*
+    from ${prefix}ACT_RU_ASYNC_JOB ASYNC_RES
     	LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = ASYNC_RES.PROCESS_INSTANCE_ID_
     where (ASYNC_RES.RETRIES_ &gt; 0)
       and (ASYNC_RES.DUEDATE_ is null or ASYNC_RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
@@ -179,7 +197,7 @@
 
       union
 
-     select TIMER_RES.*  select TIMER_RES.* (
+   select TIMER_RES.*
     from ${prefix}ACT_RU_TIMER_JOB TIMER_RES
     	LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = TIMER_RES.PROCESS_INSTANCE_ID_
     where (TIMER_RES.RETRIES_ &gt; 0)
@@ -190,7 +208,7 @@
 	  		  or
 	  		  (PI.SUSPENSION_STATE_ = 1)
       )
-      )
+
       ) AS RES
 
 
@@ -200,7 +218,9 @@
     <select id="selectNextTimerJobsToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
     ${limitBefore}
     select 
-      RES.* ${limitBetween}       
+      RES.*
+
+      ${limitBetween}
     from ${prefix}ACT_RU_TIMER_JOB RES
       LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     where (RES.RETRIES_ &gt; 0)
@@ -222,8 +242,7 @@
     from ${prefix}ACT_RU_ASYNC_JOB RES
       LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     where RES.RETRIES_ &gt; 0
-      and RES.DUEDATE_ is not null
-      and RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP}
+
       and (RES.LOCK_EXP_TIME_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
       and (
           (RES.EXECUTION_ID_ is null)
@@ -281,23 +300,122 @@
   </select>
 
     <select id="selectJobsByTypeAndProcessDefinitionId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-      select * from ${prefix}ACT_RU_JOB
-      where HANDLER_TYPE_ = #{parameter.handlerType}
-      and PROC_DEF_ID_ = #{parameter.processDefinitionId}
+      select
+        ASYNC_J.ID_,
+        ASYNC_J.REV_ ,
+        ASYNC_J.LOCK_OWNER_,
+        ASYNC_J.LOCK_EXP_TIME_,
+        ASYNC_J.EXCLUSIVE_,
+        ASYNC_J.EXECUTION_ID_,
+        ASYNC_J.PROCESS_INSTANCE_ID_,
+        ASYNC_J.PROC_DEF_ID_,
+        ASYNC_J.RETRIES_,
+        ASYNC_J.EXCEPTION_STACK_ID_,
+        ASYNC_J.EXCEPTION_MSG_,
+        ASYNC_J.HANDLER_TYPE_,
+        ASYNC_J.HANDLER_CFG_,
+        ASYNC_J.TENANT_ID_,
+        ASYNC_J.TYPE_,
+        null as DUEDATE_,
+        null as REPEAT_
+
+      from ${prefix}ACT_RU_ASYNC_JOB ASYNC_J
+      where ASYNC_J.HANDLER_TYPE_ = #{parameter.handlerType}
+      and ASYNC_J.PROC_DEF_ID_ = #{parameter.processDefinitionId}
+
+      union
+
+      select
+        TIMER_J.ID_,
+        TIMER_J.REV_ ,
+        TIMER_J.LOCK_OWNER_,
+        TIMER_J.LOCK_EXP_TIME_,
+        TIMER_J.EXCLUSIVE_,
+        TIMER_J.EXECUTION_ID_,
+        TIMER_J.PROCESS_INSTANCE_ID_,
+        TIMER_J.PROC_DEF_ID_,
+        TIMER_J.RETRIES_,
+        TIMER_J.EXCEPTION_STACK_ID_,
+        TIMER_J.EXCEPTION_MSG_,
+        TIMER_J.HANDLER_TYPE_,
+        TIMER_J.HANDLER_CFG_,
+        TIMER_J.TENANT_ID_,
+        TIMER_J.TYPE_,
+
+        TIMER_J.DUEDATE_,
+        TIMER_J.REPEAT_
+         from ${prefix}ACT_RU_TIMER_JOB TIMER_J
+      where TIMER_J.HANDLER_TYPE_ = #{parameter.handlerType}
+      and TIMER_J.PROC_DEF_ID_ = #{parameter.processDefinitionId}
   </select>
 
     <select id="selectJobsByTypeAndProcessDefinitionIds" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-        select * from ${prefix}ACT_RU_JOB
-        where HANDLER_TYPE_ = #{parameter.handlerType}
+        select
+        ASYNC_J.ID_,
+        ASYNC_J.REV_ ,
+        ASYNC_J.LOCK_OWNER_,
+        ASYNC_J.LOCK_EXP_TIME_,
+        ASYNC_J.EXCLUSIVE_,
+        ASYNC_J.EXECUTION_ID_,
+        ASYNC_J.PROCESS_INSTANCE_ID_,
+        ASYNC_J.PROC_DEF_ID_,
+        ASYNC_J.RETRIES_,
+        ASYNC_J.EXCEPTION_STACK_ID_,
+        ASYNC_J.EXCEPTION_MSG_,
+        ASYNC_J.HANDLER_TYPE_,
+        ASYNC_J.HANDLER_CFG_,
+        ASYNC_J.TENANT_ID_,
+        ASYNC_J.TYPE_,
+        null as DUEDATE_,
+        null as REPEAT_
+
+        from ${prefix}ACT_RU_ASYNC_JOB ASYNC_J
+        where ASYNC_J.HANDLER_TYPE_ = #{parameter.handlerType}
         <if test="parameter.processDefinitionIds != null">
             and (<foreach item="processDefinitionId" collection="parameter.processDefinitionIds" index="index" separator=" or ">
-            PROC_DEF_ID_ = #{processDefinitionId, jdbcType=VARCHAR}
+            ASYNC_J.PROC_DEF_ID_ = #{processDefinitionId, jdbcType=VARCHAR}
+        </foreach>)
+        </if>
+
+        UNION
+
+        select
+        TIMER_J.ID_,
+        TIMER_J.REV_ ,
+        TIMER_J.LOCK_OWNER_,
+        TIMER_J.LOCK_EXP_TIME_,
+        TIMER_J.EXCLUSIVE_,
+        TIMER_J.EXECUTION_ID_,
+        TIMER_J.PROCESS_INSTANCE_ID_,
+        TIMER_J.PROC_DEF_ID_,
+        TIMER_J.RETRIES_,
+        TIMER_J.EXCEPTION_STACK_ID_,
+        TIMER_J.EXCEPTION_MSG_,
+        TIMER_J.HANDLER_TYPE_,
+        TIMER_J.HANDLER_CFG_,
+        TIMER_J.TENANT_ID_,
+        TIMER_J.TYPE_,
+
+        TIMER_J.DUEDATE_,
+        TIMER_J.REPEAT_
+
+        from ${prefix}ACT_RU_TIMER_JOB TIMER_J
+        where TIMER_J.HANDLER_TYPE_ = #{parameter.handlerType}
+        <if test="parameter.processDefinitionIds != null">
+            and (<foreach item="processDefinitionId" collection="parameter.processDefinitionIds" index="index" separator=" or ">
+            TIMER_J.PROC_DEF_ID_ = #{processDefinitionId, jdbcType=VARCHAR}
         </foreach>)
         </if>
     </select>
 
     <select id="selectJobsByConfiguration" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-      select * from ${prefix}ACT_RU_JOB
+      select * from ${prefix}ACT_RU_ASYNC_JOB
+      where HANDLER_TYPE_ = #{parameter.handlerType}
+      and HANDLER_CFG_ like  #{parameter.handlerConfiguration}
+
+      union
+
+        select * from ${prefix}ACT_RU_TIMER_JOB
       where HANDLER_TYPE_ = #{parameter.handlerType}
       and HANDLER_CFG_ like  #{parameter.handlerConfiguration}
   </select>
@@ -328,29 +446,163 @@
   </select>
 
     <select id="selectJobByTypeAndProcessDefinitionKeyNoTenantId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-    select J.*
-    from ${prefix}ACT_RU_JOB J
-    inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_ = P.ID_
-    where J.HANDLER_TYPE_ = #{parameter.handlerType} 
+     select
+        ASYNC_J.ID_,
+        ASYNC_J.REV_ ,
+        ASYNC_J.LOCK_OWNER_,
+        ASYNC_J.LOCK_EXP_TIME_,
+        ASYNC_J.EXCLUSIVE_,
+        ASYNC_J.EXECUTION_ID_,
+        ASYNC_J.PROCESS_INSTANCE_ID_,
+        ASYNC_J.PROC_DEF_ID_,
+        ASYNC_J.RETRIES_,
+        ASYNC_J.EXCEPTION_STACK_ID_,
+        ASYNC_J.EXCEPTION_MSG_,
+        ASYNC_J.HANDLER_TYPE_,
+        ASYNC_J.HANDLER_CFG_,
+        ASYNC_J.TENANT_ID_,
+        ASYNC_J.TYPE_,
+        null as DUEDATE_,
+        null as REPEAT_
+
+    from ${prefix}ACT_RU_ASYNC_JOB ASYNC_J
+    inner join ${prefix}ACT_RE_PROCDEF P on ASYNC_J.PROC_DEF_ID_ = P.ID_
+    where ASYNC_J.HANDLER_TYPE_ = #{parameter.handlerType}
     and P.KEY_ = #{parameter.processDefinitionKey}
-    and (P.TENANT_ID_ = ''  or P.TENANT_ID_ is null)  
+    and (P.TENANT_ID_ = ''  or P.TENANT_ID_ is null)
+
+    union
+
+    select
+        TIMER_J.ID_,
+        TIMER_J.REV_ ,
+        TIMER_J.LOCK_OWNER_,
+        TIMER_J.LOCK_EXP_TIME_,
+        TIMER_J.EXCLUSIVE_,
+        TIMER_J.EXECUTION_ID_,
+        TIMER_J.PROCESS_INSTANCE_ID_,
+        TIMER_J.PROC_DEF_ID_,
+        TIMER_J.RETRIES_,
+        TIMER_J.EXCEPTION_STACK_ID_,
+        TIMER_J.EXCEPTION_MSG_,
+        TIMER_J.HANDLER_TYPE_,
+        TIMER_J.HANDLER_CFG_,
+        TIMER_J.TENANT_ID_,
+        TIMER_J.TYPE_,
+
+        TIMER_J.DUEDATE_,
+        TIMER_J.REPEAT_
+
+    from ${prefix}ACT_RU_TIMER_JOB TIMER_J
+    inner join ${prefix}ACT_RE_PROCDEF P on TIMER_J.PROC_DEF_ID_ = P.ID_
+    where TIMER_J.HANDLER_TYPE_ = #{parameter.handlerType}
+    and P.KEY_ = #{parameter.processDefinitionKey}
+    and (P.TENANT_ID_ = ''  or P.TENANT_ID_ is null)
   </select>
 
     <select id="selectJobByTypeAndProcessDefinitionKeyAndTenantId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject"
             resultMap="jobResultMap">
-    select J.*
-    from ${prefix}ACT_RU_JOB J
-    inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_ = P.ID_
-    where J.HANDLER_TYPE_ = #{parameter.handlerType} 
+    select
+        ASYNC_J.ID_,
+        ASYNC_J.REV_ ,
+        ASYNC_J.LOCK_OWNER_,
+        ASYNC_J.LOCK_EXP_TIME_,
+        ASYNC_J.EXCLUSIVE_,
+        ASYNC_J.EXECUTION_ID_,
+        ASYNC_J.PROCESS_INSTANCE_ID_,
+        ASYNC_J.PROC_DEF_ID_,
+        ASYNC_J.RETRIES_,
+        ASYNC_J.EXCEPTION_STACK_ID_,
+        ASYNC_J.EXCEPTION_MSG_,
+        ASYNC_J.HANDLER_TYPE_,
+        ASYNC_J.HANDLER_CFG_,
+        ASYNC_J.TENANT_ID_,
+        ASYNC_J.TYPE_,
+        null as DUEDATE_,
+        null as REPEAT_
+
+    from ${prefix}ACT_RU_ASYNC_JOB ASYNC_J
+    inner join ${prefix}ACT_RE_PROCDEF P on ASYNC_J.PROC_DEF_ID_ = P.ID_
+    where ASYNC_J.HANDLER_TYPE_ = #{parameter.handlerType}
     and P.KEY_ = #{parameter.processDefinitionKey}
-    and P.TENANT_ID_ = #{parameter.tenantId} 
+    and P.TENANT_ID_ = #{parameter.tenantId}
+
+    UNION
+
+    select
+        TIMER_J.ID_,
+        TIMER_J.REV_ ,
+        TIMER_J.LOCK_OWNER_,
+        TIMER_J.LOCK_EXP_TIME_,
+        TIMER_J.EXCLUSIVE_,
+        TIMER_J.EXECUTION_ID_,
+        TIMER_J.PROCESS_INSTANCE_ID_,
+        TIMER_J.PROC_DEF_ID_,
+        TIMER_J.RETRIES_,
+        TIMER_J.EXCEPTION_STACK_ID_,
+        TIMER_J.EXCEPTION_MSG_,
+        TIMER_J.HANDLER_TYPE_,
+        TIMER_J.HANDLER_CFG_,
+        TIMER_J.TENANT_ID_,
+        TIMER_J.TYPE_,
+
+        TIMER_J.DUEDATE_,
+        TIMER_J.REPEAT_
+    from ${prefix}ACT_RU_TIMER_JOB TIMER_J
+    inner join ${prefix}ACT_RE_PROCDEF P on TIMER_J.PROC_DEF_ID_ = P.ID_
+    where TIMER_J.HANDLER_TYPE_ = #{parameter.handlerType}
+    and P.KEY_ = #{parameter.processDefinitionKey}
+    and P.TENANT_ID_ = #{parameter.tenantId}
   </select>
 
     <select id="selectJobByTypeAndProcessDefinitionId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-    select J.*
-    from ${prefix}ACT_RU_JOB J
-    where J.HANDLER_TYPE_ = #{parameter.handlerType}
-    and J.PROC_DEF_ID_ = #{parameter.processDefinitionId} 
+   select
+        ASYNC_J.ID_,
+        ASYNC_J.REV_ ,
+        ASYNC_J.LOCK_OWNER_,
+        ASYNC_J.LOCK_EXP_TIME_,
+        ASYNC_J.EXCLUSIVE_,
+        ASYNC_J.EXECUTION_ID_,
+        ASYNC_J.PROCESS_INSTANCE_ID_,
+        ASYNC_J.PROC_DEF_ID_,
+        ASYNC_J.RETRIES_,
+        ASYNC_J.EXCEPTION_STACK_ID_,
+        ASYNC_J.EXCEPTION_MSG_,
+        ASYNC_J.HANDLER_TYPE_,
+        ASYNC_J.HANDLER_CFG_,
+        ASYNC_J.TENANT_ID_,
+        ASYNC_J.TYPE_,
+        null as DUEDATE_,
+        null as REPEAT_
+
+    from ${prefix}ACT_RU_ASYNC_JOB ASYNC_J
+    where ASYNC_J.HANDLER_TYPE_ = #{parameter.handlerType}
+    and ASYNC_J.PROC_DEF_ID_ = #{parameter.processDefinitionId}
+
+    union
+
+   select
+        TIMER_J.ID_,
+        TIMER_J.REV_ ,
+        TIMER_J.LOCK_OWNER_,
+        TIMER_J.LOCK_EXP_TIME_,
+        TIMER_J.EXCLUSIVE_,
+        TIMER_J.EXECUTION_ID_,
+        TIMER_J.PROCESS_INSTANCE_ID_,
+        TIMER_J.PROC_DEF_ID_,
+        TIMER_J.RETRIES_,
+        TIMER_J.EXCEPTION_STACK_ID_,
+        TIMER_J.EXCEPTION_MSG_,
+        TIMER_J.HANDLER_TYPE_,
+        TIMER_J.HANDLER_CFG_,
+        TIMER_J.TENANT_ID_,
+        TIMER_J.TYPE_,
+
+        TIMER_J.DUEDATE_,
+        TIMER_J.REPEAT_
+    from ${prefix}ACT_RU_TIMER_JOB TIMER_J
+    where TIMER_J.HANDLER_TYPE_ = #{parameter.handlerType}
+    and TIMER_J.PROC_DEF_ID_ = #{parameter.processDefinitionId}
   </select>
 
     <select id="selectJobByQueryCriteria" parameterType="org.activiti.engine.impl.JobQueryImpl" resultMap="jobResultMap">
@@ -832,9 +1084,16 @@
     </update>
 
     <update id="unacquireJob" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject">
-    update ${prefix}ACT_RU_ASYNC_JOB
-    set DUEDATE_ = #{dueDate,jdbcType=TIMESTAMP}, LOCK_OWNER_ = null, LOCK_EXP_TIME_ = null
-    where ID_ = #{id,jdbcType=VARCHAR}
-  </update>
+        <if test="jobType == 'message'">
+            update ${prefix}ACT_RU_ASYNC_JOB
+            set LOCK_OWNER_ = null, LOCK_EXP_TIME_ = null
+            where ID_ = #{id,jdbcType=VARCHAR}
+        </if>
+        <if test="jobType == 'timer'">
+            update ${prefix}ACT_RU_TIMER_JOB
+            set DUEDATE_ = #{dueDate,jdbcType=TIMESTAMP}, LOCK_OWNER_ = null, LOCK_EXP_TIME_ = null
+            where ID_ = #{id,jdbcType=VARCHAR}
+        </if>
+    </update>
 
 </mapper>

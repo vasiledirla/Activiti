@@ -81,8 +81,8 @@ public class ExecutorPerTenantAsyncExecutor implements TenantAwareAsyncExecutor 
     return tenantExecutors.get(tenantInfoHolder.getCurrentTenantId());
   }
 
-  public boolean executeAsyncJob(JobEntity job) {
-    return determineAsyncExecutor().executeAsyncJob(job);
+  public boolean executeJob(JobEntity job) {
+    return determineAsyncExecutor().executeJob(job);
   }
 
   public void setCommandExecutor(CommandExecutor commandExecutor) {

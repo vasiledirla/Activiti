@@ -82,7 +82,7 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
 
   protected CommandExecutor commandExecutor;
 
-  public boolean executeAsyncJob(final JobEntity job) {
+  public boolean executeJob(final JobEntity job) {
     Runnable runnable = null;
     if (isActive) {
       
@@ -134,7 +134,7 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
   }
   
   protected void unacquireJob(final JobEntity job, CommandContext commandContext) {
-    commandContext.getAsyncJobEntityManager().unacquireJob(job.getId());
+    commandContext.getGenericJobEntityManager().unacquireJob(job);
   }
   
   /** Starts the async executor */
@@ -156,7 +156,7 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
 
     while (temporaryJobQueue.isEmpty() == false) {
       JobEntity job = temporaryJobQueue.pop();
-      executeAsyncJob(job);
+      executeJob(job);
     }
     isActive = true;
   }

@@ -13,8 +13,6 @@
 
 package org.activiti.engine.impl.persistence.entity;
 
-import org.activiti.engine.ActivitiException;
-import org.activiti.engine.ActivitiTaskAlreadyClaimedException;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.JobQueryImpl;
@@ -82,7 +80,7 @@ public class GenericJobEntityManagerImpl extends AbstractEntityManager<JobEntity
 
     } catch (InterruptedException e) {
     }
-    getAsyncExecutor().executeAsyncJob(job);
+    getAsyncExecutor().executeJob(job);
   }
 
   protected void hintAsyncExecutor(JobEntity job) {
@@ -155,8 +153,8 @@ public class GenericJobEntityManagerImpl extends AbstractEntityManager<JobEntity
   }
 
   @Override
-  public void unacquireJob(String jobId) {
-    jobDataManager.unacquireJob(jobId);
+  public void unacquireJob(Job job) {
+    jobDataManager.unacquireJob(job.getJobType(), job.getId());
   }
 
   @Override

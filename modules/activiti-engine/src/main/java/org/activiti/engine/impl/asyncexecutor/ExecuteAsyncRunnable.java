@@ -148,11 +148,11 @@ public class ExecuteAsyncRunnable implements Runnable {
   protected void unacquireJob() {
     CommandContext commandContext = Context.getCommandContext();
     if (commandContext != null) {
-      commandContext.getAsyncJobEntityManager().unacquireJob(job.getId());
+      commandContext.getGenericJobEntityManager().unacquireJob(job);
     } else {
       commandExecutor.execute(new Command<Void>() {
         public Void execute(CommandContext commandContext) {
-          commandContext.getAsyncJobEntityManager().unacquireJob(job.getId());
+          commandContext.getGenericJobEntityManager().unacquireJob(job);
           return null;
         }
       });

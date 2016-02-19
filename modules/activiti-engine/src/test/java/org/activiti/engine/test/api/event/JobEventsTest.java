@@ -59,7 +59,7 @@ public class JobEventsTest extends PluggableActivitiTestCase {
 
     // Update the job-entity. Check if update event is dispatched with
     // update job entity
-    managementService.setJobRetries(theJob.getId(), 5);
+    managementService.setJobRetries(theJob, 5);
     assertEquals(1, listener.getEventsReceived().size());
     event = listener.getEventsReceived().get(0);
     assertEquals(ActivitiEventType.ENTITY_UPDATED, event.getType());
@@ -193,7 +193,7 @@ public class JobEventsTest extends PluggableActivitiTestCase {
     Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
 
     // WHEN
-    managementService.deleteJob(job.getId());
+    managementService.deleteJob(job);
 
     // THEN
     checkEventCount(1, ActivitiEventType.JOB_CANCELED);
@@ -274,7 +274,7 @@ public class JobEventsTest extends PluggableActivitiTestCase {
     assertNotNull(theJob);
 
     // Set retries to 1, to prevent multiple chains of events being thrown
-    managementService.setJobRetries(theJob.getId(), 1);
+    managementService.setJobRetries(theJob, 1);
 
     listener.clearEventsReceived();
 

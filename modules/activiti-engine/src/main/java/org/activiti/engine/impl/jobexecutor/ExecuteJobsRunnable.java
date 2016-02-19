@@ -67,7 +67,7 @@ public class ExecuteJobsRunnable implements Runnable {
 
         JobEntity currentJob = currentProcessorJobQueue.remove(0);
         try {
-          commandExecutor.execute(new ExecuteJobsCmd(currentJob));
+          commandExecutor.execute(new ExecuteJobsCmd(currentJob.getJobType(), currentJob.getId()));
         } catch (Throwable e) {
           log.error("exception during job execution: {}", e.getMessage(), e);
         } finally {
@@ -92,7 +92,7 @@ public class ExecuteJobsRunnable implements Runnable {
 
         JobEntity currentJob = currentProcessorJobQueue.remove(0);
         try {
-          commandExecutor.execute(new ExecuteJobsCmd(currentJob));
+          commandExecutor.execute(new ExecuteJobsCmd(currentJob.getJobType(), currentJob.getId()));
         } catch (Throwable e) {
           log.error("exception during job execution: {}", e.getMessage(), e);
         } finally {

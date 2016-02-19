@@ -30,4 +30,5 @@ public interface AsyncJobEntityManager extends JobEntityManager {
 
   List<JobEntity> findAsyncJobsDueToExecute(Page page);
 
+  void unacquireAsyncJob(String jobId);
 }

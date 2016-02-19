@@ -49,8 +49,8 @@ public class SetJobRetriesCmd extends JobCmd<Void> implements Serializable {
   }
 
 
-  public SetJobRetriesCmd(String jobId, int retries) {
-    this(Job.GENERIC, jobId, retries);
+  public SetJobRetriesCmd(Job job, int retries) {
+    this(job.getJobType(), job.getId(), retries);
   }
 
   public Void executeCommand(CommandContext commandContext) {
