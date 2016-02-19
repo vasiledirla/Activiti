@@ -193,11 +193,19 @@ public class MybatisJobDataManager extends AbstractDataManager<JobEntity> implem
   }
 
   @Override
-  public void updateJobTenantIdForDeployment(String deploymentId, String newTenantId) {
+  public void updateAsyncJobTenantIdForDeployment(String deploymentId, String newTenantId) {
     HashMap<String, Object> params = new HashMap<String, Object>();
     params.put("deploymentId", deploymentId);
     params.put("tenantId", newTenantId);
-    getDbSqlSession().update("updateJobTenantIdForDeployment", params);
+    getDbSqlSession().update("updateAsyncJobTenantIdForDeployment", params);
+  }
+
+  @Override
+  public void updateTimerJobTenantIdForDeployment(String deploymentId, String newTenantId) {
+    HashMap<String, Object> params = new HashMap<String, Object>();
+    params.put("deploymentId", deploymentId);
+    params.put("tenantId", newTenantId);
+    getDbSqlSession().update("updateTimerJobTenantIdForDeployment", params);
   }
   
   @Override

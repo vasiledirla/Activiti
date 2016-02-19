@@ -44,7 +44,7 @@ public class JobExecutorFailRetryTest extends PluggableActivitiTestCase {
     assertEquals(2, RetryFailingDelegate.times.size()); // check number of
                                                         // calls of delegate
     long timeDiff = RetryFailingDelegate.times.get(1) - RetryFailingDelegate.times.get(0);
-    assertTrue(timeDiff > 6000 && timeDiff < 12000); // check time
+    assertTrue(timeDiff > 600 && timeDiff < 12000); // check time
                                                      // difference between
                                                      // calls. Just roughly
   }

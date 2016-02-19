@@ -149,7 +149,7 @@ public class GenericJobEntityManagerImpl extends AbstractEntityManager<JobEntity
 
   @Override
   public void updateJobTenantIdForDeployment(String deploymentId, String newTenantId) {
-    jobDataManager.updateJobTenantIdForDeployment(deploymentId, newTenantId);
+//    jobDataManager.updateJobTenantIdForDeployment(deploymentId, newTenantId);
   }
 
   @Override

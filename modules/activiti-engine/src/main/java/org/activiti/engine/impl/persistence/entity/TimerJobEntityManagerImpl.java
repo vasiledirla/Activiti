@@ -254,7 +254,7 @@ public class TimerJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
 
   @Override
   public void updateJobTenantIdForDeployment(String deploymentId, String newTenantId) {
-    jobDataManager.updateJobTenantIdForDeployment(deploymentId, newTenantId);
+    jobDataManager.updateTimerJobTenantIdForDeployment(deploymentId, newTenantId);
   }
 
   @Override

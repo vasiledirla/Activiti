@@ -42,15 +42,14 @@ public class AcquireTimerJobsRunnable implements Runnable {
   }
 
   public synchronized void run() {
-    log.info("{} starting to acquire async jobs due");
+    log.info("{} starting to acquire Timer jobs due");
 
     final CommandExecutor commandExecutor = asyncExecutor.getCommandExecutor();
 
     while (!isInterrupted) {
 
       try {
-        AcquiredJobEntities acquiredJobs = commandExecutor.execute(new AcquireTimerJobsCmd(asyncExecutor.getLockOwner(), asyncExecutor.getTimerLockTimeInMillis(), asyncExecutor
-            .getMaxTimerJobsPerAcquisition()));
+        AcquiredJobEntities acquiredJobs = commandExecutor.execute(new AcquireTimerJobsCmd(asyncExecutor.getLockOwner(), asyncExecutor.getTimerLockTimeInMillis(), asyncExecutor.getMaxTimerJobsPerAcquisition()));
 
         boolean allJobsSuccessfullyOffered = true; 
         for (JobEntity job : acquiredJobs.getJobs()) {

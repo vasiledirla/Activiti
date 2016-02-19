@@ -65,7 +65,7 @@ public class AcquireAsyncJobsDueRunnable implements Runnable {
         millisToWait = asyncExecutor.getDefaultAsyncJobAcquireWaitTimeInMillis();
         int jobsAcquired = acquiredJobs.size();
         if (jobsAcquired >= asyncExecutor.getMaxAsyncJobsDuePerAcquisition()) {
-          millisToWait = 0; 
+          millisToWait = 0;
         }
         
         // If the queue was full, we wait too (even if we got enough jobs back), as not overload the queue

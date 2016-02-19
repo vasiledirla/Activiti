@@ -195,7 +195,7 @@ public class AsyncJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
 
   @Override
   public void updateJobTenantIdForDeployment(String deploymentId, String newTenantId) {
-    jobDataManager.updateJobTenantIdForDeployment(deploymentId, newTenantId);
+    jobDataManager.updateAsyncJobTenantIdForDeployment(deploymentId, newTenantId);
   }
 
   @Override

@@ -12,6 +12,7 @@
  */
 package org.activiti.engine.impl.persistence.entity;
 
+import java.util.Date;
 
 /**
  * @author Tom Baeyens
@@ -33,5 +34,13 @@ public class MessageEntityImpl extends JobEntityImpl implements MessageEntity {
 
   public void setRepeat(String repeat) {
     this.repeat = repeat;
+  }
+
+  public Date getDuedate() {
+    return null;
+  }
+
+  public void setDuedate(Date duedate) {
+    this.duedate = null;
   }
 }

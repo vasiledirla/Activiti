@@ -1,14 +1,5 @@
 package org.activiti.engine.impl.asyncexecutor;
 
-import java.util.LinkedList;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
@@ -16,6 +7,12 @@ import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.LinkedList;
+import java.util.UUID;
+import java.util.concurrent.*;
 
 /**
  * @author Joram Barrez
@@ -125,6 +122,7 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
     return true;
   }
 
+
   protected Runnable createRunnableForJob(final JobEntity job) {
     if (executeAsyncRunnableFactory == null) {
       return new ExecuteAsyncRunnable(job, commandExecutor);
@@ -156,7 +154,9 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
 
     while (temporaryJobQueue.isEmpty() == false) {
       JobEntity job = temporaryJobQueue.pop();
-      executeJob(job);
+      if (job.getLockExpirationTime() != null) { //workaround -- BAD idea todo: shoudl change this
+        executeJob(job);
+      }
     }
     isActive = true;
   }
@@ -225,13 +225,17 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
   /** Stops the acquisition thread */
   protected void stopJobAcquisitionThread() {
     try {
-      timerJobAcquisitionThread.join();
+      if (timerJobAcquisitionThread != null) {
+        timerJobAcquisitionThread.join();
+      }
     } catch (InterruptedException e) {
       log.warn("Interrupted while waiting for the timer job acquisition thread to terminate", e);
     }
 
     try {
-      asyncJobAcquisitionThread.join();
+      if (asyncJobAcquisitionThread != null) {
+        asyncJobAcquisitionThread.join();
+      }
     } catch (InterruptedException e) {
       log.warn("Interrupted while waiting for the async job acquisition thread to terminate", e);
     }

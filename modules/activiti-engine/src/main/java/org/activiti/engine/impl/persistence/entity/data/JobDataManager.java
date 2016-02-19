@@ -62,8 +62,10 @@ public interface JobDataManager extends DataManager<JobEntity> {
   
   long findJobCountByQueryCriteria(JobQueryImpl jobQuery);
 
-  void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
-  
+  void updateAsyncJobTenantIdForDeployment(String deploymentId, String newTenantId);
+
+  void updateTimerJobTenantIdForDeployment(String deploymentId, String newTenantId);
+
   void unacquireJob(String jobType, String jobId);
 
 }
