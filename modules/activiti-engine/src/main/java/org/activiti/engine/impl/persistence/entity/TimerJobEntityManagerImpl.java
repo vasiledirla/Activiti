@@ -91,7 +91,7 @@ public class TimerJobEntityManagerImpl extends AbstractEntityManager<JobEntity> 
 
     // Inherit tenant
     newTimerEntity.setTenantId(te.getTenantId());
-    newTimerEntity.setJobType("timer");
+    newTimerEntity.setJobType(Job.TIMER);
     return newTimerEntity;
   }
   
