@@ -21,7 +21,6 @@ import java.util.Map;
 import org.activiti.engine.impl.JobQueryImpl;
 import org.activiti.engine.impl.Page;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.activiti.engine.impl.db.JobQueryParameterObject;
 import org.activiti.engine.impl.persistence.CachedEntityMatcher;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntityImpl;
@@ -77,15 +76,21 @@ public class MybatisJobDataManager extends AbstractDataManager<JobEntity> implem
   
   @Override
   @SuppressWarnings("unchecked")
-  public List<JobEntity> findNextJobsToExecute(Page page) {
+  public List<JobEntity> findNextAsyncJobsToExecute(Page page) {
     Date now = getClock().getCurrentTime();
-    return getDbSqlSession().selectList("selectNextJobsToExecute", now, page);
+    return getDbSqlSession().selectList("selectNextAsyncJobsToExecute", now, page);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public JobEntity selectJob(JobQueryParameterObject jobIdentifier) {
-    return (JobEntity) getDbSqlSession().selectOne("selectJob", jobIdentifier);
+  public JobEntity selectAsyncJob(String jobIdentifier) {
+    return (JobEntity) getDbSqlSession().selectOne("selectAsyncJob", jobIdentifier);
+  }
+  @Override
+
+  @SuppressWarnings("unchecked")
+  public JobEntity selectTimerJob(String jobIdentifier) {
+    return (JobEntity) getDbSqlSession().selectOne("selectTimerJob", jobIdentifier);
   }
 
   @Override
@@ -104,13 +109,29 @@ public class MybatisJobDataManager extends AbstractDataManager<JobEntity> implem
 
   @Override
   @SuppressWarnings("unchecked")
-  public List<JobEntity> findJobsByLockOwner(String lockOwner, int start, int maxNrOfJobs) {
-    return getDbSqlSession().selectList("selectJobsByLockOwner", lockOwner, start, maxNrOfJobs);
+  public List<JobEntity> findAsyncJobsByLockOwner(String lockOwner, int start, int maxNrOfJobs) {
+    return getDbSqlSession().selectList("selectAsyncJobsByLockOwner", lockOwner, start, maxNrOfJobs);
   }
 
   @Override
-  public List<JobEntity> findJobsByExecutionId(final String executionId) {
-    return getList("selectJobsByExecutionId", executionId, new CachedEntityMatcher<JobEntity>() {
+  @SuppressWarnings("unchecked")
+  public List<JobEntity> findTimerJobsByLockOwner(String lockOwner, int start, int maxNrOfJobs) {
+    return getDbSqlSession().selectList("selectTimerJobsByLockOwner", lockOwner, start, maxNrOfJobs);
+  }
+
+  @Override
+  public List<JobEntity> findTimerJobsByExecutionId(final String executionId) {
+    return getList("selectTimerJobsByExecutionId", executionId, new CachedEntityMatcher<JobEntity>() {
+      @Override
+      public boolean isRetained(JobEntity jobEntity) {
+        return jobEntity.getExecutionId() != null && jobEntity.getExecutionId().equals(executionId);
+      }
+    }, true);
+  }
+
+  @Override
+  public List<JobEntity> findAsyncJobsByExecutionId(final String executionId) {
+    return getList("selectAsyncJobsByExecutionId", executionId, new CachedEntityMatcher<JobEntity>() {
       @Override
       public boolean isRetained(JobEntity jobEntity) {
         return jobEntity.getExecutionId() != null && jobEntity.getExecutionId().equals(executionId);
@@ -120,11 +141,20 @@ public class MybatisJobDataManager extends AbstractDataManager<JobEntity> implem
 
   @Override
   @SuppressWarnings("unchecked")
-  public List<JobEntity> findExclusiveJobsToExecute(String processInstanceId) {
+  public List<JobEntity> findExclusiveTimerJobsToExecute(String processInstanceId) {
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("pid", processInstanceId);
     params.put("now", getClock().getCurrentTime());
-    return getDbSqlSession().selectList("selectExclusiveJobsToExecute", params);
+    return getDbSqlSession().selectList("selectExclusiveTimerJobsToExecute", params);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public List<JobEntity> findExclusiveAsyncJobsToExecute(String processInstanceId) {
+    Map<String, Object> params = new HashMap<String, Object>();
+    params.put("pid", processInstanceId);
+    params.put("now", getClock().getCurrentTime());
+    return getDbSqlSession().selectList("selectExclusiveAsyncJobsToExecute", params);
   }
 
   @Override
@@ -143,50 +173,89 @@ public class MybatisJobDataManager extends AbstractDataManager<JobEntity> implem
   @Override
   @SuppressWarnings("unchecked")
   public List<Job> findJobsByQueryCriteria(JobQueryImpl jobQuery, Page page) {
-    final String query = "selectJobByQueryCriteria";
-    return getDbSqlSession().selectList(query, jobQuery, page);
+    return getDbSqlSession().selectList("selectJobByQueryCriteria", jobQuery, page);
   }
   
   @Override
   @SuppressWarnings("unchecked")
-  public List<Job> findJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds) {
+  public List<Job> findAsyncJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds) {
     Map<String, Object> params = new HashMap<String, Object>(2);
     params.put("handlerType", jobHandlerType);
     
     if (processDefinitionIds != null && processDefinitionIds.size() > 0) {
       params.put("processDefinitionIds", processDefinitionIds);
     }
-    return getDbSqlSession().selectList("selectJobsByTypeAndProcessDefinitionIds", params);
+    return getDbSqlSession().selectList("selectAsyncJobsByTypeAndProcessDefinitionIds", params);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public List<Job> findTimerJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds) {
+    Map<String, Object> params = new HashMap<String, Object>(2);
+    params.put("handlerType", jobHandlerType);
+
+    if (processDefinitionIds != null && processDefinitionIds.size() > 0) {
+      params.put("processDefinitionIds", processDefinitionIds);
+    }
+    return getDbSqlSession().selectList("selectTimerJobsByTypeAndProcessDefinitionIds", params);
   }
   
   @Override
   @SuppressWarnings("unchecked")
-  public List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey) {
+  public List<Job> findAsyncJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey) {
      Map<String, String> params = new HashMap<String, String>(2);
      params.put("handlerType", jobHandlerType);
      params.put("processDefinitionKey", processDefinitionKey);
-     return getDbSqlSession().selectList("selectJobByTypeAndProcessDefinitionKeyNoTenantId", params);
+     return getDbSqlSession().selectList("selectAsyncJobByTypeAndProcessDefinitionKeyNoTenantId", params);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public List<Job> findTimerJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey) {
+     Map<String, String> params = new HashMap<String, String>(2);
+     params.put("handlerType", jobHandlerType);
+     params.put("processDefinitionKey", processDefinitionKey);
+     return getDbSqlSession().selectList("selectTimerJobByTypeAndProcessDefinitionKeyNoTenantId", params);
   }
   
   @Override
   @SuppressWarnings("unchecked")
-  public List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId) {
+  public List<Job> findAsyncJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId) {
      Map<String, String> params = new HashMap<String, String>(3);
      params.put("handlerType", jobHandlerType);
      params.put("processDefinitionKey", processDefinitionKey);
      params.put("tenantId", tenantId);
-     return getDbSqlSession().selectList("selectJobByTypeAndProcessDefinitionKeyAndTenantId", params);
+     return getDbSqlSession().selectList("selectAsyncJobByTypeAndProcessDefinitionKeyAndTenantId", params);
   }
-  
+
+    @Override
+  @SuppressWarnings("unchecked")
+  public List<Job> findTimerJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId) {
+     Map<String, String> params = new HashMap<String, String>(3);
+     params.put("handlerType", jobHandlerType);
+     params.put("processDefinitionKey", processDefinitionKey);
+     params.put("tenantId", tenantId);
+     return getDbSqlSession().selectList("selectTimerJobByTypeAndProcessDefinitionKeyAndTenantId", params);
+  }
+
   @Override
   @SuppressWarnings("unchecked")
-  public List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId) {
+  public List<Job> findAsyncJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId) {
      Map<String, String> params = new HashMap<String, String>(2);
      params.put("handlerType", jobHandlerType);
      params.put("processDefinitionId", processDefinitionId);
-     return getDbSqlSession().selectList("selectJobByTypeAndProcessDefinitionId", params);
+     return getDbSqlSession().selectList("selectAsyncJobByTypeAndProcessDefinitionId", params);
   }
-  
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public List<Job> findTimerJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId) {
+     Map<String, String> params = new HashMap<String, String>(2);
+     params.put("handlerType", jobHandlerType);
+     params.put("processDefinitionId", processDefinitionId);
+     return getDbSqlSession().selectList("selectTimerJobByTypeAndProcessDefinitionId", params);
+  }
+
   @Override
   public long findJobCountByQueryCriteria(JobQueryImpl jobQuery) {
     return (Long) getDbSqlSession().selectOne("selectJobCountByQueryCriteria", jobQuery);
@@ -209,12 +278,19 @@ public class MybatisJobDataManager extends AbstractDataManager<JobEntity> implem
   }
   
   @Override
-  public void unacquireJob(String jobType, String jobId) {
+  public void unacquireAsyncJob(String jobId) {
     Map<String, Object> params = new HashMap<String, Object>(2);
     params.put("id", jobId);
-    params.put("jobType", jobType);
     params.put("dueDate", new Date(getProcessEngineConfiguration().getClock().getCurrentTime().getTime()));
-    getDbSqlSession().update("unacquireJob", params);
+    getDbSqlSession().update("unacquireAsyncJob", params);
   }
-  
+
+  @Override
+  public void unacquireTimerJob(String jobId) {
+    Map<String, Object> params = new HashMap<String, Object>(2);
+    params.put("id", jobId);
+    params.put("dueDate", new Date(getProcessEngineConfiguration().getClock().getCurrentTime().getTime()));
+    getDbSqlSession().update("unacquireTimerJob", params);
+  }
+
 }

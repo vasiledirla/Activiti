@@ -17,7 +17,6 @@ import java.util.List;
 
 import org.activiti.engine.impl.JobQueryImpl;
 import org.activiti.engine.impl.Page;
-import org.activiti.engine.impl.db.JobQueryParameterObject;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
@@ -32,19 +31,27 @@ public interface JobDataManager extends DataManager<JobEntity> {
   
   MessageEntity createMessage();
 
-  JobEntity selectJob(JobQueryParameterObject jobSelector);
+  JobEntity selectAsyncJob(String id);
 
-  List<JobEntity> findNextJobsToExecute(Page page);
+  JobEntity selectTimerJob(String id);
+
+  List<JobEntity> findNextAsyncJobsToExecute(Page page);
 
   List<JobEntity> findNextTimerJobsToExecute(Page page);
 
   List<JobEntity> findAsyncJobsDueToExecute(Page page);
 
-  List<JobEntity> findJobsByLockOwner(String lockOwner, int start, int maxNrOfJobs);
+  List<JobEntity> findAsyncJobsByLockOwner(String lockOwner, int start, int maxNrOfJobs);
 
-  List<JobEntity> findJobsByExecutionId(final String executionId);
+  List<JobEntity> findTimerJobsByLockOwner(String lockOwner, int start, int maxNrOfJobs);
 
-  List<JobEntity> findExclusiveJobsToExecute(String processInstanceId);
+  List<JobEntity> findAsyncJobsByExecutionId(final String executionId);
+
+  List<JobEntity> findTimerJobsByExecutionId(final String executionId);
+
+  List<JobEntity> findExclusiveAsyncJobsToExecute(String processInstanceId);
+
+  List<JobEntity> findExclusiveTimerJobsToExecute(String processInstanceId);
 
   List<TimerEntity> findUnlockedTimersByDuedate(Date duedate, Page page);
 
@@ -52,20 +59,30 @@ public interface JobDataManager extends DataManager<JobEntity> {
 
   List<Job> findJobsByQueryCriteria(JobQueryImpl jobQuery, Page page);
   
-  List<Job> findJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds);
-  
-  List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey);
-  
-  List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId);
-  
-  List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId);
-  
+  List<Job> findAsyncJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds);
+
+  List<Job> findTimerJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds);
+
+  List<Job> findAsyncJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey);
+
+  List<Job> findTimerJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey);
+
+  List<Job> findAsyncJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId);
+
+  List<Job> findTimerJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId);
+
+  List<Job> findAsyncJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId);
+
+  List<Job> findTimerJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId);
+
   long findJobCountByQueryCriteria(JobQueryImpl jobQuery);
 
   void updateAsyncJobTenantIdForDeployment(String deploymentId, String newTenantId);
 
   void updateTimerJobTenantIdForDeployment(String deploymentId, String newTenantId);
 
-  void unacquireJob(String jobType, String jobId);
+  void unacquireTimerJob(String jobId);
+
+  void unacquireAsyncJob(String jobId);
 
 }

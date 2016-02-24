@@ -10,9 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.activiti.engine.impl.cmd;
-
-import java.io.Serializable;
+package org.activiti.engine.impl.cmd.jobs;
 
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ActivitiIllegalArgumentException;
@@ -21,20 +19,21 @@ import org.activiti.engine.compatibility.Activiti5CompatibilityHandler;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.cfg.TransactionState;
-import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandContextCloseListener;
 import org.activiti.engine.impl.jobexecutor.FailedJobListener;
-import org.activiti.engine.impl.persistence.entity.AsyncJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.JobEntityManager;
 import org.activiti.engine.impl.util.Activiti5Util;
-import org.activiti.engine.runtime.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Serializable;
 
 /**
  * @author Tom Baeyens
  * @author Joram Barrez
+ * @author Vasile Dirla
  */
 public class ExecuteJobsCmd extends JobCmd<Object> implements Serializable {
 
@@ -45,13 +44,11 @@ public class ExecuteJobsCmd extends JobCmd<Object> implements Serializable {
   protected String jobId;
   protected JobEntity job;
 
-  public ExecuteJobsCmd(String jobType, String jobId) {
-    super(jobType);
+  public ExecuteJobsCmd(String jobId) {
     this.jobId = jobId;
   }
 
   public ExecuteJobsCmd(JobEntity job) {
-    super(job.getJobType());
     this.job = job;
   }
 
@@ -62,7 +59,7 @@ public class ExecuteJobsCmd extends JobCmd<Object> implements Serializable {
     }
 
     if (job == null) {
-      job = getJobEntityManager().findById(jobId);
+      job = getJob(commandContext, jobId);
     }
 
     if (job == null) {
@@ -82,12 +79,16 @@ public class ExecuteJobsCmd extends JobCmd<Object> implements Serializable {
     commandContext.addCloseListener(new ManualJobExecutionCommandContextCloseListener(job));
 
     try {
-      getJobEntityManager().execute(job);
+      commandContext.getJobEntityManager(job.getJobType()).execute(job);
     } catch (Throwable exception) {
       // Finally, Throw the exception to indicate the ExecuteJobCmd failed
       throw new ActivitiException("Job " + jobId + " failed", exception);
     }
 
+    return null;
+  }
+  @Override
+  public JobEntityManager getJobEntityManager(CommandContext commandContext) {
     return null;
   }
 
@@ -117,9 +118,9 @@ public class ExecuteJobsCmd extends JobCmd<Object> implements Serializable {
 
         if (context.getEventDispatcher().isEnabled()) {
           try {
-            context.getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityExceptionEvent(
-                ActivitiEventType.JOB_EXECUTION_FAILURE, jobEntity, context.getException()));
-          } catch(Throwable ignore) {
+            context.getEventDispatcher()
+                    .dispatchEvent(ActivitiEventBuilder.createEntityExceptionEvent(ActivitiEventType.JOB_EXECUTION_FAILURE, jobEntity, context.getException()));
+          } catch (Throwable ignore) {
             log.warn("Exception occurred while dispatching job failure event, ignoring.", ignore);
           }
         }
@@ -127,8 +128,7 @@ public class ExecuteJobsCmd extends JobCmd<Object> implements Serializable {
       } else {
 
         if (context.getEventDispatcher().isEnabled()) {
-          context.getEventDispatcher().dispatchEvent(
-              ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_EXECUTION_SUCCESS, jobEntity));
+          context.getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_EXECUTION_SUCCESS, jobEntity));
         }
 
       }

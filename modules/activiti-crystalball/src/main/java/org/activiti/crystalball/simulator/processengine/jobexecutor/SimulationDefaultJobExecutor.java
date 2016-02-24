@@ -14,7 +14,7 @@ package org.activiti.crystalball.simulator.processengine.jobexecutor;
 
 import java.util.List;
 
-import org.activiti.engine.impl.cmd.AcquireJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.AcquireAsyncJobsCmd;
 import org.activiti.engine.impl.jobexecutor.AcquireJobsRunnable;
 import org.activiti.engine.impl.jobexecutor.DefaultJobExecutor;
 import org.activiti.engine.impl.jobexecutor.ExecuteJobsRunnable;
@@ -36,7 +36,7 @@ public class SimulationDefaultJobExecutor extends DefaultJobExecutor {
    */
   @Override
   protected void ensureInitialization() {
-    acquireJobsCmd = new AcquireJobsCmd(this);
+    acquireJobsCmd = new AcquireAsyncJobsCmd(this);
     acquireJobsRunnable = new SimulationAcquireJobsRunnable(this);
   }
 

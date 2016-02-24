@@ -10,13 +10,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.activiti.engine.impl.cmd;
+package org.activiti.engine.impl.cmd.jobs;
 
-import org.activiti.engine.ActivitiIllegalArgumentException;
-import org.activiti.engine.delegate.event.ActivitiEventType;
-import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.JobEntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,35 +23,19 @@ import java.io.Serializable;
 /**
  * @author Tijs Rademakers
  */
-public class ExecuteAsyncJobCmd extends JobCmd<Object> implements Serializable {
+public class ExecuteAsyncJobCmd extends ExecuteJobCmd implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
   private static Logger log = LoggerFactory.getLogger(ExecuteAsyncJobCmd.class);
 
-  protected JobEntity job;
-
   public ExecuteAsyncJobCmd(JobEntity job) {
-    super(job.getJobType());
-    this.job = job;
+    super(job);
   }
 
-  public Object executeCommand(CommandContext commandContext) {
-
-    if (job == null) {
-      throw new ActivitiIllegalArgumentException("job is null");
-    }
-
-    if (log.isDebugEnabled()) {
-      log.debug("Executing async job {}", job.getId());
-    }
-
-    getJobEntityManager().execute(job);
-
-    if (commandContext.getEventDispatcher().isEnabled()) {
-      commandContext.getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_EXECUTION_SUCCESS, job));
-    }
-
-    return null;
+  @Override
+  public JobEntityManager getJobEntityManager(CommandContext commandContext) {
+    return commandContext.getAsyncJobEntityManager();
   }
+
 }

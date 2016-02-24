@@ -12,18 +12,28 @@
  */
 package org.activiti.engine.impl.jobexecutor;
 
-import org.activiti.engine.impl.cmd.JobRetryCmd;
-
+import org.activiti.engine.impl.cmd.jobs.AsyncJobRetryCmd;
+import org.activiti.engine.impl.cmd.jobs.TimerJobRetryCmd;
 import org.activiti.engine.impl.interceptor.Command;
+import org.activiti.engine.runtime.Job;
 
 /**
  * @author Saeid Mirzaei
+ * @author Vasile Dirla
  */
 public class DefaultFailedJobCommandFactory implements FailedJobCommandFactory {
 
+  String TIMER = "timer";
+  String MESSAGE = "message";
+
   @Override
   public Command<Object> getCommand(String jobType, String jobId, Throwable exception) {
-    return new JobRetryCmd(jobType, jobId, exception);
+    if (jobType.equalsIgnoreCase(MESSAGE)) {
+      return new AsyncJobRetryCmd(jobId, exception);
+    } else if (jobType.equalsIgnoreCase(TIMER)) {
+      return new TimerJobRetryCmd(jobId, exception);
+    }
+    return null;
   }
 
 }

@@ -12,12 +12,6 @@
  */
 package org.activiti.engine.impl.persistence.entity;
 
-import org.activiti.engine.impl.Page;
-import org.activiti.engine.impl.db.JobQueryParameterObject;
-
-import java.util.Date;
-import java.util.List;
-
 /**
  * @author Joram Barrez
  * @author Vasile Dirla

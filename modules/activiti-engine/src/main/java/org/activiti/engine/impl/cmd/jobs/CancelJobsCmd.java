@@ -11,13 +11,12 @@
  * limitations under the License.
  */
 
-package org.activiti.engine.impl.cmd;
+package org.activiti.engine.impl.cmd.jobs;
 
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.activiti.engine.runtime.Job;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -28,18 +27,16 @@ import java.util.List;
  *
  * @author Vasile Dirla
  */
-public class CancelAsyncJobsCmd extends JobCmd<Void> implements Serializable {
+public abstract class CancelJobsCmd extends JobCmd<Void> implements Serializable {
 
   private static final long serialVersionUID = 1L;
   List<String> jobIds;
 
-  public CancelAsyncJobsCmd(List<String> jobIds) {
-    super(Job.MESSAGE);
+  public CancelJobsCmd(List<String> jobIds) {
     this.jobIds = jobIds;
   }
 
-  public CancelAsyncJobsCmd(String jobId) {
-    super(Job.MESSAGE);
+  public CancelJobsCmd(String jobId) {
     this.jobIds = new ArrayList<String>();
     jobIds.add(jobId);
   }
@@ -47,7 +44,7 @@ public class CancelAsyncJobsCmd extends JobCmd<Void> implements Serializable {
   public Void executeCommand(CommandContext commandContext) {
     JobEntity jobToDelete = null;
     for (String jobId : jobIds) {
-      jobToDelete = getJobEntityManager().findById(jobId);
+      jobToDelete = getJobEntityManager(commandContext).findById(jobId);
 
       if (jobToDelete != null) {
         // When given job doesn't exist, ignore
@@ -55,7 +52,7 @@ public class CancelAsyncJobsCmd extends JobCmd<Void> implements Serializable {
           commandContext.getProcessEngineConfiguration().getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, jobToDelete));
         }
 
-        getJobEntityManager().delete(jobToDelete);
+        getJobEntityManager(commandContext).delete(jobToDelete);
       }
     }
     return null;

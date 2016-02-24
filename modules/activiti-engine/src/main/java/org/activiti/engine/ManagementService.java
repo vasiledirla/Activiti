@@ -87,6 +87,8 @@ public interface ManagementService {
 
   void deleteTimerJob(String jobId);
 
+  void deleteJob(String jobId);
+
   void deleteJob(Job job);
 
   /**
@@ -177,6 +179,8 @@ public interface ManagementService {
    * Delete a EventLogEntry. Typically only used in testing, as deleting log entries defeats the whole purpose of keeping a log.
    */
   void deleteEventLogEntry(long logNr);
+
+  void executeJob(String jobId);
 
   void executeJob(Job job);
 }

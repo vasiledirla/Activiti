@@ -36,11 +36,4 @@ public class MessageEntityImpl extends JobEntityImpl implements MessageEntity {
     this.repeat = repeat;
   }
 
-  public Date getDuedate() {
-    return null;
-  }
-
-  public void setDuedate(Date duedate) {
-    this.duedate = null;
-  }
 }

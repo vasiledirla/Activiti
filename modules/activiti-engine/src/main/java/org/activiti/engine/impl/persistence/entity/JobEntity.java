@@ -39,8 +39,6 @@ public interface JobEntity extends Job, Entity, HasRevision {
 
   void setExceptionStacktrace(String exception);
 
-  void setDuedate(Date duedate);
-
   void setExecutionId(String executionId);
 
   void setRetries(int retries);

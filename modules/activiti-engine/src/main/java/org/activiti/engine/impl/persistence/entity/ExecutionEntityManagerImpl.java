@@ -427,10 +427,19 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
 
     // Delete jobs
 
-    GenericJobEntityManager genericJobEntityManager = getGenericJobEntityManager();
-    Collection<JobEntity> jobsForExecution = genericJobEntityManager.findJobsByExecutionId(executionEntity.getId());
-    for (JobEntity job : jobsForExecution) {
-      getGenericJobEntityManager().delete(job);
+    JobEntityManager asyncJobEntityManager = getAsyncJobEntityManager();
+    Collection<JobEntity> asyncJobsForExecution = asyncJobEntityManager.findJobsByExecutionId(executionEntity.getId());
+    for (JobEntity job : asyncJobsForExecution) {
+      asyncJobEntityManager.delete(job);
+      if (getEventDispatcher().isEnabled()) {
+        getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, job));
+      }
+    }
+
+    JobEntityManager timerJobEntityManager = getTimerJobEntityManager();
+    Collection<JobEntity> timerJobsForExecution = timerJobEntityManager.findJobsByExecutionId(executionEntity.getId());
+    for (JobEntity job : timerJobsForExecution) {
+      timerJobEntityManager.delete(job);
       if (getEventDispatcher().isEnabled()) {
         getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, job));
       }

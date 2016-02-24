@@ -13,6 +13,7 @@
 package org.activiti.engine.impl.persistence.entity;
 
 import java.util.Date;
+import java.util.Map;
 
 /**
  * @author Tom Baeyens
@@ -25,10 +26,18 @@ public class TimerEntityImpl extends JobEntityImpl implements TimerEntity {
   protected int maxIterations;
   protected String repeat;
   protected Date endDate;
+  protected Date duedate;
+
 
   public TimerEntityImpl() {
     super();
     this.jobType = "timer";
+  }
+
+  public Object getPersistentState() {
+    Map<String, Object> persistentState = (Map<String, Object>)super.getPersistentState();
+    persistentState.put("duedate", duedate);
+    return persistentState;
   }
 
   public String getRepeat() {
@@ -53,6 +62,14 @@ public class TimerEntityImpl extends JobEntityImpl implements TimerEntity {
 
   public void setMaxIterations(int maxIterations) {
     this.maxIterations = maxIterations;
+  }
+
+  public Date getDuedate() {
+    return duedate;
+  }
+
+  public void setDuedate(Date duedate) {
+    this.duedate = duedate;
   }
 
 }

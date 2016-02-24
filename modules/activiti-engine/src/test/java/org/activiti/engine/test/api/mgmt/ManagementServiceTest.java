@@ -20,7 +20,7 @@ import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.ActivitiObjectNotFoundException;
 import org.activiti.engine.JobNotFoundException;
 import org.activiti.engine.impl.ProcessEngineImpl;
-import org.activiti.engine.impl.cmd.AcquireTimerJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.AcquireTimerJobsCmd;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.EventSubscriptionEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
@@ -54,10 +54,10 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
 
   public void testExecuteJobNullJobId() {
     try {
-      managementService.executeJob(null);
+      managementService.executeJob((String)null);
       fail("ActivitiException expected");
     } catch (ActivitiIllegalArgumentException re) {
-      assertTextPresent("job is null", re.getMessage());
+      assertTextPresent("JobId is null", re.getMessage());
     }
   }
 
@@ -281,10 +281,10 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
 
   public void testDeleteJobNullJob() {
     try {
-      managementService.deleteJob(null);
+      managementService.deleteJob((String)null);
       fail("ActivitiException expected");
     } catch (ActivitiIllegalArgumentException re) {
-      assertTextPresent("Job is null", re.getMessage());
+      assertTextPresent("jobId is null", re.getMessage());
     }
   }
 

@@ -15,8 +15,8 @@ package org.activiti.engine.test.jobexecutor;
 import java.util.Date;
 
 import org.activiti.engine.impl.asyncexecutor.AcquiredJobEntities;
-import org.activiti.engine.impl.cmd.AcquireTimerJobsCmd;
-import org.activiti.engine.impl.cmd.ExecuteAsyncJobCmd;
+import org.activiti.engine.impl.cmd.jobs.AcquireTimerJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.ExecuteTimerJobCmd;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
@@ -86,7 +86,7 @@ public class JobExecutorCmdHappyTest extends JobExecutorTestCase {
 
     assertEquals(0, tweetHandler.getMessages().size());
 
-    commandExecutor.execute(new ExecuteAsyncJobCmd(job));
+    commandExecutor.execute(new ExecuteTimerJobCmd(job));
 
     assertEquals("i'm coding a test", tweetHandler.getMessages().get(0));
     assertEquals(1, tweetHandler.getMessages().size());

@@ -32,4 +32,11 @@ public interface TimerEntity extends JobEntity {
 
   void setMaxIterations(int maxIterations);
 
+  /**
+   * Returns the date on which this job is supposed to be processed.
+   */
+  Date getDuedate();
+
+  void setDuedate(Date duedate);
+
 }

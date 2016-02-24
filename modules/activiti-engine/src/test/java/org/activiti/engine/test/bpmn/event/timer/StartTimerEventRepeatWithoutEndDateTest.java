@@ -15,6 +15,7 @@ package org.activiti.engine.test.bpmn.event.timer;
 
 import org.activiti.engine.delegate.event.ActivitiEvent;
 import org.activiti.engine.delegate.event.ActivitiEventType;
+import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.impl.util.DefaultClockImpl;
 import org.activiti.engine.runtime.Clock;
@@ -79,7 +80,7 @@ public class StartTimerEventRepeatWithoutEndDateTest extends PluggableActivitiTe
     dueDateCalendar.set(2025, Calendar.DECEMBER, 11, 0, 0, 0);
 
     // check the due date is inside the 2 seconds range
-    assertEquals(true, Math.abs(dueDateCalendar.getTime().getTime() - jobs.get(0).getDuedate().getTime()) < 2000);
+    assertEquals(true, Math.abs(dueDateCalendar.getTime().getTime() - ((TimerEntity)jobs.get(0)).getDuedate().getTime()) < 2000);
 
     // No process instances
     List<ProcessInstance> processInstances = runtimeService.createProcessInstanceQuery().list();
@@ -118,7 +119,7 @@ public class StartTimerEventRepeatWithoutEndDateTest extends PluggableActivitiTe
     // (10'th repeat after 10 dec. => dueDate must have DueDate = 20 dec.)
     dueDateCalendar = Calendar.getInstance();
     dueDateCalendar.set(2025, Calendar.DECEMBER, 20, 0, 0, 0);
-    assertEquals(true, Math.abs(dueDateCalendar.getTime().getTime() - jobs.get(0).getDuedate().getTime()) < 2000);
+    assertEquals(true, Math.abs(dueDateCalendar.getTime().getTime() - ((TimerEntity)jobs.get(0)).getDuedate().getTime()) < 2000);
 
     // ADVANCE THE CLOCK SO that all 10 repeats to be executed
     // (last execution)

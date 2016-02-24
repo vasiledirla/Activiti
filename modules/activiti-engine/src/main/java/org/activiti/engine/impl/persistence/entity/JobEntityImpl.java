@@ -39,8 +39,6 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
   protected String id;
   protected int revision;
 
-  protected Date duedate;
-
   protected String lockOwner;
   protected Date lockExpirationTime;
 
@@ -67,7 +65,6 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
     persistentState.put("lockOwner", lockOwner);
     persistentState.put("lockExpirationTime", lockExpirationTime);
     persistentState.put("retries", retries);
-    persistentState.put("duedate", duedate);
     persistentState.put("exceptionMessage", exceptionMessage);
     
     if (exceptionByteArrayRef != null) {
@@ -137,14 +134,6 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
 
   public void setRevision(int revision) {
     this.revision = revision;
-  }
-
-  public Date getDuedate() {
-    return duedate;
-  }
-
-  public void setDuedate(Date duedate) {
-    this.duedate = duedate;
   }
 
   public String getExecutionId() {

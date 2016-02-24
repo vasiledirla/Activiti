@@ -300,10 +300,6 @@ public class CommandContext {
     return processEngineConfiguration.getAsyncJobEntityManager();
   }
 
-  public GenericJobEntityManager getGenericJobEntityManager() {
-    return processEngineConfiguration.getGenericJobEntityManager();
-  }
-
   public UserEntityManager getUserEntityManager() {
     return processEngineConfiguration.getUserEntityManager();
   }
@@ -408,8 +404,8 @@ public class CommandContext {
       return getTimerJobEntityManager();
     } else if ("message".equalsIgnoreCase(jobType)) {
       return getAsyncJobEntityManager();
-    } else {
-      return getGenericJobEntityManager();
     }
+
+    return null;
   }
 }

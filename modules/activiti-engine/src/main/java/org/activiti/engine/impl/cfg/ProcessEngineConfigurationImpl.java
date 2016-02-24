@@ -194,7 +194,6 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected IdentityLinkEntityManager identityLinkEntityManager;
   protected TimerJobEntityManager timerJobEntityManager;
   protected AsyncJobEntityManager asyncJobEntityManager;
-  protected GenericJobEntityManager genericJobEntityManager;
   protected MembershipEntityManager membershipEntityManager;
   protected ModelEntityManager modelEntityManager;
   protected ProcessDefinitionEntityManager processDefinitionEntityManager;
@@ -1144,9 +1143,6 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     }
     if (asyncJobEntityManager == null) {
       asyncJobEntityManager = new AsyncJobEntityManagerImpl(this, jobDataManager);
-    }
-    if (genericJobEntityManager == null) {
-      genericJobEntityManager = new GenericJobEntityManagerImpl(this, jobDataManager);
     }
     if (membershipEntityManager == null) {
       membershipEntityManager = new MembershipEntityManagerImpl(this, membershipDataManager);
@@ -3095,15 +3091,6 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   public ProcessEngineConfigurationImpl setAsyncJobEntityManager(AsyncJobEntityManager asyncJobEntityManager) {
     this.asyncJobEntityManager = asyncJobEntityManager;
-    return this;
-  }
-
-  public GenericJobEntityManager getGenericJobEntityManager() {
-    return genericJobEntityManager;
-  }
-
-  public ProcessEngineConfigurationImpl setGenericJobEntityManager(GenericJobEntityManager genericJobEntityManager) {
-    this.genericJobEntityManager = genericJobEntityManager;
     return this;
   }
 

@@ -74,9 +74,28 @@ create table ACT_RU_EXECUTION (
     primary key (ID_)
 );
 
-create table ACT_RU_JOB (
+create table ACT_RU_ASYNC_JOB (
     ID_ nvarchar(64) NOT NULL,
-  REV_ int,
+    REV_ int,
+    TYPE_ nvarchar(255) NOT NULL,
+    LOCK_EXP_TIME_ datetime,
+    LOCK_OWNER_ nvarchar(255),
+    EXCLUSIVE_ bit,
+    EXECUTION_ID_ nvarchar(64),
+    PROCESS_INSTANCE_ID_ nvarchar(64),
+    PROC_DEF_ID_ nvarchar(64),
+    RETRIES_ int,
+    EXCEPTION_STACK_ID_ nvarchar(64),
+    EXCEPTION_MSG_ nvarchar(4000),
+    HANDLER_TYPE_ nvarchar(255),
+    HANDLER_CFG_ nvarchar(4000),
+    TENANT_ID_ nvarchar(255) default '',
+    primary key (ID_)
+);
+
+create table ACT_RU_TIMER_JOB (
+    ID_ nvarchar(64) NOT NULL,
+    REV_ int,
     TYPE_ nvarchar(255) NOT NULL,
     LOCK_EXP_TIME_ datetime,
     LOCK_OWNER_ nvarchar(255),
@@ -92,6 +111,7 @@ create table ACT_RU_JOB (
     HANDLER_TYPE_ nvarchar(255),
     HANDLER_CFG_ nvarchar(4000),
     TENANT_ID_ nvarchar(255) default '',
+    SUSPENSION_STATE_ integer,
     primary key (ID_)
 );
 
@@ -298,9 +318,14 @@ alter table ACT_RU_VARIABLE
     foreign key (BYTEARRAY_ID_) 
     references ACT_GE_BYTEARRAY (ID_);
   
-alter table ACT_RU_JOB 
-    add constraint ACT_FK_JOB_EXCEPTION 
-    foreign key (EXCEPTION_STACK_ID_) 
+alter table ACT_RU_ASYNC_JOB
+    add constraint ACT_FK_ASYNC_JOB_EXCEPTION
+    foreign key (EXCEPTION_STACK_ID_)
+    references ACT_GE_BYTEARRAY (ID_);
+
+alter table ACT_RU_TIMER_JOB
+    add constraint ACT_FK_TIMER_JOB_EXCEPTION
+    foreign key (EXCEPTION_STACK_ID_)
     references ACT_GE_BYTEARRAY (ID_);
     
 alter table ACT_RU_EVENT_SUBSCR

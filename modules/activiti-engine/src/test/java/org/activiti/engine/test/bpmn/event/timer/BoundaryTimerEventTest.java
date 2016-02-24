@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.activiti.engine.delegate.DelegateExecution;
 import org.activiti.engine.delegate.ExecutionListener;
+import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.JobQuery;
@@ -199,9 +200,9 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
 			
 			// Verify due date
 			if (previousDueDate != null) {
-				assertTrue(job.getDuedate().getTime() - previousDueDate.getTime() >= twentyFourHours);
+				assertTrue(((TimerEntity)job).getDuedate().getTime() - previousDueDate.getTime() >= twentyFourHours);
 			}
-			previousDueDate = job.getDuedate();
+			previousDueDate = ((TimerEntity)job).getDuedate();
 			
 			currentTime = new Date(currentTime.getTime() + twentyFourHours + (60 * 1000));
 			processEngineConfiguration.getClock().setCurrentTime(currentTime);

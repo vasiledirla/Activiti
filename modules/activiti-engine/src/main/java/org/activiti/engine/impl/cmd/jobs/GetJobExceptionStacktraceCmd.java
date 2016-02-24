@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package org.activiti.engine.impl.cmd;
+package org.activiti.engine.impl.cmd.jobs;
 
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.ActivitiObjectNotFoundException;
@@ -25,18 +25,12 @@ import java.io.Serializable;
  * @author Frederik Heremans
  * @author Vasile Dirla
  */
-public class GetJobExceptionStacktraceCmd extends JobCmd<String> implements Serializable {
+public abstract class GetJobExceptionStacktraceCmd extends JobCmd<String> implements Serializable {
 
   private static final long serialVersionUID = 1L;
   private String jobId;
 
-  public GetJobExceptionStacktraceCmd(String jobType, String jobId) {
-    super(jobType);
-    this.jobId = jobId;
-  }
-
   public GetJobExceptionStacktraceCmd(String jobId) {
-    super(Job.GENERIC);
     this.jobId = jobId;
   }
 
@@ -45,7 +39,7 @@ public class GetJobExceptionStacktraceCmd extends JobCmd<String> implements Seri
       throw new ActivitiIllegalArgumentException("jobId is null");
     }
 
-    JobEntity job = getJobEntityManager().findById(jobId);
+    JobEntity job = getJobEntityManager(commandContext).findById(jobId);
 
     if (job == null) {
       throw new ActivitiObjectNotFoundException("No job found with id " + jobId, Job.class);

@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.activiti.engine.impl.cmd;
+package org.activiti.engine.impl.cmd.jobs;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;

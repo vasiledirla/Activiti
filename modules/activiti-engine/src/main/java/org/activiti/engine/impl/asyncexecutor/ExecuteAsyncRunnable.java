@@ -16,7 +16,8 @@ import org.activiti.engine.ActivitiOptimisticLockingException;
 import org.activiti.engine.compatibility.Activiti5CompatibilityHandler;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
-import org.activiti.engine.impl.cmd.ExecuteAsyncJobCmd;
+import org.activiti.engine.impl.cmd.jobs.ExecuteAsyncJobCmd;
+import org.activiti.engine.impl.cmd.jobs.ExecuteTimerJobCmd;
 import org.activiti.engine.impl.cmd.LockExclusiveJobCmd;
 import org.activiti.engine.impl.cmd.UnlockExclusiveJobCmd;
 import org.activiti.engine.impl.context.Context;
@@ -26,6 +27,8 @@ import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.jobexecutor.FailedJobCommandFactory;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.MessageEntity;
+import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.impl.util.Activiti5Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +82,11 @@ public class ExecuteAsyncRunnable implements Runnable {
 
   protected void executeJob() {
     try {
-      commandExecutor.execute(new ExecuteAsyncJobCmd(job));
+      if (job instanceof MessageEntity) {
+        commandExecutor.execute(new ExecuteAsyncJobCmd(job));
+      } else if (job instanceof TimerEntity) {
+        commandExecutor.execute(new ExecuteTimerJobCmd(job));
+      }
 
     } catch (final ActivitiOptimisticLockingException e) {
 
@@ -148,11 +155,11 @@ public class ExecuteAsyncRunnable implements Runnable {
   protected void unacquireJob() {
     CommandContext commandContext = Context.getCommandContext();
     if (commandContext != null) {
-      commandContext.getGenericJobEntityManager().unacquireJob(job);
+        commandContext.getJobEntityManager(job.getJobType()).unacquireJob(job);
     } else {
       commandExecutor.execute(new Command<Void>() {
         public Void execute(CommandContext commandContext) {
-          commandContext.getGenericJobEntityManager().unacquireJob(job);
+          commandContext.getJobEntityManager(job.getJobType()).unacquireJob(job);
           return null;
         }
       });

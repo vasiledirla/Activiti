@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.activiti.engine.impl.cmd;
+package org.activiti.engine.impl.cmd.jobs;
 
 import org.activiti.bpmn.model.FlowElement;
 import org.activiti.bpmn.model.ServiceTask;
@@ -28,6 +28,8 @@ import org.activiti.engine.impl.jobexecutor.JobExecutor;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
+import org.activiti.engine.impl.persistence.entity.TimerEntity;
+import org.activiti.engine.runtime.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,24 +40,25 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 
 /**
+ * @author Saeid Mirzaei
+ * @author Joram Barrez
  * @author Vasile Dirla
  */
 
-public class TimerJobRetryCmd extends JobCmd<Object> {
+public abstract class JobRetryCmd extends JobCmd<Object> {
 
-  private static final Logger log = LoggerFactory.getLogger(TimerJobRetryCmd.class.getName());
+  private static final Logger log = LoggerFactory.getLogger(JobRetryCmd.class.getName());
 
   protected String jobId;
   protected Throwable exception;
 
-  public TimerJobRetryCmd(String jobType, String jobId, Throwable exception) {
-    super(jobType);
+  public JobRetryCmd(String jobId, Throwable exception) {
     this.jobId = jobId;
     this.exception = exception;
   }
 
   public Object executeCommand(CommandContext commandContext) {
-    JobEntity job = getJobEntityManager().findById(jobId);
+    JobEntity job = getJobEntityManager(commandContext).findById(jobId);
     if (job == null) {
       return null;
     }
@@ -76,12 +79,22 @@ public class TimerJobRetryCmd extends JobCmd<Object> {
       job.setRetries(job.getRetries() - 1);
       job.setLockOwner(null);
       job.setLockExpirationTime(null);
-      if (job.getDuedate() == null || job instanceof MessageEntity) {
+
+      if (job instanceof MessageEntity) {
+        job.setLockExpirationTime(calculateDueDate(commandContext, processEngineConfig.getAsyncFailedJobWaitTime(), null));
+      }
+
+      if (job instanceof TimerEntity && ((TimerEntity) job).getDuedate() == null) {
         // add wait time for failed async job
-        job.setDuedate(calculateDueDate(commandContext, processEngineConfig.getAsyncFailedJobWaitTime(), null));
+        ((TimerEntity) job).setDuedate(calculateDueDate(commandContext, processEngineConfig.getAsyncFailedJobWaitTime(), null));
       } else {
-        // add default wait time for failed job
-        job.setDuedate(calculateDueDate(commandContext, processEngineConfig.getDefaultFailedJobWaitTime(), job.getDuedate()));
+        if (job instanceof MessageEntity) {
+          job.setLockExpirationTime(calculateDueDate(commandContext, processEngineConfig.getDefaultFailedJobWaitTime(), job.getLockExpirationTime()));
+        } else if (job instanceof TimerEntity) {
+          // add default wait time for failed job
+          ((TimerEntity) job).setDuedate(calculateDueDate(commandContext, processEngineConfig.getDefaultFailedJobWaitTime(), ((TimerEntity) job).getDuedate()));
+        }
+
       }
 
     } else {
@@ -89,7 +102,11 @@ public class TimerJobRetryCmd extends JobCmd<Object> {
         DurationHelper durationHelper = new DurationHelper(failedJobRetryTimeCycleValue, processEngineConfig.getClock());
         job.setLockOwner(null);
         job.setLockExpirationTime(null);
-        job.setDuedate(durationHelper.getDateAfter());
+        if (job instanceof TimerEntity) {
+          ((TimerEntity) job).setDuedate(durationHelper.getDateAfter());
+        } else if (job instanceof MessageEntity) {
+          job.setLockExpirationTime(durationHelper.getDateAfter());
+        }
 
         if (job.getExceptionMessage() == null) { // is it the first exception
           log.debug("Applying JobRetryStrategy '" + failedJobRetryTimeCycleValue + "' the first time for job " + job.getId() + " with " + durationHelper

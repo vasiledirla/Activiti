@@ -22,7 +22,7 @@ import java.util.UUID;
 
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ActivitiIllegalArgumentException;
-import org.activiti.engine.impl.cmd.CancelAsyncJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.CancelAsyncJobsCmd;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;

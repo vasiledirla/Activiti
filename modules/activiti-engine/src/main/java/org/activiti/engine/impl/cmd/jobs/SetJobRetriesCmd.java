@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package org.activiti.engine.impl.cmd;
+package org.activiti.engine.impl.cmd.jobs;
 
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.ActivitiObjectNotFoundException;
@@ -29,15 +29,14 @@ import java.io.Serializable;
  * @author Falko Menge
  * @author Vasile Dirla
  */
-public class SetJobRetriesCmd extends JobCmd<Void> implements Serializable {
+public abstract class SetJobRetriesCmd extends JobCmd<Void> implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
   private final String jobId;
   private final int retries;
 
-  public SetJobRetriesCmd(String jobType, String jobId, int retries) {
-    super(jobType);
+  public SetJobRetriesCmd(String jobId, int retries) {
     if (jobId == null || jobId.length() < 1) {
       throw new ActivitiIllegalArgumentException("The job id is mandatory, but '" + jobId + "' has been provided.");
     }
@@ -48,13 +47,12 @@ public class SetJobRetriesCmd extends JobCmd<Void> implements Serializable {
     this.retries = retries;
   }
 
-
   public SetJobRetriesCmd(Job job, int retries) {
-    this(job.getJobType(), job.getId(), retries);
+    this(job.getId(), retries);
   }
 
   public Void executeCommand(CommandContext commandContext) {
-    JobEntity job = getJobEntityManager().findById(jobId);
+    JobEntity job = getJobEntityManager(commandContext).findById(jobId);
     if (job != null) {
 
       if (Activiti5Util.isActiviti5ProcessDefinitionId(commandContext, job.getProcessDefinitionId())) {

@@ -17,7 +17,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import org.activiti.engine.impl.cmd.AcquireJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.AcquireJobsCmd;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;

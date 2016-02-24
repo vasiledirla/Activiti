@@ -18,7 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import org.activiti.engine.impl.cmd.CancelTimerJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.CancelTimerJobsCmd;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.impl.util.IoUtil;

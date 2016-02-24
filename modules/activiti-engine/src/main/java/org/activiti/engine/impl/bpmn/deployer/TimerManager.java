@@ -21,7 +21,7 @@ import org.activiti.bpmn.model.Process;
 import org.activiti.bpmn.model.StartEvent;
 import org.activiti.bpmn.model.TimerEventDefinition;
 import org.activiti.engine.ProcessEngineConfiguration;
-import org.activiti.engine.impl.cmd.CancelTimerJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.CancelTimerJobsCmd;
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.jobexecutor.TimerEventHandler;
 import org.activiti.engine.impl.jobexecutor.TimerStartEventJobHandler;

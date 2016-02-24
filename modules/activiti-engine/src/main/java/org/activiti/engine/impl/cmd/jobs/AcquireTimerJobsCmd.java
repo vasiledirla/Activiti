@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.activiti.engine.impl.cmd;
+package org.activiti.engine.impl.cmd.jobs;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -18,11 +18,10 @@ import java.util.List;
 
 import org.activiti.engine.impl.Page;
 import org.activiti.engine.impl.asyncexecutor.AcquiredJobEntities;
-import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.JobEntityManager;
 import org.activiti.engine.impl.persistence.entity.TimerJobEntityManager;
-import org.activiti.engine.runtime.Job;
 
 /**
  * @author Tijs Rademakers
@@ -35,7 +34,6 @@ public class AcquireTimerJobsCmd extends JobCmd<AcquiredJobEntities> {
   private final int maxJobsPerAcquisition;
 
   public AcquireTimerJobsCmd(String lockOwner, int lockTimeInMillis, int maxJobsPerAcquisition) {
-    super(Job.TIMER);
     this.lockOwner = lockOwner;
     this.lockTimeInMillis = lockTimeInMillis;
     this.maxJobsPerAcquisition = maxJobsPerAcquisition;
@@ -43,7 +41,7 @@ public class AcquireTimerJobsCmd extends JobCmd<AcquiredJobEntities> {
 
   public AcquiredJobEntities executeCommand(CommandContext commandContext) {
     AcquiredJobEntities acquiredJobs = new AcquiredJobEntities();
-    List<JobEntity> jobs = ((TimerJobEntityManager)getJobEntityManager()).findNextTimerJobsToExecute(new Page(0, maxJobsPerAcquisition));
+    List<JobEntity> jobs = ((TimerJobEntityManager)getJobEntityManager(commandContext)).findNextTimerJobsToExecute(new Page(0, maxJobsPerAcquisition));
 
     for (JobEntity job : jobs) {
       if (job != null && !acquiredJobs.contains(job.getId())) {
@@ -53,6 +51,11 @@ public class AcquireTimerJobsCmd extends JobCmd<AcquiredJobEntities> {
     }
 
     return acquiredJobs;
+  }
+
+  @Override
+  public JobEntityManager getJobEntityManager(CommandContext commandContext) {
+    return commandContext.getTimerJobEntityManager();
   }
 
   protected void lockJob(CommandContext commandContext, JobEntity job, String lockOwner, int lockTimeInMillis) {

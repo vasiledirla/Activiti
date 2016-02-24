@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.activiti.engine.impl.Page;
 import org.activiti.engine.impl.asyncexecutor.AcquiredJobEntities;
-import org.activiti.engine.impl.cmd.AcquireTimerJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.AcquireTimerJobsCmd;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
@@ -102,7 +102,7 @@ public class ProcessInstanceSuspensionTest extends PluggableActivitiTestCase {
     processEngineConfiguration.getCommandExecutor().execute(new Command<Void>() {
       public Void execute(CommandContext commandContext) {
         Date currentTime = processEngineConfiguration.getClock().getCurrentTime();
-        commandContext.getTimerJobEntityManager().findById(job.getId()).setDuedate(new Date(currentTime.getTime() - 10000));
+        ((TimerEntity)commandContext.getTimerJobEntityManager().findById(job.getId())).setDuedate(new Date(currentTime.getTime() - 10000));
         return null;
       }
 

@@ -14,11 +14,13 @@ package org.activiti.engine.impl.jobexecutor;
 
 import java.util.List;
 
-import org.activiti.engine.impl.cmd.ExecuteJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.ExecuteAsyncJobsCmd;
+import org.activiti.engine.impl.cmd.jobs.ExecuteTimerJobsCmd;
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.activiti.engine.runtime.Job;
+import org.activiti.engine.impl.persistence.entity.MessageEntity;
+import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +69,11 @@ public class ExecuteJobsRunnable implements Runnable {
 
         JobEntity currentJob = currentProcessorJobQueue.remove(0);
         try {
-          commandExecutor.execute(new ExecuteJobsCmd(currentJob.getJobType(), currentJob.getId()));
+          if (currentJob instanceof MessageEntity) {
+            commandExecutor.execute(new ExecuteAsyncJobsCmd(currentJob.getId()));
+          } else if (currentJob instanceof TimerEntity) {
+            commandExecutor.execute(new ExecuteTimerJobsCmd(currentJob.getId()));
+          }
         } catch (Throwable e) {
           log.error("exception during job execution: {}", e.getMessage(), e);
         } finally {
@@ -92,7 +98,11 @@ public class ExecuteJobsRunnable implements Runnable {
 
         JobEntity currentJob = currentProcessorJobQueue.remove(0);
         try {
-          commandExecutor.execute(new ExecuteJobsCmd(currentJob.getJobType(), currentJob.getId()));
+          if (currentJob instanceof MessageEntity) {
+            commandExecutor.execute(new ExecuteAsyncJobsCmd(currentJob.getId()));
+          } else if (currentJob instanceof TimerEntity) {
+            commandExecutor.execute(new ExecuteTimerJobsCmd(currentJob.getId()));
+          }
         } catch (Throwable e) {
           log.error("exception during job execution: {}", e.getMessage(), e);
         } finally {

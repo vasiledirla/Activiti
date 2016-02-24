@@ -5,6 +5,8 @@ import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.MessageEntity;
+import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,7 +134,11 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
   }
   
   protected void unacquireJob(final JobEntity job, CommandContext commandContext) {
-    commandContext.getGenericJobEntityManager().unacquireJob(job);
+    if (job instanceof MessageEntity) {
+      commandContext.getAsyncJobEntityManager().unacquireJob(job);
+    } else if (job instanceof TimerEntity) {
+      commandContext.getTimerJobEntityManager().unacquireJob(job);
+    }
   }
   
   /** Starts the async executor */
@@ -154,9 +160,9 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
 
     while (temporaryJobQueue.isEmpty() == false) {
       JobEntity job = temporaryJobQueue.pop();
-      if (job.getLockExpirationTime() != null) { //workaround -- BAD idea todo: shoudl change this
+//      if (job.getLockExpirationTime() != null) { //workaround -- BAD idea todo: shoudl change this
         executeJob(job);
-      }
+//      }
     }
     isActive = true;
   }

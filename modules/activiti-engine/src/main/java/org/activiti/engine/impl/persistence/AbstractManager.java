@@ -175,8 +175,5 @@ public abstract class AbstractManager {
   protected AsyncJobEntityManager getAsyncJobEntityManager() {
     return getProcessEngineConfiguration().getAsyncJobEntityManager();
   }
-  protected GenericJobEntityManager getGenericJobEntityManager() {
-    return getProcessEngineConfiguration().getGenericJobEntityManager();
-  }
 
 }

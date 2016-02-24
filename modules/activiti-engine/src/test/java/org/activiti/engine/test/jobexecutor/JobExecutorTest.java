@@ -22,10 +22,12 @@ import java.util.TreeSet;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
+import org.activiti.engine.impl.persistence.entity.AsyncJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.TimerJobEntityManager;
 
 /**
  * @author Tom Baeyens
+ * @author Vasile Dirla
  */
 public class JobExecutorTest extends JobExecutorTestCase {
 
@@ -33,15 +35,16 @@ public class JobExecutorTest extends JobExecutorTestCase {
     CommandExecutor commandExecutor = processEngineConfiguration.getCommandExecutor();
     commandExecutor.execute(new Command<Void>() {
       public Void execute(CommandContext commandContext) {
-        TimerJobEntityManager jobManager = commandContext.getTimerJobEntityManager();
-        jobManager.send(createTweetMessage("message-one"));
-        jobManager.send(createTweetMessage("message-two"));
-        jobManager.send(createTweetMessage("message-three"));
-        jobManager.send(createTweetMessage("message-four"));
+        AsyncJobEntityManager asyncJobManager = commandContext.getAsyncJobEntityManager();
+        TimerJobEntityManager timerJobManager = commandContext.getTimerJobEntityManager();
+        asyncJobManager.send(createTweetMessage("message-one"));
+        asyncJobManager.send(createTweetMessage("message-two"));
+        asyncJobManager.send(createTweetMessage("message-three"));
+        asyncJobManager.send(createTweetMessage("message-four"));
 
-        jobManager.schedule(createTweetTimer("timer-one", new Date()));
-        jobManager.schedule(createTweetTimer("timer-one", new Date()));
-        jobManager.schedule(createTweetTimer("timer-two", new Date()));
+        timerJobManager.schedule(createTweetTimer("timer-one", new Date()));
+        timerJobManager.schedule(createTweetTimer("timer-one", new Date()));
+        timerJobManager.schedule(createTweetTimer("timer-two", new Date()));
         return null;
       }
     });

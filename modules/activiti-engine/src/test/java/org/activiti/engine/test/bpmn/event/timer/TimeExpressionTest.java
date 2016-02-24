@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
+import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.ProcessInstance;
@@ -29,7 +30,7 @@ public class TimeExpressionTest extends PluggableActivitiTestCase {
 
     List<Job> jobs = managementService.createJobQuery().executable().list();
     assertEquals(1, jobs.size());
-    return jobs.get(0).getDuedate();
+    return ((TimerEntity)jobs.get(0)).getDuedate();
   }
 
   @Deployment(resources = { "org/activiti/engine/test/bpmn/event/timer/IntermediateTimerEventTest.testExpression.bpmn20.xml" })
