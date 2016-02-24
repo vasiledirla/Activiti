@@ -160,9 +160,7 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
 
     while (temporaryJobQueue.isEmpty() == false) {
       JobEntity job = temporaryJobQueue.pop();
-//      if (job.getLockExpirationTime() != null) { //workaround -- BAD idea todo: shoudl change this
         executeJob(job);
-//      }
     }
     isActive = true;
   }
