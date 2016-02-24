@@ -62,31 +62,14 @@ public class JobResource {
     response.setStatus(HttpStatus.NO_CONTENT.value());
   }
 
-  @RequestMapping(value = "/management/async-jobs/{jobId}", method = RequestMethod.POST)
-  public void executeAsyncJobAction(@PathVariable String jobId, @RequestBody RestActionRequest actionRequest, HttpServletResponse response) {
+  @RequestMapping(value = "/management/jobs/{jobId}", method = RequestMethod.POST)
+  public void executeJobAction(@PathVariable String jobId, @RequestBody RestActionRequest actionRequest, HttpServletResponse response) {
     if (actionRequest == null || !EXECUTE_ACTION.equals(actionRequest.getAction())) {
       throw new ActivitiIllegalArgumentException("Invalid action, only 'execute' is supported.");
     }
 
     try {
-      managementService.executeAsyncJob(jobId);
-    } catch (ActivitiObjectNotFoundException aonfe) {
-      // Re-throw to have consistent error-messaging acrosse REST-api
-      throw new ActivitiObjectNotFoundException("Could not find a job with id '" + jobId + "'.", Job.class);
-    }
-
-    response.setStatus(HttpStatus.NO_CONTENT.value());
-  }
-
-
-  @RequestMapping(value = "/management/timer-jobs/{jobId}", method = RequestMethod.POST)
-  public void executeTimerJobAction(@PathVariable String jobId, @RequestBody RestActionRequest actionRequest, HttpServletResponse response) {
-    if (actionRequest == null || !EXECUTE_ACTION.equals(actionRequest.getAction())) {
-      throw new ActivitiIllegalArgumentException("Invalid action, only 'execute' is supported.");
-    }
-
-    try {
-      managementService.executeTimerJob(jobId);
+      managementService.executeJob(jobId);
     } catch (ActivitiObjectNotFoundException aonfe) {
       // Re-throw to have consistent error-messaging acrosse REST-api
       throw new ActivitiObjectNotFoundException("Could not find a job with id '" + jobId + "'.", Job.class);
