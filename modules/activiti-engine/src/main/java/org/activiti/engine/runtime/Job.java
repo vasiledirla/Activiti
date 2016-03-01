@@ -35,6 +35,17 @@ public interface Job {
   String getProcessInstanceId();
 
   /**
+   * Handle the suspension state of the job
+   *
+   * @return
+   */
+  boolean isSuspended();
+
+  int getSuspensionState();
+
+  void setSuspensionState(int suspensionState);
+
+  /**
    * Returns the specific execution on which the job was created.
    */
   String getExecutionId();

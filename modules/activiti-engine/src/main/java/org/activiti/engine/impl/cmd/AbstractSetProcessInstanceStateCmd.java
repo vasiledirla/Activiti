@@ -12,9 +12,6 @@
  */
 package org.activiti.engine.impl.cmd;
 
-import java.util.Collection;
-import java.util.List;
-
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.ActivitiObjectNotFoundException;
@@ -26,6 +23,9 @@ import org.activiti.engine.impl.persistence.entity.SuspensionState.SuspensionSta
 import org.activiti.engine.impl.persistence.entity.TaskEntity;
 import org.activiti.engine.impl.util.Activiti5Util;
 import org.activiti.engine.runtime.Execution;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Daniel Meyer
@@ -53,7 +53,7 @@ public abstract class AbstractSetProcessInstanceStateCmd implements Command<Void
     if (!executionEntity.isProcessInstanceType()) {
       throw new ActivitiException("Cannot set suspension state for execution '" + executionId + "': not a process instance.");
     }
-    
+
     if (Activiti5Util.isActiviti5ProcessDefinitionId(commandContext, executionEntity.getProcessDefinitionId())) {
       if (getNewState() == SuspensionState.ACTIVE) {
         commandContext.getProcessEngineConfiguration().getActiviti5CompatibilityHandler().activateProcessInstance(executionId);
@@ -65,11 +65,21 @@ public abstract class AbstractSetProcessInstanceStateCmd implements Command<Void
 
     SuspensionStateUtil.setSuspensionState(executionEntity, getNewState());
 
+    // All the jobs are suspended for the current execution
+    commandContext.getAsyncJobEntityManager().updateSuspensionStateForJobsByExecution(executionId, getNewState());
+    commandContext.getTimerJobEntityManager().updateSuspensionStateForJobsByExecution(executionId, getNewState());
+
+
     // All child executions are suspended
     Collection<ExecutionEntity> childExecutions = commandContext.getExecutionEntityManager().findChildExecutionsByProcessInstanceId(executionId);
     for (ExecutionEntity childExecution : childExecutions) {
       if (!childExecution.getId().equals(executionId)) {
         SuspensionStateUtil.setSuspensionState(childExecution, getNewState());
+
+        // All the jobs are suspended for the child execution
+        commandContext.getAsyncJobEntityManager().updateSuspensionStateForJobsByExecution(childExecution.getId(), getNewState());
+        commandContext.getTimerJobEntityManager().updateSuspensionStateForJobsByExecution(childExecution.getId(), getNewState());
+
       }
     }
 

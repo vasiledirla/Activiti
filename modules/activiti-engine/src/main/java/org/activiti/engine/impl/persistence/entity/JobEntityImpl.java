@@ -44,6 +44,8 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
 
   protected String executionId;
   protected String processInstanceId;
+  protected int suspensionState = SuspensionState.ACTIVE.getStateCode();
+
   protected String processDefinitionId;
 
   protected boolean isExclusive = DEFAULT_EXCLUSIVE;
@@ -66,6 +68,7 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
     persistentState.put("lockExpirationTime", lockExpirationTime);
     persistentState.put("retries", retries);
     persistentState.put("exceptionMessage", exceptionMessage);
+    persistentState.put("suspensionState", this.suspensionState);
     
     if (exceptionByteArrayRef != null) {
       persistentState.put("exceptionByteArrayId", exceptionByteArrayRef.getId());
@@ -75,6 +78,18 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
   }
 
   // getters and setters ////////////////////////////////////////////////////////
+
+  public int getSuspensionState() {
+    return suspensionState;
+  }
+
+  public void setSuspensionState(int suspensionState) {
+    this.suspensionState = suspensionState;
+  }
+
+  public boolean isSuspended() {
+    return suspensionState == SuspensionState.SUSPENDED.getStateCode();
+  }
 
   public void setExecution(ExecutionEntity execution) {
     executionId = execution.getId();

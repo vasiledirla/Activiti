@@ -20,6 +20,12 @@
     </delete>
 
 
+    <update id="updateSuspensionStateForTimerJobsByExecution" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject">
+        update ${prefix}ACT_RU_TIMER_JOB
+        set SUSPENSION_STATE_ = #{newState, jdbcType=INTEGER}
+        where PROCESS_INSTANCE_ID_ = #{pid, jdbcType=INTEGER};
+    </update>
+
     <!-- JOB RESULTMAP (FOR TIMER AND MESSAGE) -->
 
     <resultMap id="timerJobResultMap" type="org.activiti.engine.impl.persistence.entity.TimerEntityImpl">
@@ -39,6 +45,7 @@
         <result property="tenantId" column="TENANT_ID_" jdbcType="VARCHAR"/>
         <result property="duedate" column="DUEDATE_" jdbcType="TIMESTAMP"/>
         <result property="repeat" column="REPEAT_" jdbcType="VARCHAR"/>
+        <result property="suspensionState" column="SUSPENSION_STATE_" jdbcType="INTEGER"/>
     </resultMap>
 
 
@@ -47,29 +54,42 @@
     select 
       RES.* ${limitBetween}
     from ${prefix}ACT_RU_TIMER_JOB RES
-      LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
+
     where (RES.RETRIES_ &gt; 0)
       and (RES.DUEDATE_ is null or RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
       and (RES.LOCK_OWNER_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
       and (
           (RES.EXECUTION_ID_ is null)
           or 
-          (PI.SUSPENSION_STATE_ = 1)
+          (RES.SUSPENSION_STATE_ = 1)
       )
     ${limitAfter}     
   </select>
 
 
     <sql id="selectTimerJobByQueryCriteriaSql">
-        select TIMER_RES.ID_, TIMER_RES.REV_ , LOCK_OWNER_, LOCK_EXP_TIME_,
-        EXCLUSIVE_, EXECUTION_ID_,
-        PROCESS_INSTANCE_ID_, TIMER_RES.PROC_DEF_ID_, RETRIES_,
-        EXCEPTION_STACK_ID_, EXCEPTION_MSG_, HANDLER_TYPE_, HANDLER_CFG_, TIMER_RES.TENANT_ID_, TYPE_,
+        select
+        TIMER_RES.ID_,
+        TIMER_RES.REV_ ,
+        TIMER_RES.LOCK_OWNER_,
+        TIMER_RES.LOCK_EXP_TIME_,
+        TIMER_RES.EXCLUSIVE_,
+        TIMER_RES.EXECUTION_ID_,
+        TIMER_RES.PROCESS_INSTANCE_ID_,
+        TIMER_RES.PROC_DEF_ID_,
+        TIMER_RES.RETRIES_,
+        TIMER_RES.EXCEPTION_STACK_ID_,
+        TIMER_RES.EXCEPTION_MSG_,
+        TIMER_RES.HANDLER_TYPE_,
+        TIMER_RES.HANDLER_CFG_,
+        TIMER_RES.TENANT_ID_,
+        TIMER_RES.TYPE_,
+        TIMER_RES.SUSPENSION_STATE_,
+        TIMER_RES.DUEDATE_,
+        TIMER_RES.REPEAT_
 
-        DUEDATE_, REPEAT_ from ${prefix}ACT_RU_TIMER_JOB TIMER_RES
-        <if test="executable">
-            LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = TIMER_RES.PROCESS_INSTANCE_ID_
-        </if>
+        from ${prefix}ACT_RU_TIMER_JOB TIMER_RES
+
         <where>
             <if test="id != null">
                 TIMER_RES.ID_ = #{id}
@@ -95,7 +115,7 @@
                 and (
                 (TIMER_RES.EXECUTION_ID_ is null)
                 or
-                (PI.SUSPENSION_STATE_ = 1)
+                (TIMER_RES.SUSPENSION_STATE_ = 1)
                 )
             </if>
 
@@ -150,6 +170,7 @@
             REPEAT_,
             HANDLER_TYPE_,
             HANDLER_CFG_,
+            SUSPENSION_STATE_,
             TENANT_ID_)
     values (#{id, jdbcType=VARCHAR},
             1,
@@ -167,6 +188,7 @@
             #{repeat, jdbcType=VARCHAR},
             #{jobHandlerType, jdbcType=VARCHAR},
             #{jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{suspensionState, jdbcType=INTEGER},
             #{tenantId, jdbcType=VARCHAR}
     )
   </insert>
@@ -189,6 +211,7 @@
         REPEAT_,
         HANDLER_TYPE_,
         HANDLER_CFG_,
+        SUSPENSION_STATE_,
         TENANT_ID_) VALUES
         <foreach collection="list" item="job" index="index" separator=",">
             (#{job.id, jdbcType=VARCHAR},
@@ -207,6 +230,7 @@
             #{job.repeat, jdbcType=VARCHAR},
             #{job.jobHandlerType, jdbcType=VARCHAR},
             #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{job.suspensionState, jdbcType=INTEGER},
             #{job.tenantId, jdbcType=VARCHAR})
         </foreach>
     </insert>
@@ -231,6 +255,7 @@
             REPEAT_,
             HANDLER_TYPE_,
             HANDLER_CFG_,
+            SUSPENSION_STATE_,
             TENANT_ID_) VALUES
             (#{job.id, jdbcType=VARCHAR},
             1,
@@ -248,6 +273,7 @@
             #{job.repeat, jdbcType=VARCHAR},
             #{job.jobHandlerType, jdbcType=VARCHAR},
             #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{job.suspensionState, jdbcType=INTEGER},
             #{job.tenantId, jdbcType=VARCHAR})
         </foreach>
         SELECT * FROM dual
@@ -275,7 +301,7 @@
     <select id="selectUnlockedTimersByDuedate" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="timerJobResultMap">
     select RES.*
     from ${prefix}ACT_RU_TIMER_JOB RES
-    LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
+
     where (RES.TYPE_ = 'timer')
       and (RES.DUEDATE_ &lt; #{parameter, jdbcType=TIMESTAMP})
       and (RES.LOCK_OWNER_ is null or RES.LOCK_EXP_TIME_ &lt; #{parameter, jdbcType=TIMESTAMP})
@@ -283,7 +309,7 @@
       and (
         (RES.EXECUTION_ID_ is null)
         or 
-        (PI.SUSPENSION_STATE_ = 1)    
+        (RES.SUSPENSION_STATE_ = 1)
       )
     order by DUEDATE_
   </select>
@@ -292,14 +318,14 @@
             resultMap="timerJobResultMap">
     select RES.*
     from ${prefix}ACT_RU_TIMER_JOB RES
-    LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
-    where (RES.TYPE_ = 'timer')
+
+    where
     and (RES.DUEDATE_ &lt; #{parameter, jdbcType=TIMESTAMP})
     and (NVL(RES.LOCK_OWNER_, 'UNDEF')='UNDEF' OR RES.LOCK_EXP_TIME_ &lt; #{parameter, jdbcType=TIMESTAMP})
     and (RES.RETRIES_ &gt; 0)
     and (NVL(RES.EXECUTION_ID_ , 'UNDEF')='UNDEF' OR
          exists (select 1 from ${prefix}ACT_RU_EXECUTION PI where PI.ID_ =
-    RES.PROCESS_INSTANCE_ID_ and PI.SUSPENSION_STATE_ = 1)
+    RES.PROCESS_INSTANCE_ID_ and RES.SUSPENSION_STATE_ = 1)
     )
     order by DUEDATE_
   </select>
@@ -325,7 +351,7 @@
         EXCLUSIVE_, EXECUTION_ID_,
         PROCESS_INSTANCE_ID_, PROC_DEF_ID_, RETRIES_,
         EXCEPTION_STACK_ID_, EXCEPTION_MSG_, HANDLER_TYPE_, HANDLER_CFG_, TENANT_ID_, TYPE_,
-
+        SUSPENSION_STATE_,
         DUEDATE_, REPEAT_
 
         from ${prefix}ACT_RU_TIMER_JOB TIMER_J
@@ -400,6 +426,7 @@
         TIMER_J.HANDLER_CFG_,
         TIMER_J.TENANT_ID_,
         TIMER_J.TYPE_,
+        TIMER_J.SUSPENSION_STATE_,
 
         TIMER_J.DUEDATE_,
         TIMER_J.REPEAT_
@@ -428,6 +455,7 @@
         TIMER_J.HANDLER_CFG_,
         TIMER_J.TENANT_ID_,
         TIMER_J.TYPE_,
+        TIMER_J.SUSPENSION_STATE_,
 
         TIMER_J.DUEDATE_,
         TIMER_J.REPEAT_
@@ -438,7 +466,8 @@
         and P.TENANT_ID_ = #{parameter.tenantId}
     </select>
 
-    <select id="selectTimerJobByTypeAndProcessDefinitionKeyNoTenantId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="timerJobResultMap">
+    <select id="selectTimerJobByTypeAndProcessDefinitionKeyNoTenantId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject"
+            resultMap="timerJobResultMap">
         select
         TIMER_J.ID_,
         TIMER_J.REV_ ,
@@ -455,6 +484,7 @@
         TIMER_J.HANDLER_CFG_,
         TIMER_J.TENANT_ID_,
         TIMER_J.TYPE_,
+        TIMER_J.SUSPENSION_STATE_,
 
         TIMER_J.DUEDATE_,
         TIMER_J.REPEAT_
@@ -466,7 +496,8 @@
         and (P.TENANT_ID_ = ''  or P.TENANT_ID_ is null)
     </select>
 
-    <select id="selectTimerJobsByTypeAndProcessDefinitionIds" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="timerJobResultMap">
+    <select id="selectTimerJobsByTypeAndProcessDefinitionIds" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject"
+            resultMap="timerJobResultMap">
 
         select
         TIMER_J.ID_,
@@ -484,6 +515,7 @@
         TIMER_J.HANDLER_CFG_,
         TIMER_J.TENANT_ID_,
         TIMER_J.TYPE_,
+        TIMER_J.SUSPENSION_STATE_,
 
         TIMER_J.DUEDATE_,
         TIMER_J.REPEAT_
@@ -517,6 +549,7 @@
         TIMER_J.HANDLER_CFG_,
         TIMER_J.TENANT_ID_,
         TIMER_J.TYPE_,
+        TIMER_J.SUSPENSION_STATE_,
 
         TIMER_J.DUEDATE_,
         TIMER_J.REPEAT_

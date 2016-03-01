@@ -26,6 +26,7 @@ import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntityImpl;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
 import org.activiti.engine.impl.persistence.entity.MessageEntityImpl;
+import org.activiti.engine.impl.persistence.entity.SuspensionState;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntityImpl;
 import org.activiti.engine.impl.persistence.entity.data.AbstractDataManager;
@@ -291,6 +292,24 @@ public class MybatisJobDataManager extends AbstractDataManager<JobEntity> implem
     params.put("id", jobId);
     params.put("dueDate", new Date(getProcessEngineConfiguration().getClock().getCurrentTime().getTime()));
     getDbSqlSession().update("unacquireTimerJob", params);
+  }
+
+
+  @Override
+  public void updateSuspensionStateForAsyncJobsByExecution(String executionId, SuspensionState newState) {
+    Map<String, Object> params = new HashMap<String, Object>(2);
+    params.put("pid", executionId);
+    params.put("newState", newState.getStateCode());
+    getDbSqlSession().update("updateSuspensionStateForAsyncJobsByExecution", params);
+  }
+
+
+  @Override
+  public void updateSuspensionStateForTimerJobsByExecution(String executionId, SuspensionState newState) {
+    Map<String, Object> params = new HashMap<String, Object>(2);
+    params.put("pid", executionId);
+    params.put("newState", newState.getStateCode());
+    getDbSqlSession().update("updateSuspensionStateForTimerJobsByExecution", params);
   }
 
 }

@@ -19,6 +19,7 @@ import org.activiti.engine.impl.JobQueryImpl;
 import org.activiti.engine.impl.Page;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
+import org.activiti.engine.impl.persistence.entity.SuspensionState;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.runtime.Job;
 
@@ -85,4 +86,7 @@ public interface JobDataManager extends DataManager<JobEntity> {
 
   void unacquireAsyncJob(String jobId);
 
+  void updateSuspensionStateForAsyncJobsByExecution(String executionId, SuspensionState newState);
+
+  void updateSuspensionStateForTimerJobsByExecution(String executionId, SuspensionState newState);
 }

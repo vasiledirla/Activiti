@@ -51,4 +51,6 @@ public interface JobEntityManager extends EntityManager<JobEntity> {
   
   void unacquireJob(Job job);
 
+  void updateSuspensionStateForJobsByExecution(String executionId, SuspensionState newState);
+
 }

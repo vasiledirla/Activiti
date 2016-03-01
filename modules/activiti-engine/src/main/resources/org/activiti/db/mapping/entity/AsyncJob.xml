@@ -23,6 +23,7 @@
         <result property="jobHandlerType" column="HANDLER_TYPE_" jdbcType="VARCHAR"/>
         <result property="jobHandlerConfiguration" column="HANDLER_CFG_" jdbcType="VARCHAR"/>
         <result property="tenantId" column="TENANT_ID_" jdbcType="VARCHAR"/>
+        <result property="suspensionState" column="SUSPENSION_STATE_" jdbcType="INTEGER"/>
     </resultMap>
 
     <delete id="deleteMessage" parameterType="org.activiti.engine.impl.persistence.entity.JobEntityImpl">
@@ -36,6 +37,12 @@
         </foreach>
     </delete>
 
+
+    <update id="updateSuspensionStateForAsyncJobsByExecution" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject">
+        update ${prefix}ACT_RU_ASYNC_JOB
+        set SUSPENSION_STATE_ = #{newState, jdbcType=INTEGER}
+        where PROCESS_INSTANCE_ID_ = #{pid, jdbcType=INTEGER};
+    </update>
 
     <!-- JOB UPDATE STATEMENTS -->
     <update id="updateAsyncJobTenantIdForDeployment" parameterType="java.util.Map">
@@ -78,14 +85,14 @@
         select
         RES.* ${limitBetween}
         from ${prefix}ACT_RU_ASYNC_JOB RES
-        LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
+
         where RES.RETRIES_ &gt; 0
 
         and (RES.LOCK_EXP_TIME_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
         and (
         (RES.EXECUTION_ID_ is null)
         or
-        (PI.SUSPENSION_STATE_ = 1)
+        (RES.SUSPENSION_STATE_ = 1)
         )
         ${limitAfter}
     </select>
@@ -110,6 +117,7 @@
         EXCEPTION_MSG_,
         HANDLER_TYPE_,
         HANDLER_CFG_,
+        SUSPENSION_STATE_,
         TENANT_ID_) VALUES
         <foreach collection="list" item="job" index="index" separator=",">
             (#{job.id, jdbcType=VARCHAR},
@@ -126,6 +134,7 @@
             #{job.exceptionMessage, jdbcType=VARCHAR},
             #{job.jobHandlerType, jdbcType=VARCHAR},
             #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{job.suspensionState, jdbcType=INTEGER},
             #{job.tenantId, jdbcType=VARCHAR})
         </foreach>
     </insert>
@@ -148,6 +157,7 @@
             EXCEPTION_MSG_,
             HANDLER_TYPE_,
             HANDLER_CFG_,
+            SUSPENSION_STATE_,
             TENANT_ID_) VALUES
             (#{job.id, jdbcType=VARCHAR},
             1,
@@ -163,6 +173,7 @@
             #{job.exceptionMessage, jdbcType=VARCHAR},
             #{job.jobHandlerType, jdbcType=VARCHAR},
             #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{job.suspensionState, jdbcType=INTEGER},
             #{job.tenantId, jdbcType=VARCHAR})
         </foreach>
         SELECT * FROM dual
@@ -184,6 +195,7 @@
         EXCEPTION_MSG_,
         HANDLER_TYPE_,
         HANDLER_CFG_,
+        SUSPENSION_STATE_,
         TENANT_ID_)
         values (#{id, jdbcType=VARCHAR},
         1,
@@ -199,6 +211,7 @@
         #{exceptionMessage, jdbcType=VARCHAR},
         #{jobHandlerType, jdbcType=VARCHAR},
         #{jobHandlerConfiguration, jdbcType=VARCHAR},
+        #{suspensionState, jdbcType=INTEGER},
         #{tenantId, jdbcType=VARCHAR}
         )
     </insert>
@@ -222,15 +235,29 @@
 
     <sql id="selectAsyncJobByQueryCriteriaSql">
 
-        select ASYNC_RES.ID_, ASYNC_RES.REV_ , ASYNC_RES.LOCK_OWNER_, ASYNC_RES.LOCK_EXP_TIME_,
-        EXCLUSIVE_, EXECUTION_ID_,
-        PROCESS_INSTANCE_ID_, ASYNC_RES.PROC_DEF_ID_, RETRIES_,
-        EXCEPTION_STACK_ID_, EXCEPTION_MSG_, HANDLER_TYPE_, HANDLER_CFG_, ASYNC_RES.TENANT_ID_, ASYNC_RES.TYPE_,
+        select
+        ASYNC_RES.ID_,
+        ASYNC_RES.REV_ ,
+        ASYNC_RES.LOCK_OWNER_,
+        ASYNC_RES.LOCK_EXP_TIME_,
+        ASYNC_RES.EXCLUSIVE_,
+        ASYNC_RES.EXECUTION_ID_,
+        ASYNC_RES.PROCESS_INSTANCE_ID_,
+        ASYNC_RES.PROC_DEF_ID_,
+        ASYNC_RES.RETRIES_,
+        ASYNC_RES.EXCEPTION_STACK_ID_,
+        ASYNC_RES.EXCEPTION_MSG_,
+        ASYNC_RES.HANDLER_TYPE_,
+        ASYNC_RES.HANDLER_CFG_,
+        ASYNC_RES.TENANT_ID_,
+        ASYNC_RES.TYPE_,
+        ASYNC_RES.SUSPENSION_STATE_,
 
-        null as DUEDATE_, null as REPEAT_ from ${prefix}ACT_RU_ASYNC_JOB ASYNC_RES
-        <if test="executable">
-            LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = ASYNC_RES.PROCESS_INSTANCE_ID_
-        </if>
+        null as DUEDATE_,
+        null as REPEAT_
+
+        from ${prefix}ACT_RU_ASYNC_JOB ASYNC_RES
+
         <where>
             <if test="id != null">
                 ASYNC_RES.ID_ = #{id}
@@ -255,7 +282,7 @@
                 and (
                 (ASYNC_RES.EXECUTION_ID_ is null)
                 or
-                (PI.SUSPENSION_STATE_ = 1)
+                (ASYNC_RES.SUSPENSION_STATE_ = 1)
                 )
             </if>
 
@@ -284,14 +311,14 @@
         RES.* ${limitBetween}
 
         from ${prefix}ACT_RU_ASYNC_JOB RES
-        LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
+
         where (RES.RETRIES_ &gt; 0)
         and (RES.DUEDATE_ is null or RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
         and (RES.LOCK_OWNER_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
         and (
         (RES.EXECUTION_ID_ is null)
         or
-        (PI.SUSPENSION_STATE_ = 1)
+        (RES.SUSPENSION_STATE_ = 1)
         )
 
         ${limitAfter}
@@ -309,7 +336,7 @@
         EXCLUSIVE_, EXECUTION_ID_,
         PROCESS_INSTANCE_ID_, PROC_DEF_ID_, RETRIES_,
         EXCEPTION_STACK_ID_, EXCEPTION_MSG_, HANDLER_TYPE_, HANDLER_CFG_, TENANT_ID_, TYPE_,
-
+        SUSPENSION_STATE_,
         null as DUEDATE_, null as REPEAT_
 
         from ${prefix}ACT_RU_ASYNC_JOB ASYNC_J
@@ -350,6 +377,7 @@
         ASYNC_J.HANDLER_CFG_,
         ASYNC_J.TENANT_ID_,
         ASYNC_J.TYPE_,
+        ASYNC_J.SUSPENSION_STATE_,
         null as DUEDATE_,
         null as REPEAT_
 
@@ -377,6 +405,7 @@
         ASYNC_J.HANDLER_CFG_,
         ASYNC_J.TENANT_ID_,
         ASYNC_J.TYPE_,
+        ASYNC_J.SUSPENSION_STATE_,
         null as DUEDATE_,
         null as REPEAT_
 
@@ -406,6 +435,7 @@
         ASYNC_J.HANDLER_CFG_,
         ASYNC_J.TENANT_ID_,
         ASYNC_J.TYPE_,
+        ASYNC_J.SUSPENSION_STATE_,
         null as DUEDATE_,
         null as REPEAT_
 
@@ -434,6 +464,7 @@
         ASYNC_J.HANDLER_CFG_,
         ASYNC_J.TENANT_ID_,
         ASYNC_J.TYPE_,
+        ASYNC_J.SUSPENSION_STATE_,
 
         null as DUEDATE_,
         null as REPEAT_
@@ -466,6 +497,8 @@
         ASYNC_J.HANDLER_CFG_,
         ASYNC_J.TENANT_ID_,
         ASYNC_J.TYPE_,
+        ASYNC_J.SUSPENSION_STATE_,
+
         null as DUEDATE_,
         null as REPEAT_
 

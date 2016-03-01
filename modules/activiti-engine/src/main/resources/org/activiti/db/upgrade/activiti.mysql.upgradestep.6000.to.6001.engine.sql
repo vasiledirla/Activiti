@@ -60,46 +60,48 @@ REFERENCES ACT_GE_BYTEARRAY (ID_);
 
 -- Migrate data from old job table to the new format
 INSERT INTO ACT_RU_ASYNC_JOB (SELECT
-                                ID_,
-                                REV_,
-                                TYPE_,
-                                GREATEST(DUEDATE_, LOCK_EXP_TIME_) AS LOCK_EXP_TIME_,
-                                LOCK_OWNER_,
-                                EXCLUSIVE_,
-                                EXECUTION_ID_,
-                                PROCESS_INSTANCE_ID_,
-                                PROC_DEF_ID_,
-                                RETRIES_,
-                                EXCEPTION_STACK_ID_,
-                                EXCEPTION_MSG_,
-                                HANDLER_TYPE_,
-                                HANDLER_CFG_,
-                                TENANT_ID_,
-                                NULL
-                              FROM ACT_RU_JOB
-                              WHERE TYPE_ LIKE 'message');
+                                JOB.ID_,
+                                JOB.REV_,
+                                JOB.TYPE_,
+                                GREATEST(JOB.DUEDATE_, JOB.LOCK_EXP_TIME_) AS LOCK_EXP_TIME_,
+                                JOB.LOCK_OWNER_,
+                                JOB.EXCLUSIVE_,
+                                JOB.EXECUTION_ID_,
+                                JOB.PROCESS_INSTANCE_ID_,
+                                JOB.PROC_DEF_ID_,
+                                JOB.RETRIES_,
+                                JOB.EXCEPTION_STACK_ID_,
+                                JOB.EXCEPTION_MSG_,
+                                JOB.HANDLER_TYPE_,
+                                JOB.HANDLER_CFG_,
+                                JOB.TENANT_ID_,
+                                PI.SUSPENSION_STATE_
+                                FROM ACT_RU_JOB JOB left JOIN ACT_RU_EXECUTION PI
+                                on pi.ID_ = JOB.PROCESS_INSTANCE_ID_
+                              WHERE JOB.TYPE_ LIKE 'message');
 
 INSERT INTO ACT_RU_TIMER_JOB (SELECT
-                                ID_,
-                                REV_,
-                                TYPE_,
-                                LOCK_EXP_TIME_,
-                                LOCK_OWNER_,
-                                EXCLUSIVE_,
-                                EXECUTION_ID_,
-                                PROCESS_INSTANCE_ID_,
-                                PROC_DEF_ID_,
-                                RETRIES_,
-                                EXCEPTION_STACK_ID_,
-                                EXCEPTION_MSG_,
-                                DUEDATE_,
-                                REPEAT_,
-                                HANDLER_TYPE_,
-                                HANDLER_CFG_,
-                                TENANT_ID_,
-                                NULL
-                              FROM ACT_RU_JOB
-                              WHERE TYPE_ LIKE 'timer');
+                                JOB.ID_,
+                                JOB.REV_,
+                                JOB.TYPE_,
+                                JOB.LOCK_EXP_TIME_,
+                                JOB.LOCK_OWNER_,
+                                JOB.EXCLUSIVE_,
+                                JOB.EXECUTION_ID_,
+                                JOB.PROCESS_INSTANCE_ID_,
+                                JOB.PROC_DEF_ID_,
+                                JOB.RETRIES_,
+                                JOB.EXCEPTION_STACK_ID_,
+                                JOB.EXCEPTION_MSG_,
+                                JOB.DUEDATE_,
+                                JOB.REPEAT_,
+                                JOB.HANDLER_TYPE_,
+                                JOB.HANDLER_CFG_,
+                                JOB.TENANT_ID_,
+                                PI.SUSPENSION_STATE_
+                                FROM ACT_RU_JOB JOB left JOIN ACT_RU_EXECUTION PI
+                                on pi.ID_ = JOB.PROCESS_INSTANCE_ID_
+                                 WHERE JOB.TYPE_ LIKE 'timer');
 
 -- Delete old table
 ALTER TABLE ACT_RU_JOB

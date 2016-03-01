@@ -21,6 +21,7 @@
         <result property="jobHandlerType" column="HANDLER_TYPE_" jdbcType="VARCHAR"/>
         <result property="jobHandlerConfiguration" column="HANDLER_CFG_" jdbcType="VARCHAR"/>
         <result property="tenantId" column="TENANT_ID_" jdbcType="VARCHAR"/>
+        <result property="suspensionState" column="SUSPENSION_STATE_" jdbcType="INTEGER"/>
         <discriminator javaType="string" column="TYPE_">
             <case value="message" resultMap="messageResultMap"/>
             <case value="timer" resultMap="timerResultMap"/>

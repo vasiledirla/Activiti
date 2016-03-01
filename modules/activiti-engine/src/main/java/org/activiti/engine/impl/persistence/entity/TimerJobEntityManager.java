@@ -38,4 +38,7 @@ public interface TimerJobEntityManager extends JobEntityManager {
   List<JobEntity> findNextTimerJobsToExecute(Page page);
 
   void unacquireTimerJob(String jobId);
-}
+
+  void updateSuspensionStateForJobsByExecution(String executionId, SuspensionState newState);
+
+  }

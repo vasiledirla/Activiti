@@ -176,6 +176,11 @@ public class TimerJobEntityManagerImpl extends GenericJobEntityManagerImpl imple
   }
 
   @Override
+  public void updateSuspensionStateForJobsByExecution(String executionId, SuspensionState newState){
+    jobDataManager.updateSuspensionStateForTimerJobsByExecution(executionId, newState);
+  }
+
+  @Override
   public void unacquireJob(Job job) {
     if (job instanceof TimerEntity) {
       unacquireTimerJob(job.getId());
