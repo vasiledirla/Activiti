@@ -6,34 +6,46 @@
 
   <!-- JOB DELETE STATEMENTS-->
 
-  <delete id="deleteJob" parameterType="org.activiti5.engine.impl.persistence.entity.JobEntity">
-    delete from ${prefix}ACT_RU_JOB where ID_ = #{id} and REV_ = #{revision}
-  </delete>
-  
-  <delete id="bulkDeleteJob" parameterType="java.util.Collection">
-    delete from ${prefix}ACT_RU_JOB where
-     <foreach item="job" collection="list" index="index" separator=" or ">
-        ID_ = #{job.id, jdbcType=VARCHAR}
-    </foreach> 
-  </delete>
+    <delete id="deleteJob" parameterType="org.activiti5.engine.impl.persistence.entity.§">
+        <if test="jobType == 'message'">
+            <include refid="deleteMessage"/>
+        </if>
+
+        <if test="jobType == 'timer'">
+            <include refid="deleteTimer"/>
+        </if>
+    </delete>
+
+    <delete id="bulkDeleteJob" parameterType="java.util.Collection">
+        delete from ${prefix}ACT_RU_ASYNC_JOB where
+        <foreach item="job" collection="list" index="index" separator=" or ">
+            ID_ = #{job.id, jdbcType=VARCHAR}
+        </foreach>
+
+        delete from ${prefix}ACT_RU_TIMER_JOB where
+        <foreach item="job" collection="list" index="index" separator=" or ">
+            ID_ = #{job.id, jdbcType=VARCHAR}
+        </foreach>
+
+    </delete>
   
   <delete id="deleteTimer" parameterType="org.activiti5.engine.impl.persistence.entity.JobEntity">
-    delete from ${prefix}ACT_RU_JOB where ID_ = #{id} and REV_ = #{revision}
+    delete from ${prefix}ACT_RU_TIMER_JOB where ID_ = #{id} and REV_ = #{revision}
   </delete>
   
   <delete id="bulkDeleteTimer" parameterType="java.util.Collection">
-    delete from ${prefix}ACT_RU_JOB where
+    delete from ${prefix}ACT_RU_TIMER_JOB where
      <foreach item="job" collection="list" index="index" separator=" or ">
         ID_ = #{job.id, jdbcType=VARCHAR}
     </foreach> 
   </delete>
   
   <delete id="deleteMessage" parameterType="org.activiti5.engine.impl.persistence.entity.JobEntity">
-    delete from ${prefix}ACT_RU_JOB where ID_ = #{id} and REV_ = #{revision}
+    delete from ${prefix}ACT_RU_ASYNC_JOB where ID_ = #{id} and REV_ = #{revision}
   </delete>
   
   <delete id="bulkDeleteMessage" parameterType="java.util.Collection">
-    delete from ${prefix}ACT_RU_JOB where
+    delete from ${prefix}ACT_RU_ASYNC_JOB where
      <foreach item="job" collection="list" index="index" separator=" or ">
         ID_ = #{job.id, jdbcType=VARCHAR}
     </foreach> 
@@ -41,38 +53,49 @@
   
   <!-- JOB UPDATE STATEMENTS -->
   <update id="updateJobTenantIdForDeployment" parameterType="java.util.Map">
-    update ${prefix}ACT_RU_JOB set
+    update ${prefix}ACT_RU_ASYNC_JOB set
       TENANT_ID_ = #{tenantId, jdbcType=VARCHAR}
     where
       ID_ in (
-        SELECT J.ID_ from ${prefix}ACT_RU_JOB J
+        SELECT J.ID_ from ${prefix}ACT_RU_ASYNC_JOB J
         inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_  = P.ID_
         inner join ${prefix}ACT_RE_DEPLOYMENT D on P.DEPLOYMENT_ID_ = D.ID_ 
         where D.ID_ = #{deploymentId, jdbcType=VARCHAR}
-      ) 
+      );
+
+     update ${prefix}ACT_RU_TIMER_JOB set
+      TENANT_ID_ = #{tenantId, jdbcType=VARCHAR}
+    where
+      ID_ in (
+        SELECT J.ID_ from ${prefix}ACT_RU_TIMER_JOB J
+        inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_  = P.ID_
+        inner join ${prefix}ACT_RE_DEPLOYMENT D on P.DEPLOYMENT_ID_ = D.ID_
+        where D.ID_ = #{deploymentId, jdbcType=VARCHAR}
+      )
   </update>
   
   <update id="updateJobLockForAllJobs" parameterType="java.util.Map">
-    update ${prefix}ACT_RU_JOB set
+    update ${prefix}ACT_RU_ASYNC_JOB set
+      LOCK_OWNER_ = #{lockOwner, jdbcType=VARCHAR},
+      LOCK_EXP_TIME_ = #{lockExpirationTime, jdbcType=TIMESTAMP}
+    where
+      (RETRIES_ &gt; 0)
+      and (LOCK_EXP_TIME_ is null or LOCK_EXP_TIME_ &lt;= #{dueDate, jdbcType=TIMESTAMP})
+      and (LOCK_OWNER_ is null);
+
+     update ${prefix}ACT_RU_TIMER_JOB set
       LOCK_OWNER_ = #{lockOwner, jdbcType=VARCHAR},
       LOCK_EXP_TIME_ = #{lockExpirationTime, jdbcType=TIMESTAMP}
     where
       (RETRIES_ &gt; 0)
       and (DUEDATE_ is null or DUEDATE_ &lt;= #{dueDate, jdbcType=TIMESTAMP})
       and (LOCK_OWNER_ is null)
-      
-	 <!--  and (
-	  	    (EXECUTION_ID_ is null)
-	  		or 
-	  		(PI.SUSPENSION_STATE_ = 1)
-      ) 
-        -->
   </update>
     
   <!-- See http://stackoverflow.com/questions/4429319/you-cant-specify-target-table-for-update-in-from-clause
        Tested this on MySQL 5.6: does NOT use a temporary table (so good, performance) -->
   <update id="updateJobTenantIdForDeployment_mysql" parameterType="java.util.Map">
-    update ${prefix}ACT_RU_JOB set
+    update ${prefix}ACT_RU_ASYNC_JOB set
       TENANT_ID_ = #{tenantId, jdbcType=VARCHAR}
     where
       ID_ in (
@@ -80,12 +103,29 @@
           SELECT tempTask.tempId
           FROM (
                 SELECT J.ID_ as tempId
-                FROM  ${prefix}ACT_RU_JOB J
+                FROM  ${prefix}ACT_RU_ASYNC_JOB J
                 inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_  = P.ID_
                 inner join ${prefix}ACT_RE_DEPLOYMENT D on P.DEPLOYMENT_ID_ = D.ID_ 
                 where D.ID_ = #{deploymentId, jdbcType=VARCHAR}
                 
         ) AS tempTask 
+
+    );
+
+    update ${prefix}ACT_RU_TIMER_JOB set
+      TENANT_ID_ = #{tenantId, jdbcType=VARCHAR}
+    where
+      ID_ in (
+
+          SELECT tempTask.tempId
+          FROM (
+                SELECT J.ID_ as tempId
+                FROM  ${prefix}ACT_RU_TIMER_JOB J
+                inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_  = P.ID_
+                inner join ${prefix}ACT_RE_DEPLOYMENT D on P.DEPLOYMENT_ID_ = D.ID_
+                where D.ID_ = #{deploymentId, jdbcType=VARCHAR}
+
+        ) AS tempTask
 
     )
   </update>
@@ -125,23 +165,43 @@
   <!-- JOB SELECT (FOR TIMER AND MESSAGE) -->  
 
   <select id="selectJob" parameterType="string" resultMap="jobResultMap">
-    select * from ${prefix}ACT_RU_JOB where ID_ = #{id}
+    select * from ${prefix}ACT_RU_ASYNC_JOB where ID_ = #{id}
+    union
+    select * from ${prefix}ACT_RU_TIMER_JOB where ID_ = #{id}
   </select>
 
   <select id="selectNextJobsToExecute" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
   	${limitBefore}
-    select 
+  	select * from (
+
+    select
     	RES.* ${limitBetween}    		
-    from ${prefix}ACT_RU_JOB RES    
+    from ${prefix}ACT_RU_ASYNC_JOB RES
+    	LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
+    where (RES.RETRIES_ &gt; 0)
+      and (RES.LOCK_EXP_TIME_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
+      and (RES.LOCK_OWNER_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
+	    and (
+	  	    (RES.EXECUTION_ID_ is null)
+	  		  or 
+	  		  (PI.SUSPENSION_STATE_ = 1)
+      )
+
+      union
+
+       select
+    	RES.* ${limitBetween}
+    from ${prefix}ACT_RU_TIMER_JOB RES
     	LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     where (RES.RETRIES_ &gt; 0)
       and (RES.DUEDATE_ is null or RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
       and (RES.LOCK_OWNER_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
 	    and (
 	  	    (RES.EXECUTION_ID_ is null)
-	  		  or 
+	  		  or
 	  		  (PI.SUSPENSION_STATE_ = 1)
-      )  
+      )
+       )
     ${limitAfter}	    
   </select>
   
@@ -149,7 +209,7 @@
     ${limitBefore}
     select 
       RES.* ${limitBetween}       
-    from ${prefix}ACT_RU_JOB RES    
+    from ${prefix}ACT_RU_TIMER_JOB RES
       LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     where (RES.RETRIES_ &gt; 0)
       and (RES.DUEDATE_ is null or RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
@@ -167,11 +227,9 @@
     ${limitBefore}
     select 
       RES.* ${limitBetween}       
-    from ${prefix}ACT_RU_JOB RES    
+    from ${prefix}ACT_RU_ASYNC_JOB RES
       LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     where RES.RETRIES_ &gt; 0
-      and RES.DUEDATE_ is not null
-      and RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP}
       and (RES.LOCK_EXP_TIME_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
       and TYPE_ = 'message'
       and (
@@ -183,91 +241,182 @@
   </select>
   
   <select id="selectJobsByLockOwner" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-  	${limitBefore}
-    select 
-    	RES.* ${limitBetween}    		
-    from ${prefix}ACT_RU_JOB RES    
-    where (RES.LOCK_OWNER_ = #{parameter, jdbcType=VARCHAR})
-    order by ID_ <!-- Need to have some definitive ordering to have a correct check in place during job fetching -->
-    ${limitAfter}	    
+      ${limitBefore}
+
+      select * ${limitBetween} (
+
+      select
+      RES.*
+      from ${prefix}ACT_RU_JOB RES
+      where (RES.LOCK_OWNER_ = #{parameter, jdbcType=VARCHAR})
+      order by ID_ <!-- Need to have some definitive ordering to have a correct check in place during job fetching -->
+
+      UNION
+
+      select
+      RES.*
+      from ${prefix}ACT_RU_JOB RES
+      where (RES.LOCK_OWNER_ = #{parameter, jdbcType=VARCHAR})
+      order by ID_<!-- Need to have some definitive ordering to have a correct check in place during job fetching -->
+
+      )
+
+      ${limitAfter}
   </select>   
   
   <select id="selectExclusiveJobsToExecute" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
   	${limitBefore}
-    select RES.* ${limitBetween} 
-    from ${prefix}ACT_RU_JOB RES    
+
+  	select *  ${limitBetween} from (
+
+    select RES.*
+    from ${prefix}ACT_RU_ASYNC_JOB RES
+    where (RETRIES_ &gt; 0)
+      and (LOCK_EXP_TIME_ is null or LOCK_EXP_TIME_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
+      and (LOCK_OWNER_ is null or LOCK_EXP_TIME_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
+      and (EXCLUSIVE_ = TRUE)
+      and (PROCESS_INSTANCE_ID_ = #{parameter.pid})
+
+    UNION
+
+     select RES.*
+    from ${prefix}ACT_RU_TIMER_JOB RES
     where (RETRIES_ &gt; 0)
       and (DUEDATE_ is null or DUEDATE_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
       and (LOCK_OWNER_ is null or LOCK_EXP_TIME_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
       and (EXCLUSIVE_ = TRUE)
-      and (PROCESS_INSTANCE_ID_ = #{parameter.pid})  
+      and (PROCESS_INSTANCE_ID_ = #{parameter.pid})
+
+    )
+
     ${limitAfter}
+
   </select>
   
   <select id="selectExclusiveJobsToExecute_integerBoolean" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
   	${limitBefore}
-    select RES.* ${limitBetween} 
-    from ${prefix}ACT_RU_JOB RES  
+
+  	select * ${limitBetween} from (
+    select RES.*
+    from ${prefix}ACT_RU_ASYNC_JOB RES
+    where (RETRIES_ &gt; 0)
+      and (LOCK_EXP_TIME_ is null or LOCK_EXP_TIME_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
+      and (LOCK_OWNER_ is null or LOCK_EXP_TIME_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
+      and (EXCLUSIVE_ = 1)
+      and (PROCESS_INSTANCE_ID_ = #{parameter.pid})
+
+        UNION
+
+         select RES.*
+    from ${prefix}ACT_RU_TIMER_JOB RES
     where (RETRIES_ &gt; 0)
       and (DUEDATE_ is null or DUEDATE_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
       and (LOCK_OWNER_ is null or LOCK_EXP_TIME_ &lt;= #{parameter.now, jdbcType=TIMESTAMP})
       and (EXCLUSIVE_ = 1)
-      and (PROCESS_INSTANCE_ID_ = #{parameter.pid})  
+      and (PROCESS_INSTANCE_ID_ = #{parameter.pid})
+
+        )
     ${limitAfter}   
   </select>
   
   <select id="selectJobsByConfiguration" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-      select * from ${prefix}ACT_RU_JOB
+     select * from (
+
+      select * from ${prefix}ACT_RU_ASYNC_JOB
       where HANDLER_TYPE_ = #{parameter.handlerType}
       and HANDLER_CFG_ like  #{parameter.handlerConfiguration}
+
+      UNION
+
+      select * from ${prefix}ACT_RU_TIMER_JOB
+      where HANDLER_TYPE_ = #{parameter.handlerType}
+      and HANDLER_CFG_ like  #{parameter.handlerConfiguration}
+
+      )
   </select>
 
   <select id="selectJobsByExecutionId" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-    select *
-    from ${prefix}ACT_RU_JOB J
-    where J.EXECUTION_ID_ = #{parameter}
+       select * from (
+        select * from ${prefix}ACT_RU_ASYNC_JOB J where J.EXECUTION_ID_ = #{parameter}
+       union
+        select * from ${prefix}ACT_RU_TIMER_JOB J where J.EXECUTION_ID_ = #{parameter}
+       )
   </select>
   
    <select id="selectJobByTypeAndProcessDefinitionKeyNoTenantId" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-    select J.*
-    from ${prefix}ACT_RU_JOB J
+      select * from (
+      select J.*
+    from ${prefix}ACT_RU_ASYNC_JOB J
     inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_ = P.ID_
     where J.HANDLER_TYPE_ = #{parameter.handlerType} 
     and P.KEY_ = #{parameter.processDefinitionKey}
-    and (P.TENANT_ID_ = ''  or P.TENANT_ID_ is null)  
+    and (P.TENANT_ID_ = ''  or P.TENANT_ID_ is null)
+
+    UNION
+
+    select J.*
+    from ${prefix}ACT_RU_TIMER_JOB J
+    inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_ = P.ID_
+    where J.HANDLER_TYPE_ = #{parameter.handlerType}
+    and P.KEY_ = #{parameter.processDefinitionKey}
+    and (P.TENANT_ID_ = ''  or P.TENANT_ID_ is null)
+
+    )
   </select>
   
   <select id="selectJobByTypeAndProcessDefinitionKeyAndTenantId" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-    select J.*
-    from ${prefix}ACT_RU_JOB J
+     select * from (
+      select J.*
+    from ${prefix}ACT_RU_ASYNC_JOB J
     inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_ = P.ID_
     where J.HANDLER_TYPE_ = #{parameter.handlerType} 
     and P.KEY_ = #{parameter.processDefinitionKey}
-    and P.TENANT_ID_ = #{parameter.tenantId} 
+    and P.TENANT_ID_ = #{parameter.tenantId}
+
+    UNION
+
+         select J.*
+    from ${prefix}ACT_RU_TIMER_JOB J
+    inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_ = P.ID_
+    where J.HANDLER_TYPE_ = #{parameter.handlerType}
+    and P.KEY_ = #{parameter.processDefinitionKey}
+    and P.TENANT_ID_ = #{parameter.tenantId}
+    )
   </select>
   
   <select id="selectJobByTypeAndProcessDefinitionId" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
+    select * from (
     select J.*
-    from ${prefix}ACT_RU_JOB J
+    from ${prefix}ACT_RU_ASYNC_JOB J
     where J.HANDLER_TYPE_ = #{parameter.handlerType}
-    and J.PROC_DEF_ID_ = #{parameter.processDefinitionId} 
+    and J.PROC_DEF_ID_ = #{parameter.processDefinitionId}
+
+    union
+
+    select J.*
+    from ${prefix}ACT_RU_TIMER_JOB J
+    where J.HANDLER_TYPE_ = #{parameter.handlerType}
+    and J.PROC_DEF_ID_ = #{parameter.processDefinitionId}
+    )
   </select>
   
   <select id="selectJobByQueryCriteria" parameterType="org.activiti5.engine.impl.JobQueryImpl" resultMap="jobResultMap">
-  	${limitBefore}
-    select RES.* ${limitBetween}
-    <include refid="selectJobByQueryCriteriaSql"/>
-    ${orderBy}
-    ${limitAfter}
+      ${limitBefore}
+      select * ${limitBetween} from (
+      <include refid="selectJobByQueryCriteriaSql"/>
+      )
+      ${orderBy}
+      ${limitAfter}
   </select>
 
   <select id="selectJobCountByQueryCriteria" parameterType="org.activiti5.engine.impl.JobQueryImpl" resultType="long">
-    select count(distinct RES.ID_)
+    select count(distinct RES.ID_) from (
     <include refid="selectJobByQueryCriteriaSql"/>
+      )
   </select>
   
   <sql id="selectJobByQueryCriteriaSql">
-    from ${prefix}ACT_RU_JOB RES
+      select RES.* from ${prefix}ACT_RU_ASYNC_JOB RES
     <if test="executable">
         LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     </if>
@@ -333,12 +482,82 @@
         and (RES.TENANT_ID_ = '' or RES.TENANT_ID_ is null)
       </if>
     </where>
+
+     union
+
+      select RES.* from ${prefix}ACT_RU_TIMER_JOB RES
+      <if test="executable">
+          LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
+      </if>
+      <where>
+          <if test="id != null">
+              RES.ID_ = #{id}
+          </if>
+          <if test="processInstanceId != null">
+              and RES.PROCESS_INSTANCE_ID_ = #{processInstanceId}
+          </if>
+          <if test="executionId != null">
+              and RES.EXECUTION_ID_ = #{executionId}
+          </if>
+          <if test="processDefinitionId != null">
+              and RES.PROC_DEF_ID_ = #{processDefinitionId}
+          </if>
+          <if test="retriesLeft">
+              and RES.RETRIES_ &gt; 0
+          </if>
+          <if test="noRetriesLeft">
+              and RES.RETRIES_ &lt;= 0
+          </if>
+          <if test="executable">
+              and (RES.RETRIES_ &gt; 0)
+              and (RES.DUEDATE_ is null or RES.DUEDATE_ &lt;= #{now, jdbcType=TIMESTAMP})
+              and (
+              (RES.EXECUTION_ID_ is null)
+              or
+              (PI.SUSPENSION_STATE_ = 1)
+              )
+          </if>
+          <if test="onlyTimers">
+              and RES.TYPE_ = 'timer'
+          </if>
+          <if test="onlyMessages">
+              and RES.TYPE_ = 'message'
+          </if>
+          <if test="duedateHigherThan != null">
+              and RES.DUEDATE_ &gt; #{duedateHigherThan}
+          </if>
+          <if test="duedateLowerThan != null">
+              and RES.DUEDATE_ &lt; #{duedateLowerThan}
+          </if>
+          <if test="duedateHigherThanOrEqual != null">
+              and RES.DUEDATE_ &gt;= #{duedateHigherThanOrEqual}
+          </if>
+          <if test="duedateLowerThanOrEqual != null">
+              and RES.DUEDATE_ &lt;= #{duedateLowerThanOrEqual}
+          </if>
+          <if test="withException">
+              and (RES.EXCEPTION_MSG_ is not null or RES.EXCEPTION_STACK_ID_ is not null)
+          </if>
+          <if test="exceptionMessage">
+              and RES.EXCEPTION_MSG_ = #{exceptionMessage}
+          </if>
+          <if test="tenantId != null">
+              and RES.TENANT_ID_ = #{tenantId}
+          </if>
+          <if test="tenantIdLike != null">
+              and RES.TENANT_ID_ like #{tenantIdLike}
+          </if>
+          <if test="withoutTenantId">
+              and (RES.TENANT_ID_ = '' or RES.TENANT_ID_ is null)
+          </if>
+      </where>
+
   </sql>
 
   <!-- TIMER INSERT -->
   
   <insert id="insertTimer" parameterType="org.activiti5.engine.impl.persistence.entity.TimerEntity">
-    insert into ${prefix}ACT_RU_JOB (
+    insert into ${prefix}ACT_RU_TIMER_JOB (
             ID_, 
             REV_,
             TYPE_,
@@ -377,8 +596,8 @@
   </insert>
 
   <insert id="bulkInsertTimer" parameterType="java.util.List">
-    INSERT INTO ${prefix}ACT_RU_JOB (
-            ID_, 
+    INSERT INTO ${prefix}ACT_RU_TIMER_JOB (
+            ID_,
             REV_,
             TYPE_,
             LOCK_OWNER_, 
@@ -419,7 +638,7 @@
   <insert id="bulkInsertTimer_oracle" parameterType="java.util.List">
     INSERT ALL 
     <foreach collection="list" item="job" index="index"> 
-      INTO ${prefix}ACT_RU_JOB (
+      INTO ${prefix}ACT_RU_TIMER_JOB (
               ID_, 
               REV_,
               TYPE_,
@@ -461,7 +680,7 @@
   <!-- TIMER UPDATE -->
 
   <update id="updateTimer" parameterType="org.activiti5.engine.impl.persistence.entity.TimerEntity">
-    update ${prefix}ACT_RU_JOB
+    update ${prefix}ACT_RU_TIMER_JOB
     <set>
        REV_ =  #{revisionNext, jdbcType=INTEGER},
        LOCK_EXP_TIME_ = #{lockExpirationTime, jdbcType=TIMESTAMP},
@@ -479,7 +698,7 @@
   
   <select id="selectUnlockedTimersByDuedate" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
     select RES.*
-    from ${prefix}ACT_RU_JOB RES
+    from ${prefix}ACT_RU_TIMER_JOB RES
     LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     where (RES.TYPE_ = 'timer')
       and (RES.DUEDATE_ &lt; #{parameter, jdbcType=TIMESTAMP})
@@ -496,7 +715,7 @@
   <select id="selectUnlockedTimersByDuedate_oracle" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject"
           resultMap="jobResultMap">
     select RES.*
-    from ${prefix}ACT_RU_JOB RES
+    from ${prefix}ACT_RU_TIMER_JOB RES
     LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     where (RES.TYPE_ = 'timer')
     and (RES.DUEDATE_ &lt; #{parameter, jdbcType=TIMESTAMP})
@@ -511,7 +730,7 @@
 
   <select id="selectTimersByExecutionId" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
     select * 
-    from ${prefix}ACT_RU_JOB 
+    from ${prefix}ACT_RU_TIMER_JOB
     where (RETRIES_ &gt; 0)
       and (TYPE_ = 'timer')
       and (EXECUTION_ID_ = #{parameter})
@@ -521,7 +740,7 @@
   <!-- MESSAGE INSERT -->
 
   <insert id="bulkInsertMessage" parameterType="java.util.List">
-    INSERT INTO ${prefix}ACT_RU_JOB (
+    INSERT INTO ${prefix}ACT_RU_ASYNC_JOB (
         ID_, 
         REV_, 
         TYPE_,
@@ -561,7 +780,7 @@
   <insert id="bulkInsertMessage_oracle" parameterType="java.util.List">
     INSERT ALL 
     <foreach collection="list" item="job" index="index">
-      INTO ${prefix}ACT_RU_JOB (
+      INTO ${prefix}ACT_RU_ASYNC_JOB (
           ID_, 
           REV_, 
           TYPE_,
@@ -599,7 +818,7 @@
   </insert>
 
   <insert id="insertMessage" parameterType="org.activiti5.engine.impl.persistence.entity.MessageEntity">
-    insert into ${prefix}ACT_RU_JOB (
+    insert into ${prefix}ACT_RU_ASYNC_JOB (
             ID_, 
             REV_, 
             TYPE_,
@@ -638,7 +857,7 @@
   <!-- MESSAGE UPDATE -->
   
   <update id="updateMessage" parameterType="org.activiti5.engine.impl.persistence.entity.MessageEntity">
-    update ${prefix}ACT_RU_JOB
+    update ${prefix}ACT_RU_ASYNC_JOB
     <set>
        REV_ =  #{revisionNext, jdbcType=INTEGER},
        LOCK_EXP_TIME_ = #{lockExpirationTime, jdbcType=TIMESTAMP},
@@ -651,9 +870,13 @@
     where ID_= #{id, jdbcType=VARCHAR}
       and REV_ = #{revision, jdbcType=INTEGER}
   </update>
-  
-   <update id="unacquireJob" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject">
-    update ${prefix}ACT_RU_JOB
+
+    <update id="unacquireJob" parameterType="org.activiti5.engine.impl.db.ListQueryParameterObject">
+    update ${prefix}ACT_RU_ASYNC_JOB
+    set LOCK_EXP_TIME_ = #{dueDate,jdbcType=TIMESTAMP}, LOCK_OWNER_ = null
+    where ID_ = #{id,jdbcType=VARCHAR};
+
+    update ${prefix}ACT_RU_TIMER_JOB
     set DUEDATE_ = #{dueDate,jdbcType=TIMESTAMP}, LOCK_OWNER_ = null, LOCK_EXP_TIME_ = null
     where ID_ = #{id,jdbcType=VARCHAR}
   </update>
