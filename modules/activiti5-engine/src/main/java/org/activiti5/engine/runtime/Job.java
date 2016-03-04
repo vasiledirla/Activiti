@@ -34,7 +34,7 @@ public interface Job {
    * Returns the date on which this job is supposed to be processed.
    */
   Date getDuedate();
-  
+
   /**
    * Returns the id of the process instance which execution created the job.
    */

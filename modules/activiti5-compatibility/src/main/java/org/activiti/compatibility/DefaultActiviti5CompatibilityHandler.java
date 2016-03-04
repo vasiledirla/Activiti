@@ -935,19 +935,23 @@ public class DefaultActiviti5CompatibilityHandler implements Activiti5Compatibil
   
   protected org.activiti5.engine.impl.persistence.entity.JobEntity convertToActiviti5JobEntity(JobEntity job) {
     org.activiti5.engine.impl.persistence.entity.JobEntity activity5Job = null;
+
+    Date jobDueDate = null;
+
     if (job instanceof TimerEntity) {
       TimerEntity timer = (TimerEntity) job;
       org.activiti5.engine.impl.persistence.entity.TimerEntity tempTimer = new org.activiti5.engine.impl.persistence.entity.TimerEntity();
       tempTimer.setEndDate(timer.getEndDate());
       tempTimer.setRepeat(timer.getRepeat());
       activity5Job = tempTimer;
+      jobDueDate = timer.getDuedate();
       
     } else if (job instanceof MessageEntity) {
       org.activiti5.engine.impl.persistence.entity.MessageEntity tempTimer = new org.activiti5.engine.impl.persistence.entity.MessageEntity();
       activity5Job = tempTimer;
     }
     
-    activity5Job.setDuedate(job.getDuedate());
+    activity5Job.setDuedate(jobDueDate);
     activity5Job.setExclusive(job.isExclusive());
     activity5Job.setExecutionId(job.getExecutionId());
     activity5Job.setId(job.getId());
