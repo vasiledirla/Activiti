@@ -90,6 +90,7 @@ create table ACT_RU_ASYNC_JOB (
     HANDLER_TYPE_ varchar(255),
     HANDLER_CFG_ varchar(4000),
     TENANT_ID_ varchar(255) default '',
+    SUSPENSION_STATE_ integer,
     primary key (ID_)
 );
 
