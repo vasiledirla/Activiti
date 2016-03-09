@@ -13,6 +13,7 @@
 
 package org.activiti.engine.impl.persistence.entity;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -532,7 +533,9 @@ public class ExecutionEntityImpl extends VariableScopeImpl implements ExecutionE
   
   protected void ensureJobsInitialized() {
     if (jobs == null) {
-      jobs = Context.getCommandContext().getAsyncJobEntityManager().findJobsByExecutionId(id);
+      jobs = new ArrayList<JobEntity>();
+      jobs.addAll(Context.getCommandContext().getAsyncJobEntityManager().findJobsByExecutionId(id));
+      jobs.addAll(Context.getCommandContext().getTimerJobEntityManager().findJobsByExecutionId(id));
     }
   }
 
