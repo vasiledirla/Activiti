@@ -12,21 +12,21 @@
  */
 package org.activiti.engine.impl.asyncexecutor.multitenant;
 
-import org.activiti.engine.impl.asyncexecutor.AcquireAsyncJobsDueRunnable;
+import org.activiti.engine.impl.asyncexecutor.AcquireJobsDueRunnable;
 import org.activiti.engine.impl.asyncexecutor.AsyncExecutor;
 import org.activiti.engine.impl.cfg.multitenant.TenantInfoHolder;
 
 /**
- * Extends the default {@link AcquireAsyncJobsDueRunnable} by setting the 'tenant' context before executing.
+ * Extends the default {@link AcquireJobsDueRunnable} by setting the 'tenant' context before executing.
  * 
  * @author Joram Barrez
  */
-public class TenantAwareAcquireAsyncJobsDueRunnable extends AcquireAsyncJobsDueRunnable {
+public class TenantAwareAcquireJobsDueRunnable extends AcquireJobsDueRunnable {
 
   protected TenantInfoHolder tenantInfoHolder;
   protected String tenantId;
   
-  public TenantAwareAcquireAsyncJobsDueRunnable(AsyncExecutor asyncExecutor, TenantInfoHolder tenantInfoHolder, String tenantId) {
+  public TenantAwareAcquireJobsDueRunnable(AsyncExecutor asyncExecutor, TenantInfoHolder tenantInfoHolder, String tenantId) {
     super(asyncExecutor);
     this.tenantInfoHolder = tenantInfoHolder;
     this.tenantId = tenantId;

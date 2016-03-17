@@ -27,6 +27,8 @@ import org.activiti.engine.delegate.event.ActivitiSignalEvent;
 import org.activiti.engine.delegate.event.impl.ActivitiActivityEventImpl;
 import org.activiti.engine.delegate.event.impl.ActivitiSignalEventImpl;
 import org.activiti.engine.event.EventLogEntry;
+import org.activiti.engine.impl.cmd.CleanupFailedJobsCommand;
+import org.activiti.engine.impl.cmd.MoveTimerJobsDueDate;
 import org.activiti.engine.impl.event.logger.EventLogger;
 import org.activiti.engine.impl.persistence.entity.MessageEventSubscriptionEntity;
 import org.activiti.engine.impl.persistence.entity.SignalEventSubscriptionEntity;
@@ -481,8 +483,12 @@ public class ActivityEventsTest extends PluggableActivitiTestCase {
     timeToFire.add(Calendar.HOUR, 2);
     timeToFire.add(Calendar.SECOND, 5);
     processEngineConfiguration.getClock().setCurrentTime(timeToFire.getTime());
+
     waitForJobExecutorToProcessAllJobs(2000, 200);
 
+    List<Job> jobs = managementService.createJobQuery().processInstanceId(processInstance.getId()).list();
+
+    assertEquals(0, jobs.size());
     // Check timeout-events have been dispatched
     assertEquals(4, listener.getEventsReceived().size());
     List<String> eventIdList = new ArrayList<String>();

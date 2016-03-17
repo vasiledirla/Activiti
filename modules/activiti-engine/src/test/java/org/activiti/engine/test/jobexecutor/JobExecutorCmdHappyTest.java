@@ -14,14 +14,16 @@ package org.activiti.engine.test.jobexecutor;
 
 import java.util.Date;
 
-import org.activiti.engine.impl.asyncexecutor.AcquiredJobEntities;
-import org.activiti.engine.impl.cmd.AcquireTimerJobsCmd;
+import org.activiti.engine.impl.asyncexecutor.AcquiredExecutableJobEntities;
+import org.activiti.engine.impl.cmd.AcquireExecutableJobsDueCmd;
 import org.activiti.engine.impl.cmd.ExecuteAsyncJobCmd;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
+import org.activiti.engine.impl.persistence.entity.ExecutableMessageJobEntity;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.activiti.engine.impl.persistence.entity.MessageEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.runtime.Job;
 
@@ -36,13 +38,13 @@ public class JobExecutorCmdHappyTest extends JobExecutorTestCase {
     String jobId = commandExecutor.execute(new Command<String>() {
 
       public String execute(CommandContext commandContext) {
-        MessageEntity message = createTweetMessage("i'm coding a test");
-        commandContext.getJobEntityManager().send(message);
+        ExecutableMessageJobEntity message = createTweetMessage("i'm coding a test");
+        commandContext.getExecutableJobEntityManager().send(message);
         return message.getId();
       }
     });
 
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().locked().singleResult();
     assertNotNull(job);
     assertEquals(jobId, job.getId());
 
@@ -66,21 +68,21 @@ public class JobExecutorCmdHappyTest extends JobExecutorTestCase {
     String jobId = commandExecutor.execute(new Command<String>() {
 
       public String execute(CommandContext commandContext) {
-        TimerEntity timer = createTweetTimer("i'm coding a test", new Date(SOME_TIME + (10 * SECOND)));
-        commandContext.getJobEntityManager().schedule(timer);
+        ExecutableTimerJobEntity timer = createTweetTimer("i'm coding a test", new Date(SOME_TIME + (10 * SECOND)));
+        commandContext.getExecutableJobEntityManager().schedule(timer);
         return timer.getId();
       }
     });
 
-    AcquiredJobEntities acquiredJobs = commandExecutor.execute(new AcquireTimerJobsCmd("testLockOwner", 10000, 5));
+    AcquiredExecutableJobEntities acquiredJobs = commandExecutor.execute(new AcquireExecutableJobsDueCmd(processEngineConfiguration.getAsyncExecutor()));
     assertEquals(0, acquiredJobs.size());
 
     processEngineConfiguration.getClock().setCurrentTime(new Date(SOME_TIME + (20 * SECOND)));
 
-    acquiredJobs = commandExecutor.execute(new AcquireTimerJobsCmd("testLockOwner", 10000, 5));
+    acquiredJobs = commandExecutor.execute(new AcquireExecutableJobsDueCmd(processEngineConfiguration.getAsyncExecutor()));
     assertEquals(1, acquiredJobs.size());
 
-    JobEntity job = acquiredJobs.getJobs().iterator().next();
+    LockedJobEntity job = acquiredJobs.getJobs().iterator().next();
 
     assertEquals(jobId, job.getId());
 

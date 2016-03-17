@@ -141,7 +141,7 @@ public class EventBasedGatewayTest extends PluggableActivitiTestCase {
     Task task = taskService.createTaskQuery().processInstanceId(processInstance.getId()).singleResult();
     assertNull(task);
     
-    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job job = managementService.createJobQuery().locked().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(job);
     
     managementService.executeJob(job.getId());

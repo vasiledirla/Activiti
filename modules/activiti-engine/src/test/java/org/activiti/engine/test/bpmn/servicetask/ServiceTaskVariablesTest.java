@@ -78,11 +78,11 @@ public class ServiceTaskVariablesTest extends PluggableActivitiTestCase {
 
     runtimeService.startProcessInstanceByKey("process");
     
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().locked().singleResult();
     assertNotNull(job);
     managementService.executeJob(job.getId());
     
-    job = managementService.createJobQuery().singleResult();
+    job = managementService.createJobQuery().locked().singleResult();
     assertNotNull(job);
     managementService.executeJob(job.getId());
     

@@ -16,6 +16,7 @@ import org.activiti.engine.impl.asyncexecutor.AsyncExecutor;
 import org.activiti.engine.impl.cfg.TransactionListener;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,10 +27,10 @@ public class AsyncJobAddedNotification implements TransactionListener {
 
   private static Logger log = LoggerFactory.getLogger(AsyncJobAddedNotification.class);
 
-  protected JobEntity job;
+  protected LockedJobEntity job;
   protected AsyncExecutor asyncExecutor;
 
-  public AsyncJobAddedNotification(JobEntity job, AsyncExecutor asyncExecutor) {
+  public AsyncJobAddedNotification(LockedJobEntity job, AsyncExecutor asyncExecutor) {
     this.job = job;
     this.asyncExecutor = asyncExecutor;
   }

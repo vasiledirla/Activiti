@@ -33,6 +33,10 @@ public interface JobEntity extends Job, Entity, HasRevision {
   int DEFAULT_RETRIES = 3;
   int MAX_EXCEPTION_MESSAGE_LENGTH = 255;
 
+  String getRepeat();
+
+  void setRepeat(String repeat);
+
   void setExecution(ExecutionEntity execution);
 
   String getExceptionStacktrace();
@@ -44,14 +48,6 @@ public interface JobEntity extends Job, Entity, HasRevision {
   void setExecutionId(String executionId);
 
   void setRetries(int retries);
-
-  String getLockOwner();
-
-  void setLockOwner(String claimedBy);
-
-  Date getLockExpirationTime();
-
-  void setLockExpirationTime(Date claimedUntil);
 
   void setProcessInstanceId(String processInstanceId);
 

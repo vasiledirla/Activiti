@@ -22,7 +22,7 @@ import java.util.TreeSet;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
-import org.activiti.engine.impl.persistence.entity.JobEntityManager;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntityManager;
 
 /**
  * @author Tom Baeyens
@@ -33,7 +33,7 @@ public class JobExecutorTest extends JobExecutorTestCase {
     CommandExecutor commandExecutor = processEngineConfiguration.getCommandExecutor();
     commandExecutor.execute(new Command<Void>() {
       public Void execute(CommandContext commandContext) {
-        JobEntityManager jobManager = commandContext.getJobEntityManager();
+        ExecutableJobEntityManager jobManager = commandContext.getExecutableJobEntityManager();
         jobManager.send(createTweetMessage("message-one"));
         jobManager.send(createTweetMessage("message-two"));
         jobManager.send(createTweetMessage("message-three"));
@@ -50,7 +50,7 @@ public class JobExecutorTest extends JobExecutorTestCase {
     currentCal.add(Calendar.MINUTE, 1);
     processEngineConfiguration.getClock().setCurrentTime(currentCal.getTime());
 
-    waitForJobExecutorToProcessAllJobs(8000L, 200L);
+    waitForJobExecutorToProcessAllJobs(18000L, 200L);
 
     Set<String> messages = new HashSet<String>(tweetHandler.getMessages());
     Set<String> expectedMessages = new HashSet<String>();

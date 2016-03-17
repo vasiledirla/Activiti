@@ -28,7 +28,7 @@ public class ExclusiveTaskTest extends PluggableActivitiTestCase {
     // start process
     runtimeService.startProcessInstanceByKey("exclusive");
     // now there should be 1 non-exclusive job in the database:
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().locked().singleResult();
     assertNotNull(job);
     assertFalse(((JobEntity) job).isExclusive());
 
@@ -36,6 +36,8 @@ public class ExclusiveTaskTest extends PluggableActivitiTestCase {
 
     // all the jobs are done
     assertEquals(0, managementService.createJobQuery().count());
+    assertEquals(0, managementService.createJobQuery().locked().count());
+    assertEquals(0, managementService.createJobQuery().failed().count());
   }
 
   @Deployment
@@ -43,7 +45,7 @@ public class ExclusiveTaskTest extends PluggableActivitiTestCase {
     // start process
     runtimeService.startProcessInstanceByKey("exclusive");
     // now there should be 1 exclusive job in the database:
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().locked().singleResult();
     assertNotNull(job);
     assertTrue(((JobEntity) job).isExclusive());
 
@@ -51,6 +53,8 @@ public class ExclusiveTaskTest extends PluggableActivitiTestCase {
 
     // all the jobs are done
     assertEquals(0, managementService.createJobQuery().count());
+    assertEquals(0, managementService.createJobQuery().locked().count());
+    assertEquals(0, managementService.createJobQuery().failed().count());
   }
 
   @Deployment
@@ -58,12 +62,14 @@ public class ExclusiveTaskTest extends PluggableActivitiTestCase {
     // start process
     runtimeService.startProcessInstanceByKey("exclusive");
     // now there should be 3 exclusive jobs in the database:
-    assertEquals(3, managementService.createJobQuery().count());
+    assertEquals(3, managementService.createJobQuery().locked().count());
 
     waitForJobExecutorToProcessAllJobs(20000L, 400L);
 
     // all the jobs are done
     assertEquals(0, managementService.createJobQuery().count());
+    assertEquals(0, managementService.createJobQuery().locked().count());
+    assertEquals(0, managementService.createJobQuery().failed().count());
   }
 
 }

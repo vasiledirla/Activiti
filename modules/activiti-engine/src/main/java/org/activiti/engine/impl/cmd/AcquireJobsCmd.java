@@ -44,7 +44,7 @@ public class AcquireJobsCmd implements Command<AcquiredJobs> {
     int maxNonExclusiveJobsPerAcquisition = jobExecutor.getMaxJobsPerAcquisition();
 
     AcquiredJobs acquiredJobs = new AcquiredJobs();
-    List<JobEntity> jobs = commandContext.getJobEntityManager().findNextJobsToExecute(new Page(0, maxNonExclusiveJobsPerAcquisition));
+    List<JobEntity> jobs = commandContext.getExecutableJobEntityManager().findNextJobsToExecute(new Page(0, maxNonExclusiveJobsPerAcquisition));
 
     for (JobEntity job : jobs) {
       List<String> jobIds = new ArrayList<String>();
@@ -58,7 +58,7 @@ public class AcquireJobsCmd implements Command<AcquiredJobs> {
 
           // acquire all exclusive jobs in the same process instance
           // (includes the current job)
-          List<JobEntity> exclusiveJobs = commandContext.getJobEntityManager().findExclusiveJobsToExecute(job.getProcessInstanceId());
+          List<JobEntity> exclusiveJobs = commandContext.getExecutableJobEntityManager().findExclusiveJobsToExecute(job.getProcessInstanceId());
           for (JobEntity exclusiveJob : exclusiveJobs) {
             if (exclusiveJob != null) {
               lockJob(commandContext, exclusiveJob, lockOwner, lockTimeInMillis);
@@ -80,10 +80,10 @@ public class AcquireJobsCmd implements Command<AcquiredJobs> {
   }
 
   protected void lockJob(CommandContext commandContext, JobEntity job, String lockOwner, int lockTimeInMillis) {
-    job.setLockOwner(lockOwner);
+//    job.setLockOwner(lockOwner);
     GregorianCalendar gregorianCalendar = new GregorianCalendar();
     gregorianCalendar.setTime(commandContext.getProcessEngineConfiguration().getClock().getCurrentTime());
     gregorianCalendar.add(Calendar.MILLISECOND, lockTimeInMillis);
-    job.setLockExpirationTime(gregorianCalendar.getTime());
+//    job.setLockExpirationTime(gregorianCalendar.getTime());
   }
 }

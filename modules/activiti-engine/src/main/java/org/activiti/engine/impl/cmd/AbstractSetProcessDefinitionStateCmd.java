@@ -28,6 +28,7 @@ import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.jobexecutor.JobHandler;
 import org.activiti.engine.impl.jobexecutor.TimerChangeProcessDefinitionSuspensionStateJobHandler;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.activiti.engine.impl.persistence.entity.ProcessDefinitionEntityManager;
 import org.activiti.engine.impl.persistence.entity.SuspensionState;
@@ -146,8 +147,8 @@ public abstract class AbstractSetProcessDefinitionStateCmd implements Command<Vo
     for (ProcessDefinitionEntity processDefinition : processDefinitions) {
       
       if (Activiti5Util.isActiviti5ProcessDefinition(commandContext, processDefinition)) continue;
-      
-      TimerEntity timer = commandContext.getJobEntityManager().createTimer();
+
+      ExecutableTimerJobEntity timer = commandContext.getExecutableJobEntityManager().createTimer();
       timer.setProcessDefinitionId(processDefinition.getId());
 
       // Inherit tenant identifier (if applicable)
@@ -158,7 +159,7 @@ public abstract class AbstractSetProcessDefinitionStateCmd implements Command<Vo
       timer.setDuedate(executionDate);
       timer.setJobHandlerType(getDelayedExecutionJobHandlerType());
       timer.setJobHandlerConfiguration(TimerChangeProcessDefinitionSuspensionStateJobHandler.createJobHandlerConfiguration(includeProcessInstances));
-      commandContext.getJobEntityManager().schedule(timer);
+      commandContext.getExecutableJobEntityManager().schedule(timer);
     }
   }
 

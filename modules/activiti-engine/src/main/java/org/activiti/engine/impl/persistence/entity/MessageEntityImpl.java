@@ -25,13 +25,4 @@ public class MessageEntityImpl extends JobEntityImpl implements MessageEntity {
     this.jobType = "message";
   }
 
-  private String repeat = null;
-  
-  public String getRepeat() {
-    return repeat;
-  }
-
-  public void setRepeat(String repeat) {
-    this.repeat = repeat;
-  }
 }

@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" ?> 
 
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
-  
+
 <mapper namespace="org.activiti.engine.impl.persistence.entity.JobEntityImpl">
 
   <!-- JOB DELETE STATEMENTS-->
 
-  <delete id="deleteJob" parameterType="org.activiti.engine.impl.persistence.entity.JobEntityImpl">
+  <delete id="deleteExecutableTimerJob" parameterType="org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity">
+    delete from ${prefix}ACT_RU_JOB where ID_ = #{id} and REV_ = #{revision}
+  </delete>
+
+    <delete id="deleteExecutableMessageJob" parameterType="org.activiti.engine.impl.persistence.entity.ExecutableMessageJobEntity">
     delete from ${prefix}ACT_RU_JOB where ID_ = #{id} and REV_ = #{revision}
   </delete>
   
@@ -16,18 +20,26 @@
         ID_ = #{job.id, jdbcType=VARCHAR}
     </foreach> 
   </delete>
-  
-  <delete id="deleteTimer" parameterType="org.activiti.engine.impl.persistence.entity.JobEntityImpl">
+
+  <delete id="deleteExecutableTimer" parameterType="org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntityImpl">
     delete from ${prefix}ACT_RU_JOB where ID_ = #{id} and REV_ = #{revision}
   </delete>
+
+    <delete id="deleteExecutableMessage" parameterType="org.activiti.engine.impl.persistence.entity.ExecutableMessageJobEntityImpl">
+        delete from ${prefix}ACT_RU_JOB where ID_ = #{id} and REV_ = #{revision}
+    </delete>
+
+    <delete id="deleteTimer" parameterType="org.activiti.engine.impl.persistence.entity.TimerEntityImpl">
+      delete from ${prefix}ACT_RU_TIMER_JOB where ID_ = #{id} and REV_ = #{revision}
+    </delete>
   
   <delete id="bulkDeleteTimer" parameterType="java.util.Collection">
-    delete from ${prefix}ACT_RU_JOB where
+    delete from ${prefix}ACT_RU_TIMER_JOB where
      <foreach item="job" collection="list" index="index" separator=" or ">
         ID_ = #{job.id, jdbcType=VARCHAR}
     </foreach> 
   </delete>
-  
+
   <delete id="deleteMessage" parameterType="org.activiti.engine.impl.persistence.entity.JobEntityImpl">
     delete from ${prefix}ACT_RU_JOB where ID_ = #{id} and REV_ = #{revision}
   </delete>
@@ -107,28 +119,61 @@
     <result property="jobHandlerType" column="HANDLER_TYPE_" jdbcType="VARCHAR" />
     <result property="jobHandlerConfiguration" column="HANDLER_CFG_" jdbcType="VARCHAR" />
     <result property="tenantId" column="TENANT_ID_" jdbcType="VARCHAR" />
-    <discriminator javaType="string" column="TYPE_">
+      <result property="duedate" column="DUEDATE_" jdbcType="TIMESTAMP" />
+      <discriminator javaType="string" column="TYPE_">
       <case value="message" resultMap="messageResultMap"/> 
       <case value="timer" resultMap="timerResultMap"/> 
     </discriminator>
   </resultMap>
 
   <resultMap id="messageResultMap" type="org.activiti.engine.impl.persistence.entity.MessageEntityImpl" extends="jobResultMap">
-  	<result property="duedate" column="DUEDATE_" jdbcType="TIMESTAMP" />
   </resultMap>
 
   <resultMap id="timerResultMap" type="org.activiti.engine.impl.persistence.entity.TimerEntityImpl" extends="jobResultMap">
-    <result property="duedate" column="DUEDATE_" jdbcType="TIMESTAMP" />
     <result property="repeat" column="REPEAT_" jdbcType="VARCHAR" />
   </resultMap>
 
+
+    <resultMap id="executableJobResultMap" type="org.activiti.engine.impl.persistence.entity.ExecutableJobEntityImpl" extends="jobResultMap">
+        <discriminator javaType="string" column="TYPE_">
+            <case value="message" resultMap="executableMessageResultMap"/>
+            <case value="timer" resultMap="executableTimerResultMap"/>
+        </discriminator>
+    </resultMap>
+
+
+    <resultMap id="executableMessageResultMap" type="org.activiti.engine.impl.persistence.entity.ExecutableMessageJobEntityImpl" extends="executableJobResultMap">
+    </resultMap>
+
+    <resultMap id="executableTimerResultMap" type="org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntityImpl" extends="executableJobResultMap">
+        <result property="repeat" column="REPEAT_" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <resultMap id="lockedJobResultMap" type="org.activiti.engine.impl.persistence.entity.LockedJobEntityImpl" extends="jobResultMap">
+        <discriminator javaType="string" column="TYPE_">
+            <case value="message" resultMap="lockedMessageResultMap"/>
+            <case value="timer" resultMap="lockedTimerResultMap"/>
+        </discriminator>
+    </resultMap>
+
+
+    <resultMap id="lockedMessageResultMap" type="org.activiti.engine.impl.persistence.entity.LockedMessageJobEntityImpl" extends="lockedJobResultMap">
+    </resultMap>
+
+    <resultMap id="lockedTimerResultMap" type="org.activiti.engine.impl.persistence.entity.LockedTimerJobEntityImpl" extends="lockedJobResultMap">
+        <result property="repeat" column="REPEAT_" jdbcType="VARCHAR" />
+    </resultMap>
+
+
+
   <!-- JOB SELECT (FOR TIMER AND MESSAGE) -->  
 
-  <select id="selectJob" parameterType="string" resultMap="jobResultMap">
+  <select id="selectExecutableJob" parameterType="string" resultMap="executableJobResultMap">
     select * from ${prefix}ACT_RU_JOB where ID_ = #{id, jdbcType=VARCHAR}
   </select>
 
-  <select id="selectNextJobsToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
+
+  <select id="selectNextJobsToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="executableJobResultMap">
   	${limitBefore}
     select 
     	RES.* ${limitBetween}    		
@@ -136,7 +181,6 @@
     	LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     where (RES.RETRIES_ &gt; 0)
       and (RES.DUEDATE_ is null or RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
-      and (RES.LOCK_OWNER_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
 	    and (
 	  	    (RES.EXECUTION_ID_ is null)
 	  		  or 
@@ -145,25 +189,7 @@
     ${limitAfter}	    
   </select>
   
-  <select id="selectNextTimerJobsToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-    ${limitBefore}
-    select 
-      RES.* ${limitBetween}       
-    from ${prefix}ACT_RU_JOB RES    
-      LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
-    where (RES.RETRIES_ &gt; 0)
-      and (RES.DUEDATE_ is null or RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP})
-      and (RES.LOCK_OWNER_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
-      and TYPE_ = 'timer'
-      and (
-          (RES.EXECUTION_ID_ is null)
-          or 
-          (PI.SUSPENSION_STATE_ = 1)
-      )  
-    ${limitAfter}     
-  </select>
-  
-  <select id="selectAsyncJobsDueToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
+  <select id="selectExecutableJobsDueToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="executableJobResultMap">
     ${limitBefore}
     select 
       RES.* ${limitBetween}       
@@ -172,8 +198,6 @@
     where RES.RETRIES_ &gt; 0
       and RES.DUEDATE_ is not null
       and RES.DUEDATE_ &lt;= #{parameter, jdbcType=TIMESTAMP}
-      and (RES.LOCK_EXP_TIME_ is null or RES.LOCK_EXP_TIME_ &lt;= #{parameter, jdbcType=TIMESTAMP})
-      and TYPE_ = 'message'
       and (
           (RES.EXECUTION_ID_ is null)
           or 
@@ -181,16 +205,6 @@
       )  
     ${limitAfter}     
   </select>
-  
-  <select id="selectJobsByLockOwner" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
-  	${limitBefore}
-    select 
-    	RES.* ${limitBetween}    		
-    from ${prefix}ACT_RU_JOB RES    
-    where (RES.LOCK_OWNER_ = #{parameter, jdbcType=VARCHAR})
-    order by ID_ <!-- Need to have some definitive ordering to have a correct check in place during job fetching -->
-    ${limitAfter}	    
-  </select>   
   
   <select id="selectExclusiveJobsToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
   	${limitBefore}
@@ -226,13 +240,13 @@
       and HANDLER_CFG_ like  #{parameter.handlerConfiguration}
   </select>
 
-  <select id="selectJobsByExecutionId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
+  <select id="selectExecutableJobsByExecutionId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="executableJobResultMap">
     select *
     from ${prefix}ACT_RU_JOB J
     where J.EXECUTION_ID_ = #{parameter}
   </select>
   
-   <select id="selectJobByTypeAndProcessDefinitionKeyNoTenantId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
+   <select id="selectJobByTypeAndProcessDefinitionKeyNoTenantId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="executableJobResultMap">
     select J.*
     from ${prefix}ACT_RU_JOB J
     inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_ = P.ID_
@@ -241,7 +255,7 @@
     and (P.TENANT_ID_ = ''  or P.TENANT_ID_ is null)  
   </select>
   
-  <select id="selectJobByTypeAndProcessDefinitionKeyAndTenantId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
+  <select id="selectJobByTypeAndProcessDefinitionKeyAndTenantId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="executableJobResultMap">
     select J.*
     from ${prefix}ACT_RU_JOB J
     inner join ${prefix}ACT_RE_PROCDEF P on J.PROC_DEF_ID_ = P.ID_
@@ -250,14 +264,98 @@
     and P.TENANT_ID_ = #{parameter.tenantId} 
   </select>
   
-  <select id="selectJobByTypeAndProcessDefinitionId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
+  <select id="selectExecutableJobByTypeAndProcessDefinitionId" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="executableJobResultMap">
     select J.*
     from ${prefix}ACT_RU_JOB J
     where J.HANDLER_TYPE_ = #{parameter.handlerType}
     and J.PROC_DEF_ID_ = #{parameter.processDefinitionId} 
   </select>
-  
-  <select id="selectJobByQueryCriteria" parameterType="org.activiti.engine.impl.JobQueryImpl" resultMap="jobResultMap">
+
+    <select id="selectLockedJobByQueryCriteria" parameterType="org.activiti.engine.impl.JobQueryImpl" resultMap="lockedJobResultMap">
+        ${limitBefore}
+        select RES.* ${limitBetween}
+        <include refid="selectLockedJobByQueryCriteriaSql"/>
+        ${orderBy}
+        ${limitAfter}
+    </select>
+
+    <select id="selectLockedJobCountByQueryCriteria" parameterType="org.activiti.engine.impl.JobQueryImpl" resultType="long">
+        select count(distinct RES.ID_)
+        <include refid="selectLockedJobByQueryCriteriaSql"/>
+    </select>
+
+
+    <sql id="selectLockedJobByQueryCriteriaSql">
+        from ${prefix}ACT_RU_LOCKED_JOB RES
+        <if test="executable">
+            LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
+        </if>
+        <where>
+            <if test="id != null">
+                RES.ID_ = #{id}
+            </if>
+            <if test="processInstanceId != null">
+                and RES.PROCESS_INSTANCE_ID_ = #{processInstanceId}
+            </if>
+            <if test="executionId != null">
+                and RES.EXECUTION_ID_ = #{executionId}
+            </if>
+            <if test="processDefinitionId != null">
+                and RES.PROC_DEF_ID_ = #{processDefinitionId}
+            </if>
+            <if test="retriesLeft">
+                and RES.RETRIES_ &gt; 0
+            </if>
+            <if test="noRetriesLeft">
+                and RES.RETRIES_ &lt;= 0
+            </if>
+            <if test="executable">
+                and (RES.RETRIES_ &gt; 0)
+                and (RES.DUEDATE_ is null or RES.DUEDATE_ &lt;= #{now, jdbcType=TIMESTAMP})
+                and (
+                (RES.EXECUTION_ID_ is null)
+                or
+                (PI.SUSPENSION_STATE_ = 1)
+                )
+            </if>
+            <if test="onlyTimers">
+                and RES.TYPE_ = 'timer'
+            </if>
+            <if test="onlyMessages">
+                and RES.TYPE_ = 'message'
+            </if>
+            <if test="duedateHigherThan != null">
+                and RES.DUEDATE_ &gt; #{duedateHigherThan}
+            </if>
+            <if test="duedateLowerThan != null">
+                and RES.DUEDATE_ &lt; #{duedateLowerThan}
+            </if>
+            <if test="duedateHigherThanOrEqual != null">
+                and RES.DUEDATE_ &gt;= #{duedateHigherThanOrEqual}
+            </if>
+            <if test="duedateLowerThanOrEqual != null">
+                and RES.DUEDATE_ &lt;= #{duedateLowerThanOrEqual}
+            </if>
+            <if test="withException">
+                and (RES.EXCEPTION_MSG_ is not null or RES.EXCEPTION_STACK_ID_ is not null)
+            </if>
+            <if test="exceptionMessage">
+                and RES.EXCEPTION_MSG_ = #{exceptionMessage}
+            </if>
+            <if test="tenantId != null">
+                and RES.TENANT_ID_ = #{tenantId}
+            </if>
+            <if test="tenantIdLike != null">
+                and RES.TENANT_ID_ like #{tenantIdLike}
+            </if>
+            <if test="withoutTenantId">
+                and (RES.TENANT_ID_ = '' or RES.TENANT_ID_ is null)
+            </if>
+        </where>
+    </sql>
+
+
+    <select id="selectJobByQueryCriteria" parameterType="org.activiti.engine.impl.JobQueryImpl" resultMap="executableJobResultMap">
   	${limitBefore}
     select RES.* ${limitBetween}
     <include refid="selectJobByQueryCriteriaSql"/>
@@ -269,7 +367,7 @@
     select count(distinct RES.ID_)
     <include refid="selectJobByQueryCriteriaSql"/>
   </select>
-  
+
   <sql id="selectJobByQueryCriteriaSql">
     from ${prefix}ACT_RU_JOB RES
     <if test="executable">
@@ -341,13 +439,11 @@
 
   <!-- TIMER INSERT -->
   
-  <insert id="insertTimer" parameterType="org.activiti.engine.impl.persistence.entity.TimerEntityImpl">
+  <insert id="insertExecutableTimerJob" parameterType="org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntityImpl">
     insert into ${prefix}ACT_RU_JOB (
             ID_, 
             REV_,
             TYPE_,
-            LOCK_OWNER_, 
-            LOCK_EXP_TIME_,
             EXCLUSIVE_,
             EXECUTION_ID_, 
             PROCESS_INSTANCE_ID_,
@@ -362,9 +458,42 @@
             TENANT_ID_)
     values (#{id, jdbcType=VARCHAR},
             1,
+            #{jobType, jdbcType=VARCHAR},
+            #{exclusive, jdbcType=BOOLEAN},
+            #{executionId, jdbcType=VARCHAR},
+            #{processInstanceId, jdbcType=VARCHAR},
+            #{processDefinitionId, jdbcType=VARCHAR},
+            #{retries, jdbcType=INTEGER},
+            #{exceptionByteArrayRef, typeHandler=ByteArrayRefTypeHandler},
+            #{exceptionMessage, jdbcType=VARCHAR},
+            #{duedate, jdbcType=TIMESTAMP},
+            #{repeat, jdbcType=VARCHAR},
+            #{jobHandlerType, jdbcType=VARCHAR},
+            #{jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{tenantId, jdbcType=VARCHAR}
+    )
+  </insert>
+
+  <insert id="insertTimer" parameterType="org.activiti.engine.impl.persistence.entity.TimerEntityImpl">
+    insert into ${prefix}ACT_RU_TIMER_JOB (
+            ID_,
+            REV_,
+            TYPE_,
+            EXCLUSIVE_,
+            EXECUTION_ID_,
+            PROCESS_INSTANCE_ID_,
+            PROC_DEF_ID_,
+            RETRIES_,
+            EXCEPTION_STACK_ID_,
+            EXCEPTION_MSG_,
+            DUEDATE_,
+            REPEAT_,
+            HANDLER_TYPE_,
+            HANDLER_CFG_,
+            TENANT_ID_)
+    values (#{id, jdbcType=VARCHAR},
+            1,
             'timer',
-            #{lockOwner, jdbcType=VARCHAR},
-            #{lockExpirationTime, jdbcType=TIMESTAMP},
             #{exclusive, jdbcType=BOOLEAN},
             #{executionId, jdbcType=VARCHAR},
             #{processInstanceId, jdbcType=VARCHAR},
@@ -381,12 +510,10 @@
   </insert>
 
   <insert id="bulkInsertTimer" parameterType="java.util.List">
-    INSERT INTO ${prefix}ACT_RU_JOB (
+    INSERT INTO ${prefix}ACT_RU_TIMER_JOB (
             ID_, 
             REV_,
             TYPE_,
-            LOCK_OWNER_, 
-            LOCK_EXP_TIME_,
             EXCLUSIVE_,
             EXECUTION_ID_, 
             PROCESS_INSTANCE_ID_,
@@ -403,8 +530,6 @@
         (#{job.id, jdbcType=VARCHAR},
          1,
          #{job.jobType, jdbcType=VARCHAR},
-         #{job.lockOwner, jdbcType=VARCHAR},
-         #{job.lockExpirationTime, jdbcType=TIMESTAMP},
          #{job.exclusive, jdbcType=BOOLEAN},
          #{job.executionId, jdbcType=VARCHAR},
          #{job.processInstanceId, jdbcType=VARCHAR},
@@ -423,12 +548,10 @@
   <insert id="bulkInsertTimer" databaseId="oracle" parameterType="java.util.List">
     INSERT ALL 
     <foreach collection="list" item="job" index="index"> 
-      INTO ${prefix}ACT_RU_JOB (
+      INTO ${prefix}ACT_RU_TIMER_JOB (
               ID_, 
               REV_,
               TYPE_,
-              LOCK_OWNER_, 
-              LOCK_EXP_TIME_,
               EXCLUSIVE_,
               EXECUTION_ID_, 
               PROCESS_INSTANCE_ID_,
@@ -444,8 +567,6 @@
           (#{job.id, jdbcType=VARCHAR},
            1,
            #{job.jobType, jdbcType=VARCHAR},
-           #{job.lockOwner, jdbcType=VARCHAR},
-           #{job.lockExpirationTime, jdbcType=TIMESTAMP},
            #{job.exclusive, jdbcType=BOOLEAN},
            #{job.executionId, jdbcType=VARCHAR},
            #{job.processInstanceId, jdbcType=VARCHAR},
@@ -464,12 +585,10 @@
 
   <!-- TIMER UPDATE -->
 
-  <update id="updateTimer" parameterType="org.activiti.engine.impl.persistence.entity.TimerEntityImpl">
+  <update id="updateExecutableTimerJob" parameterType="org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntityImpl">
     update ${prefix}ACT_RU_JOB
     <set>
        REV_ =  #{revisionNext, jdbcType=INTEGER},
-       LOCK_EXP_TIME_ = #{lockExpirationTime, jdbcType=TIMESTAMP},
-       LOCK_OWNER_ = #{lockOwner, jdbcType=VARCHAR},
        RETRIES_ = #{retries, jdbcType=INTEGER},
        EXCEPTION_STACK_ID_ = #{exceptionByteArrayRef, typeHandler=ByteArrayRefTypeHandler},
        EXCEPTION_MSG_ = #{exceptionMessage, jdbcType=VARCHAR},
@@ -487,8 +606,6 @@
     LEFT OUTER JOIN ${prefix}ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
     where (RES.TYPE_ = 'timer')
       and (RES.DUEDATE_ &lt; #{parameter, jdbcType=TIMESTAMP})
-      and (RES.LOCK_OWNER_ is null or RES.LOCK_EXP_TIME_ &lt; #{parameter, jdbcType=TIMESTAMP})
-      and (RES.RETRIES_  &gt; 0)
       and (
         (RES.EXECUTION_ID_ is null)
         or 
@@ -524,91 +641,11 @@
 
   <!-- MESSAGE INSERT -->
 
-  <insert id="bulkInsertMessage" parameterType="java.util.List">
-    INSERT INTO ${prefix}ACT_RU_JOB (
-        ID_, 
-        REV_, 
-        TYPE_,
-        LOCK_OWNER_, 
-        LOCK_EXP_TIME_,
-        EXCLUSIVE_,
-        EXECUTION_ID_, 
-        PROCESS_INSTANCE_ID_,
-        PROC_DEF_ID_,
-        DUEDATE_,
-        RETRIES_, 
-        EXCEPTION_STACK_ID_,
-        EXCEPTION_MSG_,
-        HANDLER_TYPE_,
-        HANDLER_CFG_,
-        TENANT_ID_) VALUES 
-    <foreach collection="list" item="job" index="index" separator=",">
-      (#{job.id, jdbcType=VARCHAR},
-       1,
-       #{job.jobType, jdbcType=VARCHAR},
-       #{job.lockOwner, jdbcType=VARCHAR},
-       #{job.lockExpirationTime, jdbcType=TIMESTAMP},
-       #{job.exclusive, jdbcType=BOOLEAN},
-       #{job.executionId, jdbcType=VARCHAR},
-       #{job.processInstanceId, jdbcType=VARCHAR},
-       #{job.processDefinitionId, jdbcType=VARCHAR},
-       #{job.duedate, jdbcType=TIMESTAMP},
-       #{job.retries, jdbcType=INTEGER},
-       #{job.exceptionByteArrayRef, typeHandler=ByteArrayRefTypeHandler},
-       #{job.exceptionMessage, jdbcType=VARCHAR},
-       #{job.jobHandlerType, jdbcType=VARCHAR},
-       #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
-       #{job.tenantId, jdbcType=VARCHAR})
-    </foreach>
-  </insert>
-
-  <insert id="bulkInsertMessage" databaseId="oracle" parameterType="java.util.List">
-    INSERT ALL 
-    <foreach collection="list" item="job" index="index">
-      INTO ${prefix}ACT_RU_JOB (
-          ID_, 
-          REV_, 
-          TYPE_,
-          LOCK_OWNER_, 
-          LOCK_EXP_TIME_,
-          EXCLUSIVE_,
-          EXECUTION_ID_, 
-          PROCESS_INSTANCE_ID_,
-          PROC_DEF_ID_,
-          DUEDATE_,
-          RETRIES_, 
-          EXCEPTION_STACK_ID_,
-          EXCEPTION_MSG_,
-          HANDLER_TYPE_,
-          HANDLER_CFG_,
-          TENANT_ID_) VALUES 
-      (#{job.id, jdbcType=VARCHAR},
-       1,
-       #{job.jobType, jdbcType=VARCHAR},
-       #{job.lockOwner, jdbcType=VARCHAR},
-       #{job.lockExpirationTime, jdbcType=TIMESTAMP},
-       #{job.exclusive, jdbcType=BOOLEAN},
-       #{job.executionId, jdbcType=VARCHAR},
-       #{job.processInstanceId, jdbcType=VARCHAR},
-       #{job.processDefinitionId, jdbcType=VARCHAR},
-       #{job.duedate, jdbcType=TIMESTAMP},
-       #{job.retries, jdbcType=INTEGER},
-       #{job.exceptionByteArrayRef, typeHandler=ByteArrayRefTypeHandler},
-       #{job.exceptionMessage, jdbcType=VARCHAR},
-       #{job.jobHandlerType, jdbcType=VARCHAR},
-       #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
-       #{job.tenantId, jdbcType=VARCHAR})
-    </foreach>
-    SELECT * FROM dual
-  </insert>
-
-  <insert id="insertMessage" parameterType="org.activiti.engine.impl.persistence.entity.MessageEntityImpl">
+  <insert id="insertExecutableMessageJob" parameterType="org.activiti.engine.impl.persistence.entity.MessageEntityImpl">
     insert into ${prefix}ACT_RU_JOB (
             ID_, 
             REV_, 
             TYPE_,
-            LOCK_OWNER_, 
-            LOCK_EXP_TIME_,
             EXCLUSIVE_,
             EXECUTION_ID_, 
             PROCESS_INSTANCE_ID_,
@@ -623,8 +660,6 @@
     values (#{id, jdbcType=VARCHAR},
             1,
             'message',
-            #{lockOwner, jdbcType=VARCHAR},
-            #{lockExpirationTime, jdbcType=TIMESTAMP},
             #{exclusive, jdbcType=BOOLEAN},
             #{executionId, jdbcType=VARCHAR},
             #{processInstanceId, jdbcType=VARCHAR},
@@ -641,7 +676,7 @@
   
   <!-- MESSAGE UPDATE -->
   
-  <update id="updateMessage" parameterType="org.activiti.engine.impl.persistence.entity.MessageEntityImpl">
+  <update id="updateExecutableMessageJob" parameterType="org.activiti.engine.impl.persistence.entity.MessageEntityImpl">
     update ${prefix}ACT_RU_JOB
     <set>
        REV_ =  #{revisionNext, jdbcType=INTEGER},
@@ -655,11 +690,171 @@
     where ID_= #{id, jdbcType=VARCHAR}
       and REV_ = #{revision, jdbcType=INTEGER}
   </update>
-  
-  <update id="unacquireJob" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject">
-    update ${prefix}ACT_RU_JOB
-    set DUEDATE_ = #{dueDate,jdbcType=TIMESTAMP}, LOCK_OWNER_ = null, LOCK_EXP_TIME_ = null
-    where ID_ = #{id,jdbcType=VARCHAR}
-  </update>
+
+
+    <insert id="bulkInsertExecutableTimerJob" parameterType="java.util.List">
+        INSERT INTO ${prefix}ACT_RU_JOB (
+        ID_,
+        REV_,
+        TYPE_,
+        EXCLUSIVE_,
+        EXECUTION_ID_,
+        PROCESS_INSTANCE_ID_,
+        PROC_DEF_ID_,
+        RETRIES_,
+        EXCEPTION_STACK_ID_,
+        EXCEPTION_MSG_,
+        DUEDATE_,
+        REPEAT_,
+        HANDLER_TYPE_,
+        HANDLER_CFG_,
+        TENANT_ID_) VALUES
+        <foreach collection="list" item="job" index="index" separator=",">
+            (#{job.id, jdbcType=VARCHAR},
+            #{job.revision, jdbcType=INTEGER},
+            'timer',
+            #{job.exclusive, jdbcType=BOOLEAN},
+            #{job.executionId, jdbcType=VARCHAR},
+            #{job.processInstanceId, jdbcType=VARCHAR},
+            #{job.processDefinitionId, jdbcType=VARCHAR},
+            #{job.retries, jdbcType=INTEGER},
+            #{job.exceptionByteArrayRef, typeHandler=ByteArrayRefTypeHandler},
+            #{job.exceptionMessage, jdbcType=VARCHAR},
+            #{job.duedate, jdbcType=TIMESTAMP},
+            #{job.repeat, jdbcType=VARCHAR},
+            #{job.jobHandlerType, jdbcType=VARCHAR},
+            #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{job.tenantId, jdbcType=VARCHAR})
+        </foreach>
+    </insert>
+
+    <insert id="bulkInsertExecutableTimerJob" databaseId="oracle" parameterType="java.util.List">
+        INSERT ALL
+        <foreach collection="list" item="job" index="index">
+            INTO ${prefix}ACT_RU_JOB (
+            ID_,
+            REV_,
+            TYPE_,
+            EXCLUSIVE_,
+            EXECUTION_ID_,
+            PROCESS_INSTANCE_ID_,
+            PROC_DEF_ID_,
+            RETRIES_,
+            EXCEPTION_STACK_ID_,
+            EXCEPTION_MSG_,
+            DUEDATE_,
+            REPEAT_,
+            HANDLER_TYPE_,
+            HANDLER_CFG_,
+            TENANT_ID_) VALUES
+            (#{job.id, jdbcType=VARCHAR},
+            #{job.revision, jdbcType=INTEGER},
+            'timer',
+            #{job.exclusive, jdbcType=BOOLEAN},
+            #{job.executionId, jdbcType=VARCHAR},
+            #{job.processInstanceId, jdbcType=VARCHAR},
+            #{job.processDefinitionId, jdbcType=VARCHAR},
+            #{job.retries, jdbcType=INTEGER},
+            #{job.exceptionByteArrayRef, typeHandler=ByteArrayRefTypeHandler},
+            #{job.exceptionMessage, jdbcType=VARCHAR},
+            #{job.duedate, jdbcType=TIMESTAMP},
+            #{job.repeat, jdbcType=VARCHAR},
+            #{job.jobHandlerType, jdbcType=VARCHAR},
+            #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{job.tenantId, jdbcType=VARCHAR})
+        </foreach>
+        SELECT * FROM dual
+    </insert>
+
+    <insert id="bulkInsertExecutableMessageJob" parameterType="java.util.List">
+        INSERT INTO ${prefix}ACT_RU_JOB (
+        ID_,
+        REV_,
+        TYPE_,
+        EXCLUSIVE_,
+        EXECUTION_ID_,
+        PROCESS_INSTANCE_ID_,
+        PROC_DEF_ID_,
+        DUEDATE_,
+        RETRIES_,
+        EXCEPTION_STACK_ID_,
+        EXCEPTION_MSG_,
+        HANDLER_TYPE_,
+        HANDLER_CFG_,
+        TENANT_ID_) VALUES
+        <foreach collection="list" item="job" index="index" separator=",">
+            (#{job.id, jdbcType=VARCHAR},
+            1,
+            #{job.jobType, jdbcType=VARCHAR},
+            #{job.exclusive, jdbcType=BOOLEAN},
+            #{job.executionId, jdbcType=VARCHAR},
+            #{job.processInstanceId, jdbcType=VARCHAR},
+            #{job.processDefinitionId, jdbcType=VARCHAR},
+            #{job.duedate, jdbcType=TIMESTAMP},
+            #{job.retries, jdbcType=INTEGER},
+            #{job.exceptionByteArrayRef, typeHandler=ByteArrayRefTypeHandler},
+            #{job.exceptionMessage, jdbcType=VARCHAR},
+            #{job.jobHandlerType, jdbcType=VARCHAR},
+            #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{job.tenantId, jdbcType=VARCHAR})
+        </foreach>
+    </insert>
+
+    <insert id="bulkInsertExecutableMessageJob" databaseId="oracle" parameterType="java.util.List">
+        INSERT ALL
+        <foreach collection="list" item="job" index="index">
+            INTO ${prefix}ACT_RU_JOB (
+            ID_,
+            REV_,
+            TYPE_,
+            EXCLUSIVE_,
+            EXECUTION_ID_,
+            PROCESS_INSTANCE_ID_,
+            PROC_DEF_ID_,
+            DUEDATE_,
+            RETRIES_,
+            EXCEPTION_STACK_ID_,
+            EXCEPTION_MSG_,
+            HANDLER_TYPE_,
+            HANDLER_CFG_,
+            TENANT_ID_) VALUES
+            (#{job.id, jdbcType=VARCHAR},
+            1,
+            #{job.jobType, jdbcType=VARCHAR},
+            #{job.exclusive, jdbcType=BOOLEAN},
+            #{job.executionId, jdbcType=VARCHAR},
+            #{job.processInstanceId, jdbcType=VARCHAR},
+            #{job.processDefinitionId, jdbcType=VARCHAR},
+            #{job.duedate, jdbcType=TIMESTAMP},
+            #{job.retries, jdbcType=INTEGER},
+            #{job.exceptionByteArrayRef, typeHandler=ByteArrayRefTypeHandler},
+            #{job.exceptionMessage, jdbcType=VARCHAR},
+            #{job.jobHandlerType, jdbcType=VARCHAR},
+            #{job.jobHandlerConfiguration, jdbcType=VARCHAR},
+            #{job.tenantId, jdbcType=VARCHAR})
+        </foreach>
+        SELECT * FROM dual
+    </insert>
+
+    <select id="selectTimerJobsToDueDate" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
+        select
+        ID_,
+        REV_ ,
+        TYPE_ ,
+        EXCLUSIVE_ ,
+        EXECUTION_ID_ ,
+        PROCESS_INSTANCE_ID_ ,
+        PROC_DEF_ID_ ,
+        RETRIES_ ,
+        EXCEPTION_STACK_ID_ ,
+        EXCEPTION_MSG_ ,
+        DUEDATE_ ,
+        REPEAT_ ,
+        HANDLER_TYPE_,
+        HANDLER_CFG_ ,
+        TENANT_ID_
+        from ${prefix}ACT_RU_TIMER_JOB
+        where DUEDATE_ is null or DUEDATE_ &lt; #{parameter, jdbcType=TIMESTAMP};
+    </select>
 
 </mapper>

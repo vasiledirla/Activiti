@@ -12,16 +12,16 @@
  */
 package org.activiti.engine.impl.persistence.entity;
 
+import org.activiti.engine.ActivitiException;
+import org.activiti.engine.ProcessEngineConfiguration;
+import org.activiti.engine.impl.db.BulkDeleteable;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.activiti.engine.ActivitiException;
-import org.activiti.engine.ProcessEngineConfiguration;
-import org.activiti.engine.impl.db.BulkDeleteable;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Stub of the common parts of a Job. You will normally work with a subclass of JobEntity, such as {@link TimerEntity} or {@link MessageEntity}.
@@ -41,8 +41,7 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
 
   protected Date duedate;
 
-  protected String lockOwner;
-  protected Date lockExpirationTime;
+  protected String repeat = null;
 
   protected String executionId;
   protected String processInstanceId;
@@ -64,26 +63,15 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
 
   public Object getPersistentState() {
     Map<String, Object> persistentState = new HashMap<String, Object>();
-    persistentState.put("lockOwner", lockOwner);
-    persistentState.put("lockExpirationTime", lockExpirationTime);
     persistentState.put("retries", retries);
     persistentState.put("duedate", duedate);
     persistentState.put("exceptionMessage", exceptionMessage);
-    
+
     if (exceptionByteArrayRef != null) {
       persistentState.put("exceptionByteArrayId", exceptionByteArrayRef.getId());
     }
-    
+
     return persistentState;
-  }
-
-  // getters and setters ////////////////////////////////////////////////////////
-
-  public void setExecution(ExecutionEntity execution) {
-    executionId = execution.getId();
-    processInstanceId = execution.getProcessInstanceId();
-    processDefinitionId = execution.getProcessDefinitionId();
-    execution.getJobs().add(this);
   }
 
   public String getExceptionStacktrace() {
@@ -118,7 +106,22 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
       throw new ActivitiException("UTF-8 is not a supported encoding");
     }
   }
+  public String getRepeat() {
+    return repeat;
+  }
 
+  // getters and setters ////////////////////////////////////////////////////////
+
+  public void setExecution(ExecutionEntity execution) {
+    executionId = execution.getId();
+    processInstanceId = execution.getProcessInstanceId();
+    processDefinitionId = execution.getProcessDefinitionId();
+    execution.getJobs().add(this);
+  }
+
+  public void setRepeat(String repeat) {
+    this.repeat = repeat;
+  }
   public int getRevisionNext() {
     return revision + 1;
   }
@@ -161,22 +164,6 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
 
   public void setRetries(int retries) {
     this.retries = retries;
-  }
-
-  public String getLockOwner() {
-    return lockOwner;
-  }
-
-  public void setLockOwner(String claimedBy) {
-    this.lockOwner = claimedBy;
-  }
-
-  public Date getLockExpirationTime() {
-    return lockExpirationTime;
-  }
-
-  public void setLockExpirationTime(Date claimedUntil) {
-    this.lockExpirationTime = claimedUntil;
   }
 
   public String getProcessInstanceId() {
@@ -244,6 +231,9 @@ public abstract class JobEntityImpl implements JobEntity, BulkDeleteable, Serial
     return exceptionByteArrayRef;
   }
 
+  public void setExceptionByteArrayRef(ByteArrayRef exceptionByteArrayRef) {
+    this.exceptionByteArrayRef = exceptionByteArrayRef;
+  }
   @Override
   public String toString() {
     return "JobEntity [id=" + id + "]";

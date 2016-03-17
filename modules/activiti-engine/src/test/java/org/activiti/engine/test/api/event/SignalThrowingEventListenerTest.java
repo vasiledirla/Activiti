@@ -17,6 +17,7 @@ import org.activiti.engine.delegate.event.ActivitiEvent;
 import org.activiti.engine.delegate.event.ActivitiEventListener;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.impl.bpmn.helper.SignalThrowingEventListener;
+import org.activiti.engine.impl.cmd.CleanupFailedJobsCommand;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.ProcessInstance;
@@ -130,7 +131,7 @@ public class SignalThrowingEventListenerTest extends PluggableActivitiTestCase {
       ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("testSignal");
       assertNotNull(processInstance);
 
-      Job signalJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+      Job signalJob = managementService.createJobQuery().locked().processInstanceId(processInstance.getId()).singleResult();
 
       try {
         managementService.executeJob(signalJob.getId());
@@ -139,7 +140,7 @@ public class SignalThrowingEventListenerTest extends PluggableActivitiTestCase {
         // Ignore, expected exception
       }
 
-      Job failedJob = managementService.createJobQuery().withException().processInstanceId(processInstance.getId()).singleResult();
+      Job failedJob = managementService.createJobQuery().failed().processInstanceId(processInstance.getId()).singleResult();
 
       assertNotNull(failedJob);
       assertEquals(2, failedJob.getRetries());
@@ -147,6 +148,9 @@ public class SignalThrowingEventListenerTest extends PluggableActivitiTestCase {
       // One retry should have triggered dispatching of a retry-decrement
       // event
       assertEquals(1, taskService.createTaskQuery().processInstanceId(processInstance.getId()).count());
+
+      // move failed job to the main queue just git it another try.
+      processEngineConfiguration.getCommandExecutor().execute(new CleanupFailedJobsCommand());
 
       try {
         managementService.executeJob(failedJob.getId());
@@ -176,7 +180,7 @@ public class SignalThrowingEventListenerTest extends PluggableActivitiTestCase {
       ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("testSignal");
       assertNotNull(processInstance);
 
-      Job signalJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+      Job signalJob = managementService.createJobQuery().locked().processInstanceId(processInstance.getId()).singleResult();
 
       try {
         managementService.executeJob(signalJob.getId());
@@ -185,7 +189,7 @@ public class SignalThrowingEventListenerTest extends PluggableActivitiTestCase {
         // Ignore, expected exception
       }
 
-      Job failedJob = managementService.createJobQuery().withException().processInstanceId(processInstance.getId()).singleResult();
+      Job failedJob = managementService.createJobQuery().failed().processInstanceId(processInstance.getId()).singleResult();
 
       assertNotNull(failedJob);
       assertEquals(2, failedJob.getRetries());

@@ -56,7 +56,7 @@ public class JobRetryCmd implements Command<Object> {
   }
 
   public Object execute(CommandContext commandContext) {
-    JobEntity job = commandContext.getJobEntityManager().findById(jobId);
+    JobEntity job = commandContext.getFailedJobEntityManager().findById(jobId);
     if (job == null) {
       return null;
     }
@@ -75,8 +75,8 @@ public class JobRetryCmd implements Command<Object> {
 
       log.debug("activity or FailedJobRetryTimerCycleValue is null in job " + jobId + "'. only decrementing retries.");
       job.setRetries(job.getRetries() - 1);
-      job.setLockOwner(null);
-      job.setLockExpirationTime(null);
+    /*  job.setLockOwner(null);
+      job.setLockExpirationTime(null);*/
       if (job.getDuedate() == null || job instanceof MessageEntity) {
         // add wait time for failed async job
         job.setDuedate(calculateDueDate(commandContext, processEngineConfig.getAsyncFailedJobWaitTime(), null));
@@ -88,8 +88,8 @@ public class JobRetryCmd implements Command<Object> {
     } else {
       try {
         DurationHelper durationHelper = new DurationHelper(failedJobRetryTimeCycleValue, processEngineConfig.getClock());
-        job.setLockOwner(null);
-        job.setLockExpirationTime(null);
+       /* job.setLockOwner(null);
+        job.setLockExpirationTime(null);*/
         job.setDuedate(durationHelper.getDateAfter());
 
         if (job.getExceptionMessage() == null) { // is it the first exception

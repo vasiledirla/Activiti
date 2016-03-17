@@ -16,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 
 /**
  * @author Daniel Meyer
@@ -23,7 +24,7 @@ import org.activiti.engine.impl.persistence.entity.JobEntity;
 public class MultipleJobsExecutorContext implements JobExecutorContext {
 
   protected List<String> currentProcessorJobQueue = new LinkedList<String>();
-  protected JobEntity currentJob;
+  protected LockedJobEntity currentJob;
 
   public List<String> getCurrentProcessorJobQueue() {
     return currentProcessorJobQueue;
@@ -33,11 +34,11 @@ public class MultipleJobsExecutorContext implements JobExecutorContext {
     return currentJob == null ? false : currentJob.isExclusive();
   }
 
-  public void setCurrentJob(JobEntity currentJob) {
+  public void setCurrentJob(LockedJobEntity currentJob) {
     this.currentJob = currentJob;
   }
 
-  public JobEntity getCurrentJob() {
+  public LockedJobEntity getCurrentJob() {
     return currentJob;
   }
 }

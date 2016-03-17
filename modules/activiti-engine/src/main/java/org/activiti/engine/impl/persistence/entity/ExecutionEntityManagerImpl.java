@@ -335,23 +335,7 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
       ExecutionEntity childExecutionEntity = childExecutions.get(i);
       deleteExecutionAndRelatedData(childExecutionEntity, deleteReason, false);
     }
-    
-//    ExecutionTree executionTree = findExecutionTreeInCurrentProcessInstance(execution.getProcessInstanceId());
-//    ExecutionTreeNode executionTreeNode = null;
-//    if (executionTree.getRoot() != null) {
-//      executionTreeNode = executionTree.getTreeNode(execution.getId());
-//    }
-//    
-//    if (executionTreeNode == null) {
-//      return;
-//    }
-//    
-//    Iterator<ExecutionTreeNode> iterator = executionTreeNode.leafsFirstIterator();
-//    while (iterator.hasNext()) {
-//      ExecutionEntity childExecutionEntity = iterator.next().getExecutionEntity();
-//      deleteExecutionAndRelatedData(childExecutionEntity, deleteReason, false);
-//    }
-    
+
     deleteExecutionAndRelatedData(execution, deleteReason, false);
 
     if (deleteHistory) {
@@ -513,14 +497,31 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
     }
 
     // Delete jobs
-    JobEntityManager jobEntityManager = getJobEntityManager();
-    Collection<JobEntity> jobsForExecution = jobEntityManager.findJobsByExecutionId(executionEntity.getId());
-    for (JobEntity job : jobsForExecution) {
-      getJobEntityManager().delete(job);
+    ExecutableJobEntityManager executableJobEntityManager = getExecutableJobEntityManager();
+    Collection<ExecutableJobEntity> executableJobsForExecution = executableJobEntityManager.findJobsByExecutionId(executionEntity.getId());
+    for (ExecutableJobEntity job : executableJobsForExecution) {
+      getExecutableJobEntityManager().delete(job);
       if (getEventDispatcher().isEnabled()) {
         getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, job));
       }
-//      jobEntityManager.delete(job, false); // false -> jobs fire the events themselves TODO: is this right?
+    }
+
+    LockedJobEntityManager lockedJobEntityManager = getLockedJobEntityManager();
+    Collection<LockedJobEntity> lockedJobsForExecution = lockedJobEntityManager.findJobsByExecutionId(executionEntity.getId());
+    for (LockedJobEntity job : lockedJobsForExecution) {
+      getLockedJobEntityManager().delete(job);
+      if (getEventDispatcher().isEnabled()) {
+        getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, job));
+      }
+    }
+
+    FailedJobEntityManager failedJobEntityManager = getFailedJobEntityManager();
+    Collection<FailedJobEntity> failedJobsForExecution = failedJobEntityManager.findJobsByExecutionId(executionEntity.getId());
+    for (FailedJobEntity job : failedJobsForExecution) {
+      getFailedJobEntityManager().delete(job);
+      if (getEventDispatcher().isEnabled()) {
+        getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, job));
+      }
     }
 
     // Delete event subscriptions

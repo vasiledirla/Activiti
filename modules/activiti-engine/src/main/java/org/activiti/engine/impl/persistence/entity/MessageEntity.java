@@ -18,8 +18,5 @@ package org.activiti.engine.impl.persistence.entity;
  */
 public interface MessageEntity extends JobEntity {
 
-  String getRepeat();
-
-  void setRepeat(String repeat);
     
 }

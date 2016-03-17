@@ -13,11 +13,6 @@
 
 package org.activiti.engine.impl.persistence.entity;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
 import org.activiti.bpmn.model.Event;
 import org.activiti.bpmn.model.EventDefinition;
 import org.activiti.bpmn.model.FlowElement;
@@ -26,8 +21,6 @@ import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.delegate.Expression;
 import org.activiti.engine.delegate.VariableScope;
-import org.activiti.engine.delegate.event.ActivitiEventType;
-import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.JobQueryImpl;
 import org.activiti.engine.impl.Page;
 import org.activiti.engine.impl.calendar.BusinessCalendar;
@@ -42,46 +35,53 @@ import org.activiti.engine.impl.jobexecutor.JobHandler;
 import org.activiti.engine.impl.jobexecutor.TimerEventHandler;
 import org.activiti.engine.impl.jobexecutor.TimerStartEventJobHandler;
 import org.activiti.engine.impl.persistence.entity.data.DataManager;
-import org.activiti.engine.impl.persistence.entity.data.JobDataManager;
+import org.activiti.engine.impl.persistence.entity.data.ExecutableJobDataManager;
 import org.activiti.engine.impl.util.ProcessDefinitionUtil;
 import org.activiti.engine.runtime.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Tom Baeyens
  * @author Daniel Meyer
  * @author Joram Barrez
  */
-public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> implements JobEntityManager {
-  
-  private static final Logger logger = LoggerFactory.getLogger(JobEntityManagerImpl.class);
-  
-  protected JobDataManager jobDataManager;
-  
-  public JobEntityManagerImpl(ProcessEngineConfigurationImpl processEngineConfiguration, JobDataManager jobDataManager) {
+public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<ExecutableJobEntity> implements ExecutableJobEntityManager {
+
+  private static final Logger logger = LoggerFactory.getLogger(ExecutableJobEntityManagerImpl.class);
+
+  protected ExecutableJobDataManager jobDataManager;
+
+  public ExecutableJobEntityManagerImpl(ProcessEngineConfigurationImpl processEngineConfiguration, ExecutableJobDataManager jobDataManager) {
     super(processEngineConfiguration);
     this.jobDataManager = jobDataManager;
   }
-  
+
   @Override
-  protected DataManager<JobEntity> getDataManager() {
+  protected DataManager<ExecutableJobEntity> getDataManager() {
     return jobDataManager;
   }
-  
+
   @Override
-  public MessageEntity createMessage() {
+  public ExecutableMessageJobEntity createMessage() {
     return jobDataManager.createMessage();
   }
-  
+
   @Override
-  public TimerEntity createTimer() {
+  public ExecutableTimerJobEntity createTimer() {
     return jobDataManager.createTimer();
   }
-  
+
   @Override
-  public TimerEntity createTimer(TimerEntity te) {
-    TimerEntity newTimerEntity = createTimer();
+  public ExecutableTimerJobEntity createTimer(TimerEntity te) {
+    ExecutableTimerJobEntity newTimerEntity = createTimer();
     newTimerEntity.setJobHandlerConfiguration(te.getJobHandlerConfiguration());
     newTimerEntity.setJobHandlerType(te.getJobHandlerType());
     newTimerEntity.setExclusive(te.isExclusive());
@@ -97,9 +97,9 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
     newTimerEntity.setJobType("timer");
     return newTimerEntity;
   }
-  
+
   @Override
-  public void insert(JobEntity jobEntity, boolean fireCreateEvent) {
+  public void insert(ExecutableJobEntity jobEntity, boolean fireCreateEvent) {
 
     // add link to execution
     if (jobEntity.getExecutionId() != null) {
@@ -116,7 +116,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
   }
 
   @Override
-  public void send(MessageEntity message) {
+  public void send(ExecutableMessageJobEntity message) {
 
     ProcessEngineConfigurationImpl processEngineConfiguration = getProcessEngineConfiguration();
 
@@ -130,26 +130,32 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
       // pick the job up after the max lock time.
       Date dueDate = new Date(getClock().getCurrentTime().getTime() + processEngineConfiguration.getAsyncExecutor().getAsyncJobLockTimeInMillis());
       message.setDuedate(dueDate);
-      message.setLockExpirationTime(null); // was set before, but to be quickly picked up needs to be set to null
+      //      message.setLockExpirationTime(null); // was set before, but to be quickly picked up needs to be set to null
 
     } else if (!processEngineConfiguration.isJobExecutorActivate()) {
 
       // If the async executor is disabled AND there is no old school job
       // executor, The job needs to be picked up as soon as possible. So the due date is now set to the current time
       message.setDuedate(processEngineConfiguration.getClock().getCurrentTime());
-      message.setLockExpirationTime(null); // was set before, but to be quickly picked up needs to be set to null
+      //      message.setLockExpirationTime(null); // was set before, but to be quickly picked up needs to be set to null
     }
 
-    insert(message);
     if (processEngineConfiguration.isAsyncExecutorEnabled()) {
-      hintAsyncExecutor(message);
+      GregorianCalendar gregorianCalendar = new GregorianCalendar();
+      gregorianCalendar.setTime(processEngineConfiguration.getClock().getCurrentTime());
+      gregorianCalendar.add(Calendar.MILLISECOND, processEngineConfiguration.getAsyncExecutor().getAsyncJobLockTimeInMillis());
+
+      LockedJobEntity lockedEntity = lockJob(message, null, gregorianCalendar.getTime());
+
+      hintAsyncExecutor(lockedEntity);
     } else {
+      insert(message);
       hintJobExecutor(message);
     }
   }
 
   @Override
-  public void schedule(TimerEntity timer) {
+  public void schedule(ExecutableTimerJobEntity timer) {
     Date duedate = timer.getDuedate();
     if (duedate == null) {
       throw new ActivitiIllegalArgumentException("duedate is null");
@@ -163,19 +169,19 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
   }
 
   @Override
-  public void retryAsyncJob(JobEntity job) {
+  public void retryAsyncJob(LockedJobEntity job) {
     try {
-    	
-    	// If a job has to be retried, we wait for a certain amount of time,
-    	// otherwise the job will be continuously be retried without delay (and thus seriously stressing the database).
-	    Thread.sleep(getAsyncExecutor().getRetryWaitTimeInMillis());
-	    
+
+      // If a job has to be retried, we wait for a certain amount of time,
+      // otherwise the job will be continuously be retried without delay (and thus seriously stressing the database).
+      Thread.sleep(getAsyncExecutor().getRetryWaitTimeInMillis());
+
     } catch (InterruptedException e) {
     }
     getAsyncExecutor().executeAsyncJob(job);
   }
 
-  protected void hintAsyncExecutor(JobEntity job) {
+  protected void hintAsyncExecutor(LockedJobEntity job) {
 
     // notify job executor:
     TransactionListener transactionListener = new AsyncJobAddedNotification(job, getAsyncExecutor());
@@ -191,7 +197,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
 
   @Override
   public List<JobEntity> findNextJobsToExecute(Page page) {
-    return jobDataManager.findNextJobsToExecute(page); 
+    return jobDataManager.findNextJobsToExecute(page);
   }
 
   @Override
@@ -200,8 +206,8 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
   }
 
   @Override
-  public List<JobEntity> findAsyncJobsDueToExecute(Page page) {
-    return jobDataManager.findAsyncJobsDueToExecute(page);
+  public List<ExecutableJobEntity> findExecutableJobsDueToExecute(Page page) {
+    return jobDataManager.findExecutableJobsDueToExecute(page);
   }
 
   @Override
@@ -210,7 +216,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
   }
 
   @Override
-  public List<JobEntity> findJobsByExecutionId(String executionId) {
+  public List<ExecutableJobEntity> findJobsByExecutionId(String executionId) {
     return jobDataManager.findJobsByExecutionId(executionId);
   }
 
@@ -233,27 +239,27 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
   public List<Job> findJobsByQueryCriteria(JobQueryImpl jobQuery, Page page) {
     return jobDataManager.findJobsByQueryCriteria(jobQuery, page);
   }
-  
+
   @Override
   public List<Job> findJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds) {
-   return jobDataManager.findJobsByTypeAndProcessDefinitionIds(jobHandlerType, processDefinitionIds);
+    return jobDataManager.findJobsByTypeAndProcessDefinitionIds(jobHandlerType, processDefinitionIds);
   }
-  
+
   @Override
   public List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey) {
     return jobDataManager.findJobsByTypeAndProcessDefinitionKeyNoTenantId(jobHandlerType, processDefinitionKey);
   }
-  
+
   @Override
   public List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId) {
     return jobDataManager.findJobsByTypeAndProcessDefinitionKeyAndTenantId(jobHandlerType, processDefinitionKey, tenantId);
   }
-  
+
   @Override
   public List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId) {
-     return jobDataManager.findJobsByTypeAndProcessDefinitionId(jobHandlerType, processDefinitionId);
+    return jobDataManager.findJobsByTypeAndProcessDefinitionId(jobHandlerType, processDefinitionId);
   }
-  
+
   @Override
   public long findJobCountByQueryCriteria(JobQueryImpl jobQuery) {
     return jobDataManager.findJobCountByQueryCriteria(jobQuery);
@@ -263,61 +269,57 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
   public void updateJobTenantIdForDeployment(String deploymentId, String newTenantId) {
     jobDataManager.updateJobTenantIdForDeployment(deploymentId, newTenantId);
   }
-  
+
   @Override
   public void unacquireJob(String jobId) {
     jobDataManager.unacquireJob(jobId);
   }
 
   @Override
-  public void delete(JobEntity jobEntity) {
-    super.delete(jobEntity);
-
-    deleteExceptionByteArrayRef(jobEntity);
-
-    removeExecutionLink(jobEntity);
-    
-    // Send event
-    if (getEventDispatcher().isEnabled()) {
-      getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.ENTITY_DELETED, this));
-    }
+  public int moveTimerJobsToMainQueue() {
+    return jobDataManager.moveTimerJobsToMainQueue();
   }
 
-  /**
-   * Removes the job's execution's reference to this job, iff the job has an associated execution.
-   * Subclasses may override to provide custom implementations.
-   */
-  protected void removeExecutionLink(JobEntity jobEntity) {
-    if (jobEntity.getExecutionId() != null) {
-      ExecutionEntity execution = getExecutionEntityManager().findById(jobEntity.getExecutionId());
-      execution.getJobs().remove(this);
-    }
-  }
-
-  /**
-   * Deletes a the byte array used to store the exception information.  Subclasses may override
-   * to provide custom implementations. 
-   */
-  protected void deleteExceptionByteArrayRef(JobEntity jobEntity) {
-    ByteArrayRef exceptionByteArrayRef = jobEntity.getExceptionByteArrayRef();
-    if (exceptionByteArrayRef != null) {
-      exceptionByteArrayRef.delete();
-    }
-  }
-  
-  // Job Execution logic ////////////////////////////////////////////////////////////////////
-  
   @Override
-  public void execute(JobEntity jobEntity) {
+  public List<ExecutableJobEntity> selectTimerJobsToDueDate() {
+    return jobDataManager.selectTimerJobsToDueDate();
+  }
+
+  @Override
+  public LockedJobEntity lockJob(ExecutableJobEntity jobEntity, String lockOwner, Date time) {
+    LockedJobEntityImpl lockedEntity = null;
+
     if (jobEntity instanceof MessageEntity) {
-      executeMessageJob(jobEntity);
+      lockedEntity = new LockedMessageJobEntityImpl((MessageEntity) jobEntity, time, lockOwner);
     } else if (jobEntity instanceof TimerEntity) {
-      executeTimerJob((TimerEntity) jobEntity);
-    } 
+      lockedEntity = new LockedTimerJobEntityImpl((TimerEntity) jobEntity, time, lockOwner);
+    }
+
+    if (lockedEntity != null) {
+      if (jobEntity.getId() != null) {
+        delete(jobEntity, false);
+      }
+
+      getLockedJobEntityManager().insert(lockedEntity, false);
+      jobEntity.setId(lockedEntity.getId());
+    }
+
+    return lockedEntity;
+  }
+
+  // Job Execution logic ////////////////////////////////////////////////////////////////////
+
+  @Override
+  public void execute(LockedJobEntity jobEntity) {
+    if (jobEntity instanceof MessageEntity) {
+      executeMessageJob((LockedMessageJobEntity) jobEntity);
+    } else if (jobEntity instanceof TimerEntity) {
+      executeTimerJob((LockedTimerJobEntity) jobEntity);
+    }
   }
 
   protected void executeJobHandler(JobEntity jobEntity) {
-    
+
     ExecutionEntity execution = null;
     if (jobEntity.getExecutionId() != null) {
       execution = getExecutionEntityManager().findById(jobEntity.getExecutionId());
@@ -327,13 +329,13 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
     JobHandler jobHandler = jobHandlers.get(jobEntity.getJobHandlerType());
     jobHandler.execute(jobEntity, jobEntity.getJobHandlerConfiguration(), execution, getCommandContext());
   }
-  
-  protected void executeMessageJob(JobEntity jobEntity) {
+
+  protected void executeMessageJob(LockedMessageJobEntity jobEntity) {
     executeJobHandler(jobEntity);
-    delete(jobEntity);
+    getLockedJobEntityManager().delete(jobEntity);
   }
-  
-  protected void executeTimerJob(TimerEntity timerEntity) {
+
+  protected void executeTimerJob(final LockedTimerJobEntity timerEntity) {
 
     // set endDate if it was set to the definition
     restoreExtraData(timerEntity);
@@ -342,7 +344,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
       if (logger.isDebugEnabled()) {
         logger.debug("Timer {} fired. but the dueDate is after the endDate.  Deleting timer.", timerEntity.getId());
       }
-      delete(timerEntity);
+      getLockedJobEntityManager().delete(timerEntity);
       return;
     }
 
@@ -351,7 +353,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
     if (logger.isDebugEnabled()) {
       logger.debug("Timer {} fired. Deleting timer.", timerEntity.getId());
     }
-    delete(timerEntity);
+    getLockedJobEntityManager().delete(timerEntity);
 
     if (timerEntity.getRepeat() != null) {
       int repeatValue = calculateRepeatValue(timerEntity);
@@ -359,16 +361,16 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
         if (repeatValue > 0) {
           setNewRepeat(timerEntity, repeatValue);
         }
-        Date newTimer = calculateNextTimer(timerEntity);
+        final Date newTimer = calculateNextTimer(timerEntity);
         if (newTimer != null && isValidTime(timerEntity, newTimer)) {
-          TimerEntity te = createTimer(timerEntity);
+          ExecutableTimerJobEntity te = createTimer(timerEntity);
           te.setDuedate(newTimer);
-          getJobEntityManager().schedule(te);
+          getExecutableJobEntityManager().schedule(te);
         }
       }
     }
   }
-  
+
   protected void restoreExtraData(TimerEntity timerEntity) {
     String activityId = timerEntity.getJobHandlerConfiguration();
 
@@ -388,7 +390,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
         if (timerEntity.getExecutionId() != null) {
           executionEntity = getExecutionEntityManager().findById(timerEntity.getExecutionId());
         }
-        
+
         if (executionEntity == null) {
           executionEntity = NoExecutionVariableScope.getSharedInstance();
         }
@@ -401,7 +403,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
             timerEntity.setEndDate((Date) endDateValue);
           } else {
             throw new ActivitiException("Timer '" + ((ExecutionEntity) executionEntity).getActivityId()
-                + "' was not configured with a valid duration/time, either hand in a java.util.Date or a String in format 'yyyy-MM-dd'T'hh:mm:ss'");
+                    + "' was not configured with a valid duration/time, either hand in a java.util.Date or a String in format 'yyyy-MM-dd'T'hh:mm:ss'");
           }
 
           if (timerEntity.getEndDate() == null) {
@@ -421,17 +423,17 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
     }
     timerEntity.setMaxIterations(maxIterations);
   }
-  
+
   protected int getMaxIterations(org.activiti.bpmn.model.Process process, String activityId) {
     FlowElement flowElement = process.getFlowElement(activityId, true);
     if (flowElement != null) {
       if (flowElement instanceof Event) {
-        
+
         Event event = (Event) flowElement;
         List<EventDefinition> eventDefinitions = event.getEventDefinitions();
-        
+
         if (eventDefinitions != null) {
-          
+
           for (EventDefinition eventDefinition : eventDefinitions) {
             if (eventDefinition instanceof TimerEventDefinition) {
               TimerEventDefinition timerEventDefinition = (TimerEventDefinition) eventDefinition;
@@ -440,14 +442,14 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
               }
             }
           }
-          
+
         }
-        
+
       }
     }
     return -1;
   }
-  
+
   protected int calculateMaxIterationsValue(String originalExpression) {
     int times = Integer.MAX_VALUE;
     List<String> expression = Arrays.asList(originalExpression.split("/"));
@@ -459,7 +461,7 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
     }
     return times;
   }
-  
+
   protected int calculateRepeatValue(TimerEntity timerEntity) {
     int times = -1;
     List<String> expression = Arrays.asList(timerEntity.getRepeat().split("/"));
@@ -483,23 +485,23 @@ public class JobEntityManagerImpl extends AbstractEntityManager<JobEntity> imple
     }
     timerEntity.setRepeat(repeatBuilder.toString());
   }
-  
+
   protected boolean isValidTime(TimerEntity timerEntity, Date newTimerDate) {
     BusinessCalendar businessCalendar = getProcessEngineConfiguration().getBusinessCalendarManager().getBusinessCalendar(CycleBusinessCalendar.NAME);
     return businessCalendar.validateDuedate(timerEntity.getRepeat(), timerEntity.getMaxIterations(), timerEntity.getEndDate(), newTimerDate);
   }
-  
+
   protected Date calculateNextTimer(TimerEntity timerEntity) {
     BusinessCalendar businessCalendar = getProcessEngineConfiguration().getBusinessCalendarManager().getBusinessCalendar(CycleBusinessCalendar.NAME);
     return businessCalendar.resolveDuedate(timerEntity.getRepeat(), timerEntity.getMaxIterations());
   }
 
-  public JobDataManager getJobDataManager() {
+  public ExecutableJobDataManager getJobDataManager() {
     return jobDataManager;
   }
 
-  public void setJobDataManager(JobDataManager jobDataManager) {
+  public void setJobDataManager(ExecutableJobDataManager jobDataManager) {
     this.jobDataManager = jobDataManager;
   }
-  
+
 }

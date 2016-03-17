@@ -62,11 +62,13 @@ public class ActivitiRuleJunit4Test {
     runtimeService.startProcessInstanceByKey("asyncTask");
 
     // now there should be one job in the database:
-    assertEquals(1, managementService.createJobQuery().count());
+    assertEquals(1, managementService.createJobQuery().locked().count());
 
     JobTestHelper.waitForJobExecutorToProcessAllJobs(activitiRule, 5000L, 500L);
 
     // the job is done
     assertEquals(0, managementService.createJobQuery().count());
+    assertEquals(0, managementService.createJobQuery().locked().count());
+    assertEquals(0, managementService.createJobQuery().failed().count());
   }
 }

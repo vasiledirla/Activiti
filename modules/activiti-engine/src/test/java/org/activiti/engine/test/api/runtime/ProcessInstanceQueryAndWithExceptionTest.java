@@ -1,9 +1,14 @@
 package org.activiti.engine.test.api.runtime;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.activiti.engine.delegate.DelegateExecution;
 import org.activiti.engine.delegate.JavaDelegate;
+import org.activiti.engine.impl.interceptor.Command;
+import org.activiti.engine.impl.interceptor.CommandContext;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
+import org.activiti.engine.impl.test.JobTestHelper;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.JobQuery;
@@ -45,17 +50,50 @@ public class ProcessInstanceQueryAndWithExceptionTest extends PluggableActivitiT
     assertEquals(0, queryWithException.withJobException().list().size());
     
     ProcessInstance processWithException1 = startProcessInstanceWithFailingJob(PROCESS_DEFINITION_KEY_WITH_EXCEPTION_1);
-    JobQuery jobQuery1 = managementService.createJobQuery().processInstanceId(processWithException1.getId());
-    assertEquals(1, jobQuery1.withException().count());
-    assertEquals(1, jobQuery1.withException().list().size());
+    JobQuery jobQuery1 = managementService.createJobQuery().locked().processInstanceId(processWithException1.getId());
+
+    final LockedJobEntity job = (LockedJobEntity) jobQuery1.singleResult();
+
+    try {
+      processEngineConfiguration.getCommandExecutor().execute(new Command<Object>() {
+
+        @Override
+        public Object execute(CommandContext commandContext) {
+          processEngineConfiguration.getExecutableJobEntityManager().execute(job);
+          return null;
+        }
+      });
+    } catch (Throwable ex){
+
+    }
+
+    assertEquals(1, jobQuery1.failed().count());
+    assertEquals(1, jobQuery1.failed().list().size());
+
+    // The execution is waiting in the first usertask. This contains a
+    // boundary timer event which we will execute manual for testing purposes.
+    JobTestHelper.waitForJobExecutorOnCondition(processEngineConfiguration, 5000L, 100L, new Callable<Boolean>() {
+      public Boolean call() throws Exception {
+        return managementService.createJobQuery().withException().count() == 1;
+      }
+    });
+
     assertEquals(1, queryWithException.withJobException().count());
     assertEquals(1, queryWithException.withJobException().list().size());
     assertEquals(processWithException1.getId(), queryWithException.withJobException().list().get(0).getId());
 
     ProcessInstance processWithException2 = startProcessInstanceWithFailingJob(PROCESS_DEFINITION_KEY_WITH_EXCEPTION_2);
-    JobQuery jobQuery2 = managementService.createJobQuery().processInstanceId(processWithException2.getId());
-    assertEquals(2, jobQuery2.withException().count());
-    assertEquals(2, jobQuery2.withException().list().size());
+    JobQuery jobQuery2 = managementService.createJobQuery().locked().processInstanceId(processWithException2.getId());
+    assertEquals(2, jobQuery2.failed().count());
+    assertEquals(2, jobQuery2.failed().list().size());
+
+    // The execution is waiting in the first usertask. This contains a
+    // boundary timer event which we will execute manual for testing purposes.
+    JobTestHelper.waitForJobExecutorOnCondition(processEngineConfiguration, 5000L, 100L, new Callable<Boolean>() {
+      public Boolean call() throws Exception {
+        return managementService.createJobQuery().withException().count() == 2;
+      }
+    });
 
     assertEquals(2, queryWithException.withJobException().count());
     assertEquals(2, queryWithException.withJobException().list().size());

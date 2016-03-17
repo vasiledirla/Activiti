@@ -1,4 +1,4 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
+package org.activiti.engine.impl.persistence.entity;/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -10,67 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.activiti.engine.impl.persistence.entity;
 
-import java.util.Date;
-import java.util.List;
+public interface JobEntityManager<T extends JobEntity> extends EntityManager<T>{
 
-import org.activiti.engine.impl.JobQueryImpl;
-import org.activiti.engine.impl.Page;
-import org.activiti.engine.runtime.Job;
-
-/**
- * @author Joram Barrez
- */
-public interface JobEntityManager extends EntityManager<JobEntity> {
-  
-  TimerEntity createTimer();
-  
-  TimerEntity createTimer(TimerEntity timerEntity);
-  
-  MessageEntity createMessage();
-  
-
-  void execute(JobEntity jobEntity);
-  
-  void send(MessageEntity message);
-
-  void schedule(TimerEntity timer);
-
-  void retryAsyncJob(JobEntity job);
-  
-
-  List<JobEntity> findNextJobsToExecute(Page page);
-
-  List<JobEntity> findNextTimerJobsToExecute(Page page);
-
-  List<JobEntity> findAsyncJobsDueToExecute(Page page);
-
-  List<JobEntity> findJobsByLockOwner(String lockOwner, int start, int maxNrOfJobs);
-
-  List<JobEntity> findJobsByExecutionId(String executionId);
-
-  List<JobEntity> findExclusiveJobsToExecute(String processInstanceId);
-
-  List<TimerEntity> findUnlockedTimersByDuedate(Date duedate, Page page);
-
-  List<TimerEntity> findTimersByExecutionId(String executionId);
-
-  List<Job> findJobsByQueryCriteria(JobQueryImpl jobQuery, Page page);
-
-  List<Job> findJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds);
-
-  List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey);
-
-  List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId);
-
-  List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId);
-
-  long findJobCountByQueryCriteria(JobQueryImpl jobQuery);
-  
-
-  void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
-  
-  void unacquireJob(String jobId);
-  
 }

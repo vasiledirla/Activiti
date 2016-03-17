@@ -15,12 +15,13 @@ package org.activiti.engine.impl.asyncexecutor;
 
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 
 /**
  * @author Joram Barrez
  */
 public interface ExecuteAsyncRunnableFactory {
   
-  Runnable createExecuteAsyncRunnable(JobEntity jobEntity, CommandExecutor commandExecutor);
+  Runnable createExecuteAsyncRunnable(LockedJobEntity jobEntity, CommandExecutor commandExecutor);
 
 }

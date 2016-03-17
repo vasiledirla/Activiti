@@ -730,21 +730,23 @@ public class DbSqlSession implements Session {
   	// Handle in entity dependency order
     for (Class<? extends Entity> entityClass : EntityDependencyOrder.INSERT_ORDER) {
       if (insertedObjects.containsKey(entityClass)) {
-      	flushEntities(entityClass, insertedObjects.get(entityClass));
+      	flushEntities(entityClass, insertedObjects.get(entityClass), null);
       }
     }
     
     // Next, in case of custom entities or we've screwed up and forgotten some entity
     if (insertedObjects.size() > 0) {
-	    for (Class<? extends Entity> entityClass : insertedObjects.keySet()) {
-      	flushEntities(entityClass, insertedObjects.get(entityClass));
+      Iterator<Class<? extends Entity>> it = insertedObjects.keySet().iterator();
+      while (it.hasNext()) {
+        Class<? extends Entity> entityClass = it.next();
+      	flushEntities(entityClass, insertedObjects.get(entityClass), it);
 	    }
     }
     
     insertedObjects.clear();
   }
 
-	protected void flushEntities(Class<? extends Entity> entityClass, List<Entity> entitiesToInsert) {
+	protected void flushEntities(Class<? extends Entity> entityClass, List<Entity> entitiesToInsert, Iterator<Class<? extends Entity>> iterator) {
 	  if (entitiesToInsert.size() == 1) {
 	  	flushRegularInsert(entitiesToInsert.get(0), entityClass);
 	  } else if (Boolean.FALSE.equals(dbSqlSessionFactory.isBulkInsertable(entityClass))) {
@@ -752,9 +754,13 @@ public class DbSqlSession implements Session {
 	  		flushRegularInsert(entity, entityClass);
 	  	}
 	  }	else {
-	  	flushBulkInsert(insertedObjects.get(entityClass), entityClass);
+	  	flushBulkInsert(entitiesToInsert, entityClass);
 	  }
-	  insertedObjects.remove(entityClass);
+    if (iterator !=null){
+      iterator.remove();
+    } else {
+      insertedObjects.remove(entityClass);
+    }
   }
   
   protected void flushRegularInsert(Entity entity, Class<? extends Entity> clazz) {

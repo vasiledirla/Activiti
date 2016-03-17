@@ -30,6 +30,7 @@ import org.activiti.engine.impl.cfg.TransactionContext;
 import org.activiti.engine.impl.db.DbSqlSession;
 import org.activiti.engine.impl.history.HistoryManager;
 import org.activiti.engine.impl.jobexecutor.FailedJobCommandFactory;
+import org.activiti.engine.impl.jobexecutor.JobFactory;
 import org.activiti.engine.impl.persistence.cache.EntityCache;
 import org.activiti.engine.impl.persistence.entity.AttachmentEntityManager;
 import org.activiti.engine.impl.persistence.entity.ByteArrayEntityManager;
@@ -39,6 +40,7 @@ import org.activiti.engine.impl.persistence.entity.EventLogEntryEntityManager;
 import org.activiti.engine.impl.persistence.entity.EventSubscriptionEntityManager;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntityManager;
+import org.activiti.engine.impl.persistence.entity.FailedJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.GroupEntityManager;
 import org.activiti.engine.impl.persistence.entity.HistoricActivityInstanceEntityManager;
 import org.activiti.engine.impl.persistence.entity.HistoricDetailEntityManager;
@@ -48,7 +50,8 @@ import org.activiti.engine.impl.persistence.entity.HistoricTaskInstanceEntityMan
 import org.activiti.engine.impl.persistence.entity.HistoricVariableInstanceEntityManager;
 import org.activiti.engine.impl.persistence.entity.IdentityInfoEntityManager;
 import org.activiti.engine.impl.persistence.entity.IdentityLinkEntityManager;
-import org.activiti.engine.impl.persistence.entity.JobEntityManager;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntityManager;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.MembershipEntityManager;
 import org.activiti.engine.impl.persistence.entity.ModelEntityManager;
 import org.activiti.engine.impl.persistence.entity.ProcessDefinitionEntityManager;
@@ -79,6 +82,9 @@ public class CommandContext {
   protected Throwable exception;
   protected ProcessEngineConfigurationImpl processEngineConfiguration;
   protected FailedJobCommandFactory failedJobCommandFactory;
+
+  protected JobFactory jobFactory;
+
   protected List<CommandContextCloseListener> closeListeners;
   protected Map<String, Object> attributes; // General-purpose storing of anything during the lifetime of a command context
 
@@ -90,6 +96,7 @@ public class CommandContext {
     this.command = command;
     this.processEngineConfiguration = processEngineConfiguration;
     this.failedJobCommandFactory = processEngineConfiguration.getFailedJobCommandFactory();
+    this.jobFactory = processEngineConfiguration.getJobFactory();
     sessionFactories = processEngineConfiguration.getSessionFactories();
     this.transactionContext = processEngineConfiguration.getTransactionContextFactory().openTransactionContext(this);
   }
@@ -323,8 +330,14 @@ public class CommandContext {
     return processEngineConfiguration.getEventLogEntryEntityManager();
   }
 
-  public JobEntityManager getJobEntityManager() {
-    return processEngineConfiguration.getJobEntityManager();
+  public ExecutableJobEntityManager getExecutableJobEntityManager() {
+    return processEngineConfiguration.getExecutableJobEntityManager();
+  }
+  public LockedJobEntityManager getLockedJobEntityManager() {
+    return processEngineConfiguration.getLockedJobEntityManager();
+  }
+  public FailedJobEntityManager getFailedJobEntityManager() {
+    return processEngineConfiguration.getFailedJobEntityManager();
   }
 
   public UserEntityManager getUserEntityManager() {
@@ -406,6 +419,9 @@ public class CommandContext {
     return failedJobCommandFactory;
   }
 
+  public JobFactory getJobFactory() {
+    return jobFactory;
+  }
   public ProcessEngineConfigurationImpl getProcessEngineConfiguration() {
     return processEngineConfiguration;
   }
@@ -424,6 +440,10 @@ public class CommandContext {
 
   public void setResult(Object result) {
     resultStack.add(result);
+  }
+
+  public JobFactory jobFactory() {
+    return jobFactory;
   }
 
 }

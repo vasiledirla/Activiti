@@ -31,6 +31,8 @@
     <mapper resource="org/activiti/db/mapping/entity/IdentityInfo.xml" />
     <mapper resource="org/activiti/db/mapping/entity/IdentityLink.xml" />
     <mapper resource="org/activiti/db/mapping/entity/Job.xml" />
+    <mapper resource="org/activiti/db/mapping/entity/LockedJob.xml" />
+    <mapper resource="org/activiti/db/mapping/entity/FailedJob.xml" />
     <mapper resource="org/activiti/db/mapping/entity/Membership.xml" />
     <mapper resource="org/activiti/db/mapping/entity/Model.xml" />
     <mapper resource="org/activiti/db/mapping/entity/ProcessDefinition.xml" />

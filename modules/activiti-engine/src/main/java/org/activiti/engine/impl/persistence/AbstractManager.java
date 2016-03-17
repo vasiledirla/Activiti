@@ -27,6 +27,7 @@ import org.activiti.engine.impl.persistence.entity.CommentEntityManager;
 import org.activiti.engine.impl.persistence.entity.DeploymentEntityManager;
 import org.activiti.engine.impl.persistence.entity.EventSubscriptionEntityManager;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntityManager;
+import org.activiti.engine.impl.persistence.entity.FailedJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.GroupEntityManager;
 import org.activiti.engine.impl.persistence.entity.HistoricActivityInstanceEntityManager;
 import org.activiti.engine.impl.persistence.entity.HistoricDetailEntityManager;
@@ -36,7 +37,8 @@ import org.activiti.engine.impl.persistence.entity.HistoricTaskInstanceEntityMan
 import org.activiti.engine.impl.persistence.entity.HistoricVariableInstanceEntityManager;
 import org.activiti.engine.impl.persistence.entity.IdentityInfoEntityManager;
 import org.activiti.engine.impl.persistence.entity.IdentityLinkEntityManager;
-import org.activiti.engine.impl.persistence.entity.JobEntityManager;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntityManager;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.MembershipEntityManager;
 import org.activiti.engine.impl.persistence.entity.ModelEntityManager;
 import org.activiti.engine.impl.persistence.entity.ProcessDefinitionEntityManager;
@@ -191,8 +193,16 @@ public abstract class AbstractManager {
     return getProcessEngineConfiguration().getCommentEntityManager();
   }
   
-  protected JobEntityManager getJobEntityManager() {
-    return getProcessEngineConfiguration().getJobEntityManager();
+  protected ExecutableJobEntityManager getExecutableJobEntityManager() {
+    return getProcessEngineConfiguration().getExecutableJobEntityManager();
+  }
+
+
+  protected LockedJobEntityManager getLockedJobEntityManager() {
+    return getProcessEngineConfiguration().getLockedJobEntityManager();
+  }
+  protected FailedJobEntityManager getFailedJobEntityManager() {
+    return getProcessEngineConfiguration().getFailedJobEntityManager();
   }
 
 }

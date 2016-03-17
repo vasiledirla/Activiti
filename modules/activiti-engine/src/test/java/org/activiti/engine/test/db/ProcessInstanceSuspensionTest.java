@@ -5,8 +5,9 @@ import java.util.Date;
 import java.util.List;
 
 import org.activiti.engine.impl.Page;
-import org.activiti.engine.impl.asyncexecutor.AcquiredJobEntities;
-import org.activiti.engine.impl.cmd.AcquireTimerJobsCmd;
+import org.activiti.engine.impl.asyncexecutor.AcquiredExecutableJobEntities;
+import org.activiti.engine.impl.cmd.AcquireExecutableJobsDueCmd;
+import org.activiti.engine.impl.cmd.AcquireJobsCmd;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
@@ -38,7 +39,7 @@ public class ProcessInstanceSuspensionTest extends PluggableActivitiTestCase {
     makeSureJobDue(job);
 
     // the acquirejobs command sees the job:
-    AcquiredJobEntities acquiredJobs = executeAcquireJobsCommand();
+    AcquiredExecutableJobEntities acquiredJobs = executeAcquireJobsCommand();
     assertEquals(1, acquiredJobs.size());
 
     // suspend the process instance:
@@ -61,7 +62,7 @@ public class ProcessInstanceSuspensionTest extends PluggableActivitiTestCase {
     makeSureJobDue(job);
 
     // the acquirejobs command sees the job:
-    AcquiredJobEntities acquiredJobs = executeAcquireJobsCommand();
+    AcquiredExecutableJobEntities acquiredJobs = executeAcquireJobsCommand();
     assertEquals(1, acquiredJobs.size());
 
     // suspend the process instance:
@@ -102,15 +103,15 @@ public class ProcessInstanceSuspensionTest extends PluggableActivitiTestCase {
     processEngineConfiguration.getCommandExecutor().execute(new Command<Void>() {
       public Void execute(CommandContext commandContext) {
         Date currentTime = processEngineConfiguration.getClock().getCurrentTime();
-        commandContext.getJobEntityManager().findById(job.getId()).setDuedate(new Date(currentTime.getTime() - 10000));
+        commandContext.getExecutableJobEntityManager().findById(job.getId()).setDuedate(new Date(currentTime.getTime() - 10000));
         return null;
       }
 
     });
   }
 
-  private AcquiredJobEntities executeAcquireJobsCommand() {
-    return processEngineConfiguration.getCommandExecutor().execute(new AcquireTimerJobsCmd("testLockOwner", 60000, 5));
+  private AcquiredExecutableJobEntities executeAcquireJobsCommand() {
+    return processEngineConfiguration.getCommandExecutor().execute(new AcquireExecutableJobsDueCmd(processEngineConfiguration.getAsyncExecutor()));
   }
 
 }

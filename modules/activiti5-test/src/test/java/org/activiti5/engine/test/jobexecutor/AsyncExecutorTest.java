@@ -30,6 +30,7 @@ import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.activiti.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.repository.DeploymentProperties;
 import org.activiti.engine.runtime.Clock;
@@ -346,7 +347,7 @@ public class AsyncExecutorTest {
       @Override
       public Job execute(CommandContext commandContext) {
         Job result = null;
-        List<JobEntity> jobs = commandContext.getJobEntityManager().findAsyncJobsDueToExecute(null);
+        List<ExecutableJobEntity> jobs = commandContext.getJobEntityManager().findExecutableJobsDueToExecute(null);
         if (jobs != null && jobs.size() > 0) {
           result = jobs.get(0);
         }

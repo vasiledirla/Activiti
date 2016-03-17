@@ -13,14 +13,14 @@
 
 package org.activiti.engine.impl.cmd;
 
-import java.io.Serializable;
-
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.ActivitiObjectNotFoundException;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.runtime.Job;
+
+import java.io.Serializable;
 
 /**
  * @author Frederik Heremans
@@ -39,10 +39,16 @@ public class GetJobExceptionStacktraceCmd implements Command<String>, Serializab
       throw new ActivitiIllegalArgumentException("jobId is null");
     }
 
-    JobEntity job = commandContext.getJobEntityManager().findById(jobId);
+    JobEntity job = commandContext.getExecutableJobEntityManager().findById(jobId);
 
     if (job == null) {
-      throw new ActivitiObjectNotFoundException("No job found with id " + jobId, Job.class);
+      job = commandContext.getLockedJobEntityManager().findById(jobId);
+      if (job == null) {
+        job = commandContext.getFailedJobEntityManager().findById(jobId);
+        if (job == null) {
+          throw new ActivitiObjectNotFoundException("No job found with id " + jobId, Job.class);
+        }
+      }
     }
 
     return job.getExceptionStacktrace();

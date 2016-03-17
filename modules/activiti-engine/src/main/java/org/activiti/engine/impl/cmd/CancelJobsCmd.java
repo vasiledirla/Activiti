@@ -19,8 +19,11 @@ import java.util.List;
 
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
+import org.activiti.engine.impl.db.Entity;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
+import org.activiti.engine.impl.persistence.entity.EntityManager;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 
 /**
@@ -43,9 +46,21 @@ public class CancelJobsCmd implements Command<Void>, Serializable {
   }
 
   public Void execute(CommandContext commandContext) {
-    JobEntity jobToDelete = null;
+    Entity jobToDelete = null;
+    EntityManager jobManager = null;
     for (String jobId : jobIds) {
-      jobToDelete = commandContext.getJobEntityManager().findById(jobId);
+      jobManager = commandContext.getExecutableJobEntityManager();
+      jobToDelete = jobManager.findById(jobId);
+
+      if (jobToDelete ==null){
+        jobManager = commandContext.getLockedJobEntityManager();
+        jobToDelete = jobManager.findById(jobId);
+
+        if (jobToDelete ==null){
+          jobManager = commandContext.getFailedJobEntityManager();
+          jobToDelete = jobManager.findById(jobId);
+        }
+      }
 
       if (jobToDelete != null) {
         // When given job doesn't exist, ignore
@@ -53,7 +68,7 @@ public class CancelJobsCmd implements Command<Void>, Serializable {
           commandContext.getProcessEngineConfiguration().getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, jobToDelete));
         }
 
-        commandContext.getJobEntityManager().delete(jobToDelete);
+        jobManager.delete(jobToDelete);
       }
     }
     return null;

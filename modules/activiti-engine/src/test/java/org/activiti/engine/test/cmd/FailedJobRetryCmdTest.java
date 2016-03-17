@@ -12,6 +12,9 @@
  */
 package org.activiti.engine.test.cmd;
 
+import org.activiti.engine.impl.cmd.CleanupFailedJobsCommand;
+import org.activiti.engine.impl.interceptor.Command;
+import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.runtime.Execution;
@@ -27,6 +30,9 @@ public class FailedJobRetryCmdTest extends PluggableActivitiTestCase {
   private void waitForExecutedJobWithRetriesLeft(final int retriesLeft) {
 
     Job job = managementService.createJobQuery().singleResult();
+    if (job == null) {
+      job = managementService.createJobQuery().locked().singleResult();
+    }
 
     try {
       managementService.executeJob(job.getId());
@@ -34,19 +40,21 @@ public class FailedJobRetryCmdTest extends PluggableActivitiTestCase {
     }
 
     // update job
-    job = managementService.createJobQuery().singleResult();
-
-    if (job.getRetries() > retriesLeft) {
-      waitForExecutedJobWithRetriesLeft(retriesLeft);
+    job = managementService.createJobQuery().failed().singleResult();
+    if (job != null) {
+      if (job.getRetries() > retriesLeft) {
+        waitForExecutedJobWithRetriesLeft(retriesLeft);
+      }
     }
   }
 
   private void stillOneJobWithExceptionAndRetriesLeft() {
-    assertEquals(1, managementService.createJobQuery().withException().count());
-    assertEquals(1, managementService.createJobQuery().withRetriesLeft().count());
+    assertEquals(1, managementService.createJobQuery().failed().count());
+    assertEquals(1, managementService.createJobQuery().failed().withRetriesLeft().count());
   }
 
   private Job fetchJob(String processInstanceId) {
+    processEngineConfiguration.getCommandExecutor().execute(new CleanupFailedJobsCommand());
     return managementService.createJobQuery().processInstanceId(processInstanceId).singleResult();
   }
 
@@ -55,6 +63,7 @@ public class FailedJobRetryCmdTest extends PluggableActivitiTestCase {
   }
 
   private Job refreshJob(String jobId) {
+    processEngineConfiguration.getCommandExecutor().execute(new CleanupFailedJobsCommand());
     return managementService.createJobQuery().jobId(jobId).singleResult();
   }
 
@@ -81,38 +90,42 @@ public class FailedJobRetryCmdTest extends PluggableActivitiTestCase {
 
     waitForExecutedJobWithRetriesLeft(3);
 
+
+    stillOneJobWithExceptionAndRetriesLeft();
+
     job = refreshJob(job.getId());
     assertEquals(3, job.getRetries());
-    stillOneJobWithExceptionAndRetriesLeft();
 
     execution = refreshExecutionEntity(execution.getId());
     assertEquals("failingServiceTask", execution.getActivityId());
 
     waitForExecutedJobWithRetriesLeft(2);
 
+
+    stillOneJobWithExceptionAndRetriesLeft();
     job = refreshJob(job.getId());
     assertEquals(2, job.getRetries());
-    stillOneJobWithExceptionAndRetriesLeft();
 
     execution = refreshExecutionEntity(execution.getId());
     assertEquals("failingServiceTask", execution.getActivityId());
 
     waitForExecutedJobWithRetriesLeft(1);
 
+    stillOneJobWithExceptionAndRetriesLeft();
     job = refreshJob(job.getId());
     assertEquals(1, job.getRetries());
-    stillOneJobWithExceptionAndRetriesLeft();
 
     execution = refreshExecutionEntity(execution.getId());
     assertEquals("failingServiceTask", execution.getActivityId());
 
     waitForExecutedJobWithRetriesLeft(0);
 
-    job = refreshJob(job.getId());
+    job = managementService.createJobQuery().failed().jobId(job.getId()).singleResult();
+
     assertEquals(0, job.getRetries());
-    assertEquals(1, managementService.createJobQuery().withException().count());
-    assertEquals(0, managementService.createJobQuery().withRetriesLeft().count());
-    assertEquals(1, managementService.createJobQuery().noRetriesLeft().count());
+    assertEquals(1, managementService.createJobQuery().failed().count());
+    assertEquals(0, managementService.createJobQuery().failed().withRetriesLeft().count());
+    assertEquals(1, managementService.createJobQuery().failed().noRetriesLeft().count());
 
     execution = refreshExecutionEntity(execution.getId());
     assertEquals("failingServiceTask", execution.getActivityId());

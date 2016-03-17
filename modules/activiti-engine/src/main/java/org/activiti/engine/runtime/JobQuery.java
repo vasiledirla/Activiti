@@ -67,6 +67,8 @@ public interface JobQuery extends Query<JobQuery, Job> {
   /** Only select jobs that failed due to an exception. */
   JobQuery withException();
 
+  JobQuery failed();
+
   /** Only select jobs that failed due to an exception with the given message. */
   JobQuery exceptionMessage(String exceptionMessage);
 
@@ -117,4 +119,7 @@ public interface JobQuery extends Query<JobQuery, Job> {
    */
   JobQuery orderByTenantId();
 
+  JobQuery locked();
+
+  boolean isLocked();
 }

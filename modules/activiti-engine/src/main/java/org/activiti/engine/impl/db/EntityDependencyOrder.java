@@ -11,7 +11,13 @@ import org.activiti.engine.impl.persistence.entity.CompensateEventSubscriptionEn
 import org.activiti.engine.impl.persistence.entity.DeploymentEntityImpl;
 import org.activiti.engine.impl.persistence.entity.EventLogEntryEntityImpl;
 import org.activiti.engine.impl.persistence.entity.EventSubscriptionEntityImpl;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntityImpl;
+import org.activiti.engine.impl.persistence.entity.ExecutableMessageJobEntityImpl;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntityImpl;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntityImpl;
+import org.activiti.engine.impl.persistence.entity.FailedJobEntityImpl;
+import org.activiti.engine.impl.persistence.entity.FailedMessageJobEntityImpl;
+import org.activiti.engine.impl.persistence.entity.FailedTimerJobEntityImpl;
 import org.activiti.engine.impl.persistence.entity.GroupEntityImpl;
 import org.activiti.engine.impl.persistence.entity.HistoricActivityInstanceEntityImpl;
 import org.activiti.engine.impl.persistence.entity.HistoricDetailAssignmentEntityImpl;
@@ -27,6 +33,9 @@ import org.activiti.engine.impl.persistence.entity.HistoricVariableInstanceEntit
 import org.activiti.engine.impl.persistence.entity.IdentityInfoEntityImpl;
 import org.activiti.engine.impl.persistence.entity.IdentityLinkEntityImpl;
 import org.activiti.engine.impl.persistence.entity.JobEntityImpl;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntityImpl;
+import org.activiti.engine.impl.persistence.entity.LockedMessageJobEntityImpl;
+import org.activiti.engine.impl.persistence.entity.LockedTimerJobEntityImpl;
 import org.activiti.engine.impl.persistence.entity.MembershipEntityImpl;
 import org.activiti.engine.impl.persistence.entity.MessageEntityImpl;
 import org.activiti.engine.impl.persistence.entity.MessageEventSubscriptionEntityImpl;
@@ -87,8 +96,14 @@ public class EntityDependencyOrder {
 		/*
 		 * FK to ByteArray
 		 */
+		DELETE_ORDER.add(ExecutableTimerJobEntityImpl.class);
+		DELETE_ORDER.add(ExecutableMessageJobEntityImpl.class);
+		DELETE_ORDER.add(LockedTimerJobEntityImpl.class);
+		DELETE_ORDER.add(LockedMessageJobEntityImpl.class);
+		DELETE_ORDER.add(FailedTimerJobEntityImpl.class);
+		DELETE_ORDER.add(FailedMessageJobEntityImpl.class);
 		DELETE_ORDER.add(JobEntityImpl.class);
-		
+
 		/*
 		 * FK to ByteArray
 		 * FK to Exeution

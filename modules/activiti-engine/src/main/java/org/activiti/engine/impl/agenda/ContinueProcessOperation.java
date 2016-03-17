@@ -17,8 +17,8 @@ import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.delegate.ActivityBehavior;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.jobexecutor.AsyncContinuationJobHandler;
+import org.activiti.engine.impl.persistence.entity.ExecutableMessageJobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
-import org.activiti.engine.impl.persistence.entity.MessageEntity;
 import org.activiti.engine.impl.util.CollectionUtil;
 import org.activiti.engine.impl.util.ProcessDefinitionUtil;
 import org.activiti.engine.logging.LogMDC;
@@ -169,7 +169,7 @@ public class ContinueProcessOperation extends AbstractOperation {
   }
 
   protected void scheduleJob(boolean exclusive) {
-    MessageEntity message = commandContext.getJobEntityManager().createMessage();
+    ExecutableMessageJobEntity message = commandContext.getExecutableJobEntityManager().createMessage();
     message.setExecutionId(execution.getId());
     message.setProcessInstanceId(execution.getProcessInstanceId());
     message.setProcessDefinitionId(execution.getProcessDefinitionId());
@@ -181,7 +181,7 @@ public class ContinueProcessOperation extends AbstractOperation {
       message.setTenantId(execution.getTenantId());
     }
 
-    commandContext.getJobEntityManager().send(message);
+    commandContext.getExecutableJobEntityManager().send(message);
   }
 
   protected void executeBoundaryEvents(Collection<BoundaryEvent> boundaryEvents, ExecutionEntity execution) {

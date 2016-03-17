@@ -1,5 +1,6 @@
 package org.activiti.engine.test.api.history;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.activiti.engine.history.HistoricProcessInstanceQuery;
@@ -44,31 +45,46 @@ public class HistoricProcessInstanceQueryAndWithExceptionTest extends PluggableA
     
     ProcessInstance processWithException1 = startProcessInstanceWithFailingJob(PROCESS_DEFINITION_KEY_WITH_EXCEPTION_1);
     JobQuery jobQuery1 = managementService.createJobQuery().processInstanceId(processWithException1.getId());
-    assertEquals(1, jobQuery1.withException().count());
-    assertEquals(1, jobQuery1.withException().list().size());
+    assertEquals(1, jobQuery1.failed().count());
+    assertEquals(1, jobQuery1.failed().list().size());
     assertEquals(1, queryWithException.withJobException().count());
     assertEquals(1, queryWithException.withJobException().list().size());
     assertEquals(processWithException1.getId(), queryWithException.withJobException().list().get(0).getId());
 
     ProcessInstance processWithException2 = startProcessInstanceWithFailingJob(PROCESS_DEFINITION_KEY_WITH_EXCEPTION_2);
     JobQuery jobQuery2 = managementService.createJobQuery().processInstanceId(processWithException2.getId());
-    assertEquals(2, jobQuery2.withException().count());
-    assertEquals(2, jobQuery2.withException().list().size());
+    assertEquals(2, jobQuery2.failed().count());
+    assertEquals(2, jobQuery2.failed().list().size());
 
     assertEquals(2, queryWithException.withJobException().count());
     assertEquals(2, queryWithException.withJobException().list().size());
     assertEquals(processWithException1.getId(), queryWithException.withJobException().processDefinitionKey(PROCESS_DEFINITION_KEY_WITH_EXCEPTION_1).list().get(0).getId());
     assertEquals(processWithException2.getId(), queryWithException.withJobException().processDefinitionKey(PROCESS_DEFINITION_KEY_WITH_EXCEPTION_2).list().get(0).getId());
   }
+  private void executeJob(Job job) {
+    try {
+      managementService.executeJob(job.getId());
+      fail("RuntimeException");
+    } catch(RuntimeException re) {
+    }
+  }
 
   private ProcessInstance startProcessInstanceWithFailingJob(String processInstanceByKey) {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(processInstanceByKey);
     
-    List<Job> jobList = managementService.createJobQuery()
+    List<Job> executableJobList = managementService.createJobQuery()
       .processInstanceId(processInstance.getId())
       .list();
 
-    for(Job job : jobList){
+    List<Job> lockedJobList = managementService.createJobQuery().locked()
+            .processInstanceId(processInstance.getId())
+            .list();
+
+    List<Job> allJobs = new ArrayList<Job>();
+    allJobs.addAll(executableJobList);
+    allJobs.addAll(lockedJobList);
+
+    for(Job job : allJobs){
         try {
           managementService.executeJob(job.getId());
           fail("RuntimeException");

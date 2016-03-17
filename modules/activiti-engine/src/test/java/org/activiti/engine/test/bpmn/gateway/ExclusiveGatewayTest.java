@@ -197,7 +197,7 @@ public class ExclusiveGatewayTest extends PluggableActivitiTestCase {
   public void testAsyncExclusiveGateway() {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("asyncExclusive", CollectionUtil.singletonMap("input", 1));
     
-    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job job = managementService.createJobQuery().locked().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(job);
     
     managementService.executeJob(job.getId());

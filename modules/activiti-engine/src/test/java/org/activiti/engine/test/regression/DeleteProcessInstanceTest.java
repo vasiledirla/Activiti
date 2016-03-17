@@ -5,6 +5,10 @@ import java.util.Map;
 
 import org.activiti.engine.history.HistoricProcessInstance;
 import org.activiti.engine.impl.history.HistoryLevel;
+import org.activiti.engine.impl.interceptor.Command;
+import org.activiti.engine.impl.interceptor.CommandContext;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
+import org.activiti.engine.impl.persistence.entity.FailedJobEntity;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.runtime.Execution;
 import org.activiti.engine.runtime.Job;
@@ -78,7 +82,7 @@ public class DeleteProcessInstanceTest extends PluggableActivitiTestCase {
     assertFalse(executionJava.isEnded());
 
     // Try to execute job 3 times
-    Job jobJava = managementService.createJobQuery().processInstanceId(instanceJava.getId()).singleResult();
+    Job jobJava = managementService.createJobQuery().locked().processInstanceId(instanceJava.getId()).singleResult();
     assertNotNull(jobJava);
 
     try {
@@ -88,22 +92,54 @@ public class DeleteProcessInstanceTest extends PluggableActivitiTestCase {
       // expected
     }
 
+    FailedJobEntity failedJobJava = (FailedJobEntity) managementService.createJobQuery().failed().processInstanceId(instanceJava.getId()).singleResult();
+    String jobId = jobJava.getId();
+    assertEquals(jobId, failedJobJava.getId());
+
+    // move the failed job in the executable queue
+    final FailedJobEntity finalFailedJobJava = failedJobJava;
+    ExecutableJobEntity newJob = managementService.executeCommand(new Command<ExecutableJobEntity>() {
+
+      @Override
+      public ExecutableJobEntity execute(CommandContext commandContext) {
+        ExecutableJobEntity executableJob = commandContext.getJobFactory().getExecutableJob(finalFailedJobJava);
+        commandContext.getExecutableJobEntityManager().insert(executableJob);
+        commandContext.getFailedJobEntityManager().delete(finalFailedJobJava.getId());
+        return executableJob;
+      }
+    });
+
+
     try {
-      managementService.executeJob(jobJava.getId());
+      managementService.executeJob(newJob.getId());
       fail("Expected exception");
     } catch (Exception e) {
       // expected
     }
 
+    failedJobJava = (FailedJobEntity) managementService.createJobQuery().failed().processInstanceId(instanceJava.getId()).singleResult();
+
+    // move the failed job in the executable queue
+    final FailedJobEntity finalFailedJobJava1 = failedJobJava;
+    newJob = managementService.executeCommand(new Command<ExecutableJobEntity>() {
+
+      @Override
+      public ExecutableJobEntity execute(CommandContext commandContext) {
+        ExecutableJobEntity executableJob = commandContext.getJobFactory().getExecutableJob(finalFailedJobJava1);
+        commandContext.getExecutableJobEntityManager().insert(executableJob);
+        commandContext.getFailedJobEntityManager().delete(finalFailedJobJava1.getId());
+        return executableJob;
+      }
+    });
     try {
-      managementService.executeJob(jobJava.getId());
+      managementService.executeJob(newJob.getId());
       fail("Expected exception");
     } catch (Exception e) {
       // expected
     }
 
     // Assert that there is a failed job.
-    jobJava = managementService.createJobQuery().processInstanceId(instanceJava.getId()).singleResult();
+    jobJava = managementService.createJobQuery().failed().processInstanceId(instanceJava.getId()).singleResult();
     assertNotNull(jobJava);
     assertEquals(0, jobJava.getRetries());
 

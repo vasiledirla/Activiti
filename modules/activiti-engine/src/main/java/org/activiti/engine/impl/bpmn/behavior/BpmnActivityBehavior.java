@@ -20,8 +20,10 @@ import org.activiti.engine.ActivitiException;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.context.Context;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +57,7 @@ public class BpmnActivityBehavior implements Serializable {
    */
   protected void dispatchJobCanceledEvents(ExecutionEntity activityExecution) {
     if (activityExecution instanceof ExecutionEntity) {
-      List<JobEntity> jobs = ((ExecutionEntity) activityExecution).getJobs();
+      List<JobEntity> jobs =  activityExecution.getJobs();
       for (JobEntity job : jobs) {
         if (Context.getProcessEngineConfiguration().getEventDispatcher().isEnabled()) {
           Context.getProcessEngineConfiguration().getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, job));

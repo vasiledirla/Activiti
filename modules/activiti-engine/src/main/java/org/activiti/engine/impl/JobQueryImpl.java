@@ -45,11 +45,13 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   protected Date duedateHigherThanOrEqual;
   protected Date duedateLowerThanOrEqual;
   protected boolean withException;
+  protected boolean failed;
   protected String exceptionMessage;
   protected String tenantId;
   protected String tenantIdLike;
   protected boolean withoutTenantId;
   protected boolean noRetriesLeft;
+  protected boolean locked;
 
   public JobQueryImpl() {
   }
@@ -170,11 +172,17 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
     return this;
   }
 
+  public JobQuery failed() {
+    this.failed = true;
+    return this;
+  }
+
   public JobQuery exceptionMessage(String exceptionMessage) {
     if (exceptionMessage == null) {
       throw new ActivitiIllegalArgumentException("Provided exception message is null");
     }
     this.exceptionMessage = exceptionMessage;
+    this.withException = (exceptionMessage !=null);
     return this;
   }
 
@@ -224,17 +232,44 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   public JobQuery orderByTenantId() {
     return orderBy(JobQueryProperty.TENANT_ID);
   }
+  @Override
+  public JobQuery locked() {
+    this.locked = true;
+    return this;
+  }
+  public boolean isLocked() {
+    return locked;
+  }
+  public boolean isFailed() {
+    return failed;
+  }
 
   // results //////////////////////////////////////////
 
   public long executeCount(CommandContext commandContext) {
     checkQueryOk();
-    return commandContext.getJobEntityManager().findJobCountByQueryCriteria(this);
+    if (isLocked()){
+      return commandContext.getLockedJobEntityManager().findJobCountByQueryCriteria(this);
+    }
+
+    if (isFailed()){
+      return commandContext.getFailedJobEntityManager().findJobCountByQueryCriteria(this);
+    }
+
+    return commandContext.getExecutableJobEntityManager().findJobCountByQueryCriteria(this);
   }
 
   public List<Job> executeList(CommandContext commandContext, Page page) {
     checkQueryOk();
-    return commandContext.getJobEntityManager().findJobsByQueryCriteria(this, page);
+    if (isLocked()){
+      return commandContext.getLockedJobEntityManager().findJobsByQueryCriteria(this, page);
+    }
+
+    if (isFailed()){
+      return commandContext.getFailedJobEntityManager().findJobsByQueryCriteria(this, page);
+    }
+
+    return commandContext.getExecutableJobEntityManager().findJobsByQueryCriteria(this, page);
   }
 
   // getters //////////////////////////////////////////

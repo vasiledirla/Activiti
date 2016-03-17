@@ -2,11 +2,13 @@ package org.activiti.engine.test.api.tenant;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ProcessEngineConfiguration;
 import org.activiti.engine.history.HistoricActivityInstance;
 import org.activiti.engine.impl.history.HistoryLevel;
+import org.activiti.engine.impl.test.JobTestHelper;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.impl.util.CollectionUtil;
 import org.activiti.engine.repository.Deployment;
@@ -231,7 +233,7 @@ public class TenancyTest extends PluggableActivitiTestCase {
 
     // Start process, and verify async job has correct tenant id
     managementService.executeJob(job.getId());
-    job = managementService.createJobQuery().singleResult();
+    job = managementService.createJobQuery().locked().singleResult();
     assertEquals(TEST_TENANT_ID, job.getTenantId());
 
     // Finish process
@@ -246,7 +248,7 @@ public class TenancyTest extends PluggableActivitiTestCase {
     job = managementService.createJobQuery().singleResult();
     assertEquals("", job.getTenantId());
     managementService.executeJob(job.getId());
-    job = managementService.createJobQuery().singleResult();
+    job = managementService.createJobQuery().locked().singleResult();
     assertEquals("", job.getTenantId());
 
     // clean up
@@ -392,7 +394,7 @@ public class TenancyTest extends PluggableActivitiTestCase {
 
     // Start process, and verify async job has correct tenant id
     managementService.executeJob(job.getId());
-    job = managementService.createJobQuery().singleResult();
+    job = managementService.createJobQuery().locked().singleResult();
     assertEquals(newTenant, job.getTenantId());
 
     // Finish process
@@ -695,7 +697,7 @@ public class TenancyTest extends PluggableActivitiTestCase {
     assertEquals(0, taskService.createTaskQuery().taskName("Task after signal").taskTenantId(TEST_TENANT_ID).count());
     assertEquals(0, taskService.createTaskQuery().taskName("Task after signal").taskWithoutTenantId().count());
 
-    for (Job job : managementService.createJobQuery().list()) {
+    for (Job job : managementService.createJobQuery().locked().list()) {
       managementService.executeJob(job.getId());
     }
 
@@ -708,7 +710,7 @@ public class TenancyTest extends PluggableActivitiTestCase {
     assertEquals(4, taskService.createTaskQuery().taskName("Task after signal").taskTenantId(TEST_TENANT_ID).count());
     assertEquals(0, taskService.createTaskQuery().taskName("Task after signal").taskWithoutTenantId().count());
 
-    for (Job job : managementService.createJobQuery().list()) {
+    for (Job job : managementService.createJobQuery().locked().list()) {
       managementService.executeJob(job.getId());
     }
 

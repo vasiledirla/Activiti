@@ -23,6 +23,7 @@ import org.activiti.engine.impl.asyncexecutor.DefaultAsyncJobExecutor;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.activiti.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.activiti.engine.impl.test.JobTestHelper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -241,10 +242,9 @@ public class AsyncExecutorTest {
 
       // Verify if all is as expected
       Assert.assertEquals(0, processEngine.getTaskService().createTaskQuery().taskName("Task after script").count());
-      Assert.assertEquals(1, processEngine.getManagementService().createJobQuery().count());
-      Assert.assertEquals(0, processEngine.getManagementService().createJobQuery().withRetriesLeft().count());
-      Assert.assertEquals(1, processEngine.getManagementService().createJobQuery().noRetriesLeft().count());
-      Assert.assertEquals(1, processEngine.getManagementService().createJobQuery().withException().count());
+      Assert.assertEquals(1, processEngine.getManagementService().createJobQuery().failed().count());
+      Assert.assertEquals(0, processEngine.getManagementService().createJobQuery().failed().withRetriesLeft().count());
+      Assert.assertEquals(1, processEngine.getManagementService().createJobQuery().failed().noRetriesLeft().count());
 
       Assert.assertEquals(3, getAsyncExecutorJobCount(processEngine));
 
@@ -344,7 +344,7 @@ public class AsyncExecutorTest {
     private AtomicInteger counter = new AtomicInteger(0);
 
     @Override
-    public boolean executeAsyncJob(JobEntity job) {
+    public boolean executeAsyncJob(LockedJobEntity job) {
       logger.info("About to execute job " + job.getId());
       counter.incrementAndGet();
       boolean success = super.executeAsyncJob(job);

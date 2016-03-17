@@ -26,6 +26,7 @@ import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.jobexecutor.FailedJobCommandFactory;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.activiti.engine.impl.util.Activiti5Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,10 +39,10 @@ public class ExecuteAsyncRunnable implements Runnable {
 
   private static Logger log = LoggerFactory.getLogger(ExecuteAsyncRunnable.class);
 
-  protected JobEntity job;
+  protected LockedJobEntity job;
   protected CommandExecutor commandExecutor;
 
-  public ExecuteAsyncRunnable(JobEntity job, CommandExecutor commandExecutor) {
+  public ExecuteAsyncRunnable(LockedJobEntity job, CommandExecutor commandExecutor) {
     this.job = job;
     this.commandExecutor = commandExecutor;
   }
@@ -148,15 +149,21 @@ public class ExecuteAsyncRunnable implements Runnable {
   protected void unacquireJob() {
     CommandContext commandContext = Context.getCommandContext();
     if (commandContext != null) {
-      commandContext.getJobEntityManager().unacquireJob(job.getId());
+      executeUnacquireJob(commandContext, job.getId());
     } else {
       commandExecutor.execute(new Command<Void>() {
         public Void execute(CommandContext commandContext) {
-          commandContext.getJobEntityManager().unacquireJob(job.getId());
+          executeUnacquireJob(commandContext, job.getId());
           return null;
         }
       });
     }
+  }
+
+  protected void executeUnacquireJob(CommandContext commandContext, String id) {
+      LockedJobEntity lockedJobEntity = commandContext.getLockedJobEntityManager().findById(id);
+      commandContext.getLockedJobEntityManager().delete(lockedJobEntity);
+      commandContext.getExecutableJobEntityManager().insert(commandContext.jobFactory().getExecutableJob(lockedJobEntity));
   }
 
   protected void handleFailedJob(final Throwable exception) {

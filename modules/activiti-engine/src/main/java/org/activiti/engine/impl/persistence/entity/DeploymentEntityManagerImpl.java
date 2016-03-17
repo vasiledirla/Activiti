@@ -136,15 +136,39 @@ public class DeploymentEntityManagerImpl extends AbstractEntityManager<Deploymen
   }
   
   protected void removeTimerStartJobs(ProcessDefinition processDefinition) {
-    List<Job> timerStartJobs = getJobEntityManager()
+    List<Job> executableTimerStartJobs = getExecutableJobEntityManager()
         .findJobsByTypeAndProcessDefinitionId(TimerStartEventJobHandler.TYPE, processDefinition.getId());
-    if (timerStartJobs != null && timerStartJobs.size() > 0) {
-      for (Job timerStartJob : timerStartJobs) {
+    if (executableTimerStartJobs != null && executableTimerStartJobs.size() > 0) {
+      for (Job timerStartJob : executableTimerStartJobs) {
         if (getEventDispatcher().isEnabled()) {
           getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, timerStartJob, null, null, processDefinition.getId()));
         }
 
-        getJobEntityManager().delete((JobEntity) timerStartJob);
+        getExecutableJobEntityManager().delete((ExecutableJobEntity) timerStartJob);
+      }
+    }
+
+    List<Job> failedTimerStartJobs = getFailedJobEntityManager()
+            .findJobsByTypeAndProcessDefinitionId(TimerStartEventJobHandler.TYPE, processDefinition.getId());
+    if (failedTimerStartJobs != null && failedTimerStartJobs.size() > 0) {
+      for (Job timerStartJob : failedTimerStartJobs) {
+        if (getEventDispatcher().isEnabled()) {
+          getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, timerStartJob, null, null, processDefinition.getId()));
+        }
+
+        getFailedJobEntityManager().delete((FailedJobEntity) timerStartJob);
+      }
+    }
+
+    List<Job> lockedTimerStartJobs = getLockedJobEntityManager()
+            .findJobsByTypeAndProcessDefinitionId(TimerStartEventJobHandler.TYPE, processDefinition.getId());
+    if (lockedTimerStartJobs != null && lockedTimerStartJobs.size() > 0) {
+      for (Job timerStartJob : lockedTimerStartJobs) {
+        if (getEventDispatcher().isEnabled()) {
+          getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, timerStartJob, null, null, processDefinition.getId()));
+        }
+
+        getLockedJobEntityManager().delete((LockedJobEntity) timerStartJob);
       }
     }
   }
@@ -189,7 +213,7 @@ public class DeploymentEntityManagerImpl extends AbstractEntityManager<Deploymen
 
   protected void restoreTimerStartEvent(ProcessDefinition previousProcessDefinition, StartEvent startEvent, EventDefinition eventDefinition) {
     TimerEventDefinition timerEventDefinition = (TimerEventDefinition) eventDefinition;
-    TimerEntity timer = TimerUtil.createTimerEntityForTimerEventDefinition((TimerEventDefinition) eventDefinition, false, null, TimerStartEventJobHandler.TYPE,
+    ExecutableTimerJobEntity timer = TimerUtil.createTimerEntityForTimerEventDefinition((TimerEventDefinition) eventDefinition, false, null, TimerStartEventJobHandler.TYPE,
         TimerEventHandler.createConfiguration(startEvent.getId(), timerEventDefinition.getEndDate()));
     
     if (timer != null) {
@@ -199,7 +223,7 @@ public class DeploymentEntityManagerImpl extends AbstractEntityManager<Deploymen
         timer.setTenantId(previousProcessDefinition.getTenantId());
       }
  
-      getJobEntityManager().schedule(timer);
+      getExecutableJobEntityManager().schedule(timer);
     }
   }
 

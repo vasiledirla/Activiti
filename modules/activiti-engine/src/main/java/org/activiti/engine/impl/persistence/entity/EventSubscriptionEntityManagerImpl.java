@@ -14,15 +14,12 @@
 package org.activiti.engine.impl.persistence.entity;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 
 import org.activiti.bpmn.model.MessageEventDefinition;
 import org.activiti.bpmn.model.Signal;
 import org.activiti.bpmn.model.SignalEventDefinition;
 import org.activiti.engine.ActivitiException;
-import org.activiti.engine.ProcessEngineConfiguration;
 import org.activiti.engine.impl.EventSubscriptionQueryImpl;
 import org.activiti.engine.impl.Page;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
@@ -254,23 +251,26 @@ public class EventSubscriptionEntityManagerImpl extends AbstractEntityManager<Ev
 
   protected void scheduleEventAsync(EventSubscriptionEntity eventSubscriptionEntity, Object payload) {
 
-    MessageEntity message = getJobEntityManager().createMessage();
+    ExecutableMessageJobEntity message = getExecutableJobEntityManager().createMessage();
     message.setJobHandlerType(ProcessEventJobHandler.TYPE);
     message.setJobHandlerConfiguration(eventSubscriptionEntity.getId());
     message.setTenantId(eventSubscriptionEntity.getTenantId());
 
+/*
     GregorianCalendar expireCal = new GregorianCalendar();
     ProcessEngineConfiguration processEngineConfig = getProcessEngineConfiguration();
     expireCal.setTime(processEngineConfig.getClock().getCurrentTime());
     expireCal.add(Calendar.SECOND, processEngineConfig.getLockTimeAsyncJobWaitTime());
-    message.setLockExpirationTime(expireCal.getTime());
+
+    LockedJobEntity lockedEntity = getJobEntityManager().lockJob(message, null, expireCal.getTime());
+*/
 
     // TODO: support payload
     // if(payload != null) {
     // message.setEventPayload(payload);
     // }
 
-    getJobEntityManager().send(message);
+    getExecutableJobEntityManager().send(message);
   }
   
   protected List<SignalEventSubscriptionEntity> toSignalEventSubscriptionEntityList(List<EventSubscriptionEntity> result) {

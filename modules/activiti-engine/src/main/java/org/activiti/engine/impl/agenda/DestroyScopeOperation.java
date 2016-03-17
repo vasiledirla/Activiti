@@ -5,10 +5,15 @@ import java.util.Collection;
 import org.activiti.bpmn.model.FlowElement;
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.impl.interceptor.CommandContext;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntityManager;
+import org.activiti.engine.impl.persistence.entity.FailedJobEntity;
+import org.activiti.engine.impl.persistence.entity.FailedJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.activiti.engine.impl.persistence.entity.JobEntityManager;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntityManager;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.TaskEntity;
 import org.activiti.engine.impl.persistence.entity.TaskEntityManager;
 import org.activiti.engine.impl.persistence.entity.VariableInstanceEntity;
@@ -67,11 +72,28 @@ public class DestroyScopeOperation extends AbstractOperation {
     }
 
     // Delete all scope jobs
-    JobEntityManager jobEntityManager = commandContext.getJobEntityManager();
-    Collection<JobEntity> jobsForExecution = jobEntityManager.findJobsByExecutionId(parentScopeExecution.getId());
-    for (JobEntity job : jobsForExecution) {
-      jobEntityManager.delete(job);
+
+    // executable jobs
+    ExecutableJobEntityManager executableJobEntityManager = commandContext.getExecutableJobEntityManager();
+    Collection<ExecutableJobEntity> executableJobsForExecution = executableJobEntityManager.findJobsByExecutionId(parentScopeExecution.getId());
+    for (ExecutableJobEntity job : executableJobsForExecution) {
+      executableJobEntityManager.delete(job);
     }
+
+    // locked jobs
+    LockedJobEntityManager lockedJobEntityManager = commandContext.getLockedJobEntityManager();
+    Collection<LockedJobEntity> lockedJobsForExecution = lockedJobEntityManager.findJobsByExecutionId(parentScopeExecution.getId());
+    for (LockedJobEntity job : lockedJobsForExecution) {
+      lockedJobEntityManager.delete(job);
+    }
+
+    // Failed jobs
+    FailedJobEntityManager failedJobEntityManager = commandContext.getFailedJobEntityManager();
+    Collection<FailedJobEntity> failedJobsForExecution = failedJobEntityManager.findJobsByExecutionId(parentScopeExecution.getId());
+    for (FailedJobEntity job : failedJobsForExecution) {
+      failedJobEntityManager.delete(job);
+    }
+
     
     // Remove variables associated with this scope
     VariableInstanceEntityManager variableInstanceEntityManager = commandContext.getVariableInstanceEntityManager();

@@ -16,6 +16,7 @@ import org.activiti.engine.impl.calendar.DurationBusinessCalendar;
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.el.ExpressionManager;
 import org.activiti.engine.impl.el.NoExecutionVariableScope;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.apache.commons.lang3.StringUtils;
@@ -31,11 +32,13 @@ public class TimerUtil {
    * 
    * Takes in an optional execution, if missing the {@link NoExecutionVariableScope} will be used (eg Timer start event)
    */
-  public static TimerEntity createTimerEntityForTimerEventDefinition(TimerEventDefinition timerEventDefinition, boolean isInterruptingTimer, 
+  public static ExecutableTimerJobEntity createTimerEntityForTimerEventDefinition(TimerEventDefinition timerEventDefinition, boolean isInterruptingTimer,
       ExecutionEntity executionEntity, String jobHandlerType, String jobHandlerConfig) {
 
     String businessCalendarRef = null;
+    Expression endDateExpression = null;
     Expression expression = null;
+
     ExpressionManager expressionManager = Context.getProcessEngineConfiguration().getExpressionManager();
     if (StringUtils.isNotEmpty(timerEventDefinition.getTimeDate())) {
 
@@ -54,14 +57,20 @@ public class TimerUtil {
 
     }
 
+    if (StringUtils.isNotEmpty(timerEventDefinition.getEndDate())){
+      endDateExpression = expressionManager.createExpression(timerEventDefinition.getEndDate());
+    }
+
     if (expression == null) {
       throw new ActivitiException("Timer needs configuration (either timeDate, timeCycle or timeDuration is needed) (" + timerEventDefinition.getId() + ")");
     }
 
     BusinessCalendar businessCalendar = Context.getProcessEngineConfiguration().getBusinessCalendarManager().getBusinessCalendar(businessCalendarRef);
 
+    String endDateString = null;
     String dueDateString = null;
-    Date duedate = null;
+    Date dueDate = null;
+    Date endDate = null;
 
     // ACT-1415: timer-declaration on start-event may contain expressions NOT
     // evaluating variables but other context, evaluating should happen nevertheless
@@ -74,28 +83,51 @@ public class TimerUtil {
     if (dueDateValue instanceof String) {
       dueDateString = (String) dueDateValue;
     } else if (dueDateValue instanceof Date) {
-      duedate = (Date) dueDateValue;
+      dueDate = (Date) dueDateValue;
     } else if (dueDateValue instanceof DateTime) {
       //JodaTime support
-      duedate = ((DateTime) dueDateValue).toDate();
+      dueDate = ((DateTime) dueDateValue).toDate();
     } else if(dueDateValue!=null){
       throw new ActivitiException("Timer '" + executionEntity.getActivityId()
           + "' was not configured with a valid duration/time, either hand in a java.util.Date or a String in format 'yyyy-MM-dd'T'hh:mm:ss'");
     }
     //dueDateValue==null is OK - but unexpected class type must throw an error.
 
-    if (duedate == null && dueDateString != null) {
-      duedate = businessCalendar.resolveDuedate(dueDateString);
+    if (dueDate == null && dueDateString != null) {
+      dueDate = businessCalendar.resolveDuedate(dueDateString);
     }
 
-    TimerEntity timer = null;
-    if (duedate != null) {
-      timer = Context.getCommandContext().getJobEntityManager().createTimer();
+
+    Object endDateValue = endDateExpression.getValue(scopeForExpression);
+    if (dueDateValue instanceof String) {
+      endDateString = (String) endDateValue;
+    } else if (dueDateValue instanceof Date) {
+      endDate = (Date) endDateValue;
+    } else if (dueDateValue instanceof DateTime) {
+      //JodaTime support
+      endDate = ((DateTime) endDateValue).toDate();
+    } else if(endDateValue!=null){
+      throw new ActivitiException("Timer '" + executionEntity.getActivityId()
+              + "' was not configured with a valid endDate, either hand in a java.util.Date or a String in format 'yyyy-MM-dd'T'hh:mm:ss'");
+    }
+
+    if (endDate == null && endDateString != null) {
+      endDate = businessCalendar.resolveEndDate(endDateString);
+    }
+
+    ExecutableTimerJobEntity timer = null;
+    if (dueDate != null) {
+      timer = Context.getCommandContext().getExecutableJobEntityManager().createTimer();
       timer.setJobHandlerType(jobHandlerType);
       timer.setJobHandlerConfiguration(jobHandlerConfig);
       timer.setExclusive(true);
       timer.setRetries(TimerEntity.DEFAULT_RETRIES);
-      timer.setDuedate(duedate);
+      timer.setDuedate(dueDate);
+
+      if (endDate !=null) {
+        timer.setEndDate(endDate);
+      }
+
       if (executionEntity != null) {
         timer.setExecution(executionEntity);
         timer.setProcessDefinitionId(executionEntity.getProcessDefinitionId());

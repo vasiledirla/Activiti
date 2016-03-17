@@ -13,29 +13,7 @@
 
 package org.activiti.engine.impl.cfg;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-
-import javax.naming.InitialContext;
-import javax.sql.DataSource;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.DynamicBpmnService;
 import org.activiti.engine.FormService;
@@ -155,7 +133,9 @@ import org.activiti.engine.impl.jobexecutor.AsyncContinuationJobHandler;
 import org.activiti.engine.impl.jobexecutor.CallerRunsRejectedJobsHandler;
 import org.activiti.engine.impl.jobexecutor.DefaultFailedJobCommandFactory;
 import org.activiti.engine.impl.jobexecutor.DefaultJobExecutor;
+import org.activiti.engine.impl.jobexecutor.DefaultJobFactory;
 import org.activiti.engine.impl.jobexecutor.FailedJobCommandFactory;
+import org.activiti.engine.impl.jobexecutor.JobFactory;
 import org.activiti.engine.impl.jobexecutor.JobHandler;
 import org.activiti.engine.impl.jobexecutor.ProcessEventJobHandler;
 import org.activiti.engine.impl.jobexecutor.RejectedJobsHandler;
@@ -186,6 +166,8 @@ import org.activiti.engine.impl.persistence.entity.EventSubscriptionEntityManage
 import org.activiti.engine.impl.persistence.entity.EventSubscriptionEntityManagerImpl;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntityManager;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntityManagerImpl;
+import org.activiti.engine.impl.persistence.entity.FailedJobEntityManager;
+import org.activiti.engine.impl.persistence.entity.FailedJobEntityManagerImpl;
 import org.activiti.engine.impl.persistence.entity.GroupEntityManager;
 import org.activiti.engine.impl.persistence.entity.GroupEntityManagerImpl;
 import org.activiti.engine.impl.persistence.entity.HistoricActivityInstanceEntityManager;
@@ -204,8 +186,10 @@ import org.activiti.engine.impl.persistence.entity.IdentityInfoEntityManager;
 import org.activiti.engine.impl.persistence.entity.IdentityInfoEntityManagerImpl;
 import org.activiti.engine.impl.persistence.entity.IdentityLinkEntityManager;
 import org.activiti.engine.impl.persistence.entity.IdentityLinkEntityManagerImpl;
-import org.activiti.engine.impl.persistence.entity.JobEntityManager;
-import org.activiti.engine.impl.persistence.entity.JobEntityManagerImpl;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntityManager;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntityManagerImpl;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntityManager;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntityManagerImpl;
 import org.activiti.engine.impl.persistence.entity.MembershipEntityManager;
 import org.activiti.engine.impl.persistence.entity.MembershipEntityManagerImpl;
 import org.activiti.engine.impl.persistence.entity.ModelEntityManager;
@@ -233,6 +217,7 @@ import org.activiti.engine.impl.persistence.entity.data.DeploymentDataManager;
 import org.activiti.engine.impl.persistence.entity.data.EventLogEntryDataManager;
 import org.activiti.engine.impl.persistence.entity.data.EventSubscriptionDataManager;
 import org.activiti.engine.impl.persistence.entity.data.ExecutionDataManager;
+import org.activiti.engine.impl.persistence.entity.data.FailedJobDataManager;
 import org.activiti.engine.impl.persistence.entity.data.GroupDataManager;
 import org.activiti.engine.impl.persistence.entity.data.HistoricActivityInstanceDataManager;
 import org.activiti.engine.impl.persistence.entity.data.HistoricDetailDataManager;
@@ -242,7 +227,8 @@ import org.activiti.engine.impl.persistence.entity.data.HistoricTaskInstanceData
 import org.activiti.engine.impl.persistence.entity.data.HistoricVariableInstanceDataManager;
 import org.activiti.engine.impl.persistence.entity.data.IdentityInfoDataManager;
 import org.activiti.engine.impl.persistence.entity.data.IdentityLinkDataManager;
-import org.activiti.engine.impl.persistence.entity.data.JobDataManager;
+import org.activiti.engine.impl.persistence.entity.data.ExecutableJobDataManager;
+import org.activiti.engine.impl.persistence.entity.data.LockedJobDataManager;
 import org.activiti.engine.impl.persistence.entity.data.MembershipDataManager;
 import org.activiti.engine.impl.persistence.entity.data.ModelDataManager;
 import org.activiti.engine.impl.persistence.entity.data.ProcessDefinitionDataManager;
@@ -259,6 +245,7 @@ import org.activiti.engine.impl.persistence.entity.data.impl.MybatisDeploymentDa
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisEventLogEntryDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisEventSubscriptionDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisExecutionDataManager;
+import org.activiti.engine.impl.persistence.entity.data.impl.MybatisFailedJobDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisGroupDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisHistoricActivityInstanceDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisHistoricDetailDataManager;
@@ -268,7 +255,8 @@ import org.activiti.engine.impl.persistence.entity.data.impl.MybatisHistoricTask
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisHistoricVariableInstanceDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisIdentityInfoDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisIdentityLinkDataManager;
-import org.activiti.engine.impl.persistence.entity.data.impl.MybatisJobDataManager;
+import org.activiti.engine.impl.persistence.entity.data.impl.MybatisExecutableJobDataManager;
+import org.activiti.engine.impl.persistence.entity.data.impl.MybatisLockedJobDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisMembershipDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisModelDataManager;
 import org.activiti.engine.impl.persistence.entity.data.impl.MybatisProcessDefinitionDataManager;
@@ -327,7 +315,27 @@ import org.apache.ibatis.type.JdbcType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.naming.InitialContext;
+import javax.sql.DataSource;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * @author Tom Baeyens
@@ -394,7 +402,9 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected HistoricVariableInstanceDataManager historicVariableInstanceDataManager;
   protected IdentityInfoDataManager identityInfoDataManager;
   protected IdentityLinkDataManager identityLinkDataManager;
-  protected JobDataManager jobDataManager;
+  protected ExecutableJobDataManager executableJobDataManager;
+  protected LockedJobDataManager lockedJobDataManager;
+  protected FailedJobDataManager failedJobDataManager;
   protected MembershipDataManager membershipDataManager;
   protected ModelDataManager modelDataManager;
   protected ProcessDefinitionDataManager processDefinitionDataManager;
@@ -424,7 +434,10 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected HistoricVariableInstanceEntityManager historicVariableInstanceEntityManager;
   protected IdentityInfoEntityManager identityInfoEntityManager;
   protected IdentityLinkEntityManager identityLinkEntityManager;
-  protected JobEntityManager jobEntityManager;
+  protected ExecutableJobEntityManager executableJobEntityManager;
+  protected LockedJobEntityManager lockedJobEntityManager;
+  protected FailedJobEntityManager failedJobEntityManager;
+
   protected MembershipEntityManager membershipEntityManager;
   protected ModelEntityManager modelEntityManager;
   protected ProcessDefinitionEntityManager processDefinitionEntityManager;
@@ -732,6 +745,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected List<EventHandler> customEventHandlers;
 
   protected FailedJobCommandFactory failedJobCommandFactory;
+  protected JobFactory jobFactory;
 
   /**
    * Set this to true if you want to have extra checks on the BPMN xml that is parsed. See http://www.jorambarrez.be/blog/2013/02/19/uploading-a-funny-xml -can-bring-down-your-server/
@@ -882,6 +896,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     initDelegateInterceptor();
     initEventHandlers();
     initFailedJobCommandFactory();
+    initJobFactory();
     initEventDispatcher();
     initProcessValidator();
     initDatabaseEventLogging();
@@ -895,6 +910,12 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   public void initFailedJobCommandFactory() {
     if (failedJobCommandFactory == null) {
       failedJobCommandFactory = new DefaultFailedJobCommandFactory();
+    }
+  }
+
+  public void initJobFactory() {
+    if (jobFactory == null) {
+      jobFactory = new DefaultJobFactory();
     }
   }
 
@@ -1286,9 +1307,16 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     if (identityLinkDataManager == null) {
       identityLinkDataManager = new MybatisIdentityLinkDataManager(this);
     }
-    if (jobDataManager == null) {
-      jobDataManager = new MybatisJobDataManager(this);
+    if (executableJobDataManager == null) {
+      executableJobDataManager = new MybatisExecutableJobDataManager(this);
     }
+    if (lockedJobDataManager == null) {
+      lockedJobDataManager = new MybatisLockedJobDataManager(this);
+    }
+    if (failedJobDataManager == null) {
+      failedJobDataManager = new MybatisFailedJobDataManager(this);
+    }
+
     if (membershipDataManager == null) {
       membershipDataManager = new MybatisMembershipDataManager(this);
     }
@@ -1369,9 +1397,16 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     if (identityLinkEntityManager == null) {
       identityLinkEntityManager = new IdentityLinkEntityManagerImpl(this, identityLinkDataManager);
     }
-    if (jobEntityManager == null) {
-      jobEntityManager = new JobEntityManagerImpl(this, jobDataManager);
+    if (executableJobEntityManager == null) {
+      executableJobEntityManager = new ExecutableJobEntityManagerImpl(this, executableJobDataManager);
     }
+    if (lockedJobEntityManager == null) {
+      lockedJobEntityManager = new LockedJobEntityManagerImpl(this, lockedJobDataManager);
+    }
+    if (failedJobEntityManager == null) {
+      failedJobEntityManager = new FailedJobEntityManagerImpl(this, failedJobDataManager);
+    }
+
     if (membershipEntityManager == null) {
       membershipEntityManager = new MembershipEntityManagerImpl(this, membershipDataManager);
     }
@@ -2742,6 +2777,15 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     return this;
   }
 
+  public JobFactory getJobFactory() {
+    return jobFactory;
+  }
+
+  public ProcessEngineConfigurationImpl setJobFactory(JobFactory jobFactory) {
+    this.jobFactory = jobFactory;
+    return this;
+  }
+
   public FailedJobCommandFactory getFailedJobCommandFactory() {
     return failedJobCommandFactory;
   }
@@ -3066,12 +3110,12 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     return this;
   }
 
-  public JobDataManager getJobDataManager() {
-    return jobDataManager;
+  public ExecutableJobDataManager getExecutableJobDataManager() {
+    return executableJobDataManager;
   }
 
-  public ProcessEngineConfigurationImpl setJobDataManager(JobDataManager jobDataManager) {
-    this.jobDataManager = jobDataManager;
+  public ProcessEngineConfigurationImpl setExecutableJobDataManager(ExecutableJobDataManager executableJobDataManager) {
+    this.executableJobDataManager = executableJobDataManager;
     return this;
   }
 
@@ -3304,12 +3348,30 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     return this;
   }
 
-  public JobEntityManager getJobEntityManager() {
-    return jobEntityManager;
+  public ExecutableJobEntityManager getExecutableJobEntityManager() {
+    return executableJobEntityManager;
   }
 
-  public ProcessEngineConfigurationImpl setJobEntityManager(JobEntityManager jobEntityManager) {
-    this.jobEntityManager = jobEntityManager;
+  public ProcessEngineConfigurationImpl setExecutableJobEntityManager(ExecutableJobEntityManager jobEntityManager) {
+    this.executableJobEntityManager = jobEntityManager;
+    return this;
+  }
+
+  public LockedJobEntityManager getLockedJobEntityManager() {
+    return lockedJobEntityManager;
+  }
+
+  public ProcessEngineConfigurationImpl setLockedJobEntityManager(LockedJobEntityManager jobEntityManager) {
+    this.lockedJobEntityManager = jobEntityManager;
+    return this;
+  }
+
+ public FailedJobEntityManager getFailedJobEntityManager() {
+    return failedJobEntityManager;
+  }
+
+  public ProcessEngineConfigurationImpl setFailedJobEntityManager(FailedJobEntityManager jobEntityManager) {
+    this.failedJobEntityManager = jobEntityManager;
     return this;
   }
 

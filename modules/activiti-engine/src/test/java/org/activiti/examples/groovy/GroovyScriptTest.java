@@ -53,7 +53,7 @@ public class GroovyScriptTest extends PluggableActivitiTestCase {
     Date startTime = new Date();
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("testAsyncScript");
     
-    JobQuery jobQuery = managementService.createJobQuery().processInstanceId(processInstance.getId());
+    JobQuery jobQuery = managementService.createJobQuery().locked().processInstanceId(processInstance.getId());
     List<Job> jobs = jobQuery.list();
     assertEquals(1, jobs.size());
     

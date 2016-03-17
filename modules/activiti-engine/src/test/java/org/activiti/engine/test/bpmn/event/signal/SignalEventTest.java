@@ -94,7 +94,7 @@ public class SignalEventTest extends PluggableActivitiTestCase {
     assertEquals(1, runtimeService.createProcessInstanceQuery().count());
 
     // there is a job:
-    assertEquals(1, managementService.createJobQuery().count());
+    assertEquals(1, managementService.createJobQuery().locked().count());
 
     try {
       processEngineConfiguration.getClock().setCurrentTime(new Date(System.currentTimeMillis() + 1000));
@@ -330,12 +330,14 @@ public class SignalEventTest extends PluggableActivitiTestCase {
 
     runtimeService.signalEventReceivedAsync("The Signal", execution.getId());
 
-    assertEquals(1, managementService.createJobQuery().messages().count());
+    assertEquals(1, managementService.createJobQuery().locked().messages().count());
 
     waitForJobExecutorToProcessAllJobs(8000L, 200L);
     assertEquals(0, createEventSubscriptionQuery().count());
     assertEquals(0, runtimeService.createProcessInstanceQuery().count());
     assertEquals(0, managementService.createJobQuery().count());
+    assertEquals(0, managementService.createJobQuery().locked().count());
+    assertEquals(0, managementService.createJobQuery().failed().count());
   }
 
   @Deployment
@@ -406,8 +408,8 @@ public class SignalEventTest extends PluggableActivitiTestCase {
     assertEquals(0, runtimeService.createProcessInstanceQuery().count());
     assertEquals(0, taskService.createTaskQuery().count());
 
-    assertEquals(3, managementService.createJobQuery().count());
-    for (Job job : managementService.createJobQuery().list()) {
+    assertEquals(3, managementService.createJobQuery().locked().count());
+    for (Job job : managementService.createJobQuery().locked().list()) {
       managementService.executeJob(job.getId());
     }
     assertEquals(3, runtimeService.createProcessInstanceQuery().count());
@@ -428,8 +430,8 @@ public class SignalEventTest extends PluggableActivitiTestCase {
     // Firing again
     runtimeService.startProcessInstanceByKey("processWithSignalThrow");
 
-    assertEquals(4, managementService.createJobQuery().count());
-    for (Job job : managementService.createJobQuery().list()) {
+    assertEquals(4, managementService.createJobQuery().locked().count());
+    for (Job job : managementService.createJobQuery().locked().list()) {
       managementService.executeJob(job.getId());
     }
     assertEquals(7, runtimeService.createProcessInstanceQuery().count());
@@ -487,8 +489,8 @@ public class SignalEventTest extends PluggableActivitiTestCase {
 
     runtimeService.signalEventReceivedAsync("The Signal");
 
-    assertEquals(3, managementService.createJobQuery().count());
-    for (Job job : managementService.createJobQuery().list()) {
+    assertEquals(3, managementService.createJobQuery().locked().count());
+    for (Job job : managementService.createJobQuery().locked().list()) {
       managementService.executeJob(job.getId());
     }
     assertEquals(3, runtimeService.createProcessInstanceQuery().count());
@@ -509,8 +511,8 @@ public class SignalEventTest extends PluggableActivitiTestCase {
     // Firing again
     runtimeService.signalEventReceivedAsync("The Signal");
 
-    assertEquals(4, managementService.createJobQuery().count());
-    for (Job job : managementService.createJobQuery().list()) {
+    assertEquals(4, managementService.createJobQuery().locked().count());
+    for (Job job : managementService.createJobQuery().locked().list()) {
       managementService.executeJob(job.getId());
     }
     assertEquals(7, runtimeService.createProcessInstanceQuery().count());

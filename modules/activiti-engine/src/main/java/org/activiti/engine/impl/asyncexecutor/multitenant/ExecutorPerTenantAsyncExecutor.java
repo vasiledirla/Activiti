@@ -21,6 +21,7 @@ import org.activiti.engine.impl.asyncexecutor.DefaultAsyncJobExecutor;
 import org.activiti.engine.impl.cfg.multitenant.TenantInfoHolder;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,8 +64,8 @@ public class ExecutorPerTenantAsyncExecutor implements TenantAwareAsyncExecutor 
     
     if (tenantExecutor instanceof DefaultAsyncJobExecutor) {
       DefaultAsyncJobExecutor defaultAsyncJobExecutor = (DefaultAsyncJobExecutor) tenantExecutor;
-      defaultAsyncJobExecutor.setAsyncJobsDueRunnable(new TenantAwareAcquireAsyncJobsDueRunnable(defaultAsyncJobExecutor, tenantInfoHolder, tenantId));
-      defaultAsyncJobExecutor.setTimerJobRunnable(new TenantAwareAcquireTimerJobsRunnable(defaultAsyncJobExecutor, tenantInfoHolder, tenantId));
+      defaultAsyncJobExecutor.setJobsDueRunnable(new TenantAwareAcquireJobsDueRunnable(defaultAsyncJobExecutor, tenantInfoHolder, tenantId));
+//      defaultAsyncJobExecutor.setTimerJobRunnable(new TenantAwareAcquireTimerJobsRunnable(defaultAsyncJobExecutor, tenantInfoHolder, tenantId));
       defaultAsyncJobExecutor.setExecuteAsyncRunnableFactory(new TenantAwareExecuteAsyncRunnableFactory(tenantInfoHolder, tenantId));
     }
     
@@ -81,7 +82,7 @@ public class ExecutorPerTenantAsyncExecutor implements TenantAwareAsyncExecutor 
     return tenantExecutors.get(tenantInfoHolder.getCurrentTenantId());
   }
 
-  public boolean executeAsyncJob(JobEntity job) {
+  public boolean executeAsyncJob(LockedJobEntity job) {
     return determineAsyncExecutor().executeAsyncJob(job);
   }
 
@@ -143,6 +144,23 @@ public class ExecutorPerTenantAsyncExecutor implements TenantAwareAsyncExecutor 
   }
 
   public void setAsyncJobLockTimeInMillis(int lockTimeInMillis) {
+    for (AsyncExecutor asyncExecutor : tenantExecutors.values()) {
+      asyncExecutor.setAsyncJobLockTimeInMillis(lockTimeInMillis);
+    }
+  }
+
+  public int getDefaultCleanupJobsWaitTimeInMillis() {
+    return determineAsyncExecutor().getDefaultCleanupJobsWaitTimeInMillis();
+  }
+  public void setDefaultCleanupJobsWaitTimeInMillis(int lockTimeInMillis) {
+    for (AsyncExecutor asyncExecutor : tenantExecutors.values()) {
+      asyncExecutor.setAsyncJobLockTimeInMillis(lockTimeInMillis);
+    }
+  }
+  public int getDefaultMoveTimerJobsWaitTimeInMillis() {
+    return determineAsyncExecutor().getDefaultMoveTimerJobsWaitTimeInMillis();
+  }
+  public void setDefaultMoveTimerJobsWaitTimeInMillis(int lockTimeInMillis) {
     for (AsyncExecutor asyncExecutor : tenantExecutors.values()) {
       asyncExecutor.setAsyncJobLockTimeInMillis(lockTimeInMillis);
     }

@@ -12,24 +12,25 @@
  */
 package org.activiti.engine.impl.asyncexecutor;
 
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.activiti.engine.impl.persistence.entity.JobEntity;
-
 /**
  * @author Tijs Rademakers
+ * @author Vasile Dirla
  */
-public class AcquiredJobEntities {
+public class AcquiredExecutableJobEntities {
 
-  protected Map<String, JobEntity> acquiredJobs = new HashMap<String, JobEntity>();
+  protected Map<String, LockedJobEntity> acquiredJobs = new HashMap<String, LockedJobEntity>();
 
-  public void addJob(JobEntity job) {
+  public void addJob(LockedJobEntity job) {
     acquiredJobs.put(job.getId(), job);
   }
 
-  public Collection<JobEntity> getJobs() {
+  public Collection<LockedJobEntity> getJobs() {
     return acquiredJobs.values();
   }
 

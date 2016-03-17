@@ -1,5 +1,14 @@
 package org.activiti.engine.impl.asyncexecutor;
 
+import org.activiti.engine.impl.context.Context;
+import org.activiti.engine.impl.interceptor.Command;
+import org.activiti.engine.impl.interceptor.CommandContext;
+import org.activiti.engine.impl.interceptor.CommandExecutor;
+import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -8,14 +17,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import org.activiti.engine.impl.context.Context;
-import org.activiti.engine.impl.interceptor.Command;
-import org.activiti.engine.impl.interceptor.CommandContext;
-import org.activiti.engine.impl.interceptor.CommandExecutor;
-import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Joram Barrez
@@ -41,13 +42,19 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
    */
   protected long keepAliveTime = 5000L;
 
-  /** The size of the queue on which jobs to be executed are placed */
+  /**
+   * The size of the queue on which jobs to be executed are placed
+   */
   protected int queueSize = 100;
 
-  /** The queue used for job execution work */
+  /**
+   * The queue used for job execution work
+   */
   protected BlockingQueue<Runnable> threadPoolQueue;
 
-  /** The executor service used for job execution */
+  /**
+   * The executor service used for job execution
+   */
   protected ExecutorService executorService;
 
   /**
@@ -55,11 +62,14 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
    */
   protected long secondsToWaitOnShutdown = 60L;
 
-  protected Thread timerJobAcquisitionThread;
   protected Thread asyncJobAcquisitionThread;
-  protected AcquireTimerJobsRunnable timerJobRunnable;
-  protected AcquireAsyncJobsDueRunnable asyncJobsDueRunnable;
-  
+  protected Thread timerJobMoveThread;
+  protected Thread cleanupJobsThread;
+
+  protected TimerJobsMoveRunnable timerJobMoveRunnable;
+  protected CleanupJobsRunnable cleanupJobsRunnable;
+  protected AcquireJobsDueRunnable jobsDueRunnable;
+
   protected ExecuteAsyncRunnableFactory executeAsyncRunnableFactory;
 
   protected boolean isAutoActivate;
@@ -67,112 +77,128 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
 
   protected int maxTimerJobsPerAcquisition = 1;
   protected int maxAsyncJobsDuePerAcquisition = 1;
+  protected int defaultCleanupJobsWaitTimeInMillis = 5 * 1000;
+  protected int defaultMoveTimerJobsWaitTimeInMillis = 5 * 1000;
   protected int defaultTimerJobAcquireWaitTimeInMillis = 10 * 1000;
   protected int defaultAsyncJobAcquireWaitTimeInMillis = 10 * 1000;
-  protected int defaultQueueSizeFullWaitTime = 0; 
+  protected int defaultQueueSizeFullWaitTime = 0;
 
   protected String lockOwner = UUID.randomUUID().toString();
   protected int timerLockTimeInMillis = 5 * 60 * 1000;
   protected int asyncJobLockTimeInMillis = 5 * 60 * 1000;
   protected int retryWaitTimeInMillis = 500;
-  
+
   // Job queue used when async executor is not yet started and jobs are already added.
   // This is mainly used for testing purpose.
-  protected LinkedList<JobEntity> temporaryJobQueue = new LinkedList<JobEntity>();
+  protected LinkedList<LockedJobEntity> temporaryJobQueue = new LinkedList<LockedJobEntity>();
 
   protected CommandExecutor commandExecutor;
 
-  public boolean executeAsyncJob(final JobEntity job) {
+  public boolean executeAsyncJob(final LockedJobEntity job) {
     Runnable runnable = null;
     if (isActive) {
-      
+
       runnable = createRunnableForJob(job);
-      
+
       try {
         executorService.execute(runnable);
       } catch (RejectedExecutionException e) {
-        
+
         // When a RejectedExecutionException is caught, this means that the queue for holding the jobs 
         // that are to be executed is full and can't store more.
         // The job is now 'unlocked', meaning that the lock owner/time is set to null,
         // so other executors can pick the job up (or this async executor, the next time the 
         // acquire query is executed.
-        
+
         // This can happen while already in a command context (for example in a transaction listener
         // after the async executor has been hinted that a new async job is created)
         // or not (when executed in the aquire thread runnable)
-        
+
         CommandContext commandContext = Context.getCommandContext();
         if (commandContext != null) {
           unacquireJob(job, commandContext);
         } else {
           commandExecutor.execute(new Command<Void>() {
+
             public Void execute(CommandContext commandContext) {
               unacquireJob(job, commandContext);
               return null;
             }
           });
         }
-        
+
         // Job queue full, returning true so (if wanted) the acquiring can be throttled
         return false;
       }
-      
+
     } else {
       temporaryJobQueue.add(job);
     }
-    
+
     return true;
   }
 
-  protected Runnable createRunnableForJob(final JobEntity job) {
+  protected Runnable createRunnableForJob(final LockedJobEntity job) {
     if (executeAsyncRunnableFactory == null) {
       return new ExecuteAsyncRunnable(job, commandExecutor);
     } else {
       return executeAsyncRunnableFactory.createExecuteAsyncRunnable(job, commandExecutor);
     }
   }
-  
+
   protected void unacquireJob(final JobEntity job, CommandContext commandContext) {
-    commandContext.getJobEntityManager().unacquireJob(job.getId());
+    commandContext.getLockedJobEntityManager().unacquireJob(job.getId());
   }
-  
-  /** Starts the async executor */
+
+  /**
+   * Starts the async executor
+   */
   public void start() {
     if (isActive) {
       return;
     }
 
     log.info("Starting up the default async job executor [{}].", getClass().getName());
-    if (timerJobRunnable == null) {
-      timerJobRunnable = new AcquireTimerJobsRunnable(this);
+
+    if (jobsDueRunnable == null) {
+      jobsDueRunnable = new AcquireJobsDueRunnable(this);
     }
-    if (asyncJobsDueRunnable == null) {
-      asyncJobsDueRunnable = new AcquireAsyncJobsDueRunnable(this);
+    if (timerJobMoveRunnable == null) {
+      timerJobMoveRunnable = new TimerJobsMoveRunnable(this);
     }
+    if (cleanupJobsRunnable == null) {
+      cleanupJobsRunnable = new CleanupJobsRunnable(this);
+    }
+
     startExecutingAsyncJobs();
 
     isActive = true;
 
     while (temporaryJobQueue.isEmpty() == false) {
-      JobEntity job = temporaryJobQueue.pop();
+      LockedJobEntity job = temporaryJobQueue.pop();
       executeAsyncJob(job);
     }
     isActive = true;
   }
 
-  /** Shuts down the whole job executor */
+  /**
+   * Shuts down the whole job executor
+   */
   public synchronized void shutdown() {
     if (!isActive) {
       return;
     }
     log.info("Shutting down the default async job executor [{}].", getClass().getName());
-    timerJobRunnable.stop();
-    asyncJobsDueRunnable.stop();
+    //    timerJobRunnable.stop();
+    jobsDueRunnable.stop();
+    timerJobMoveRunnable.stop();
+    cleanupJobsRunnable.stop();
+
     stopExecutingAsyncJobs();
 
-    timerJobRunnable = null;
-    asyncJobsDueRunnable = null;
+    jobsDueRunnable = null;
+    timerJobMoveRunnable = null;
+    cleanupJobsRunnable = null;
     isActive = false;
   }
 
@@ -200,7 +226,8 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
     // Waits for 1 minute to finish all currently executing jobs
     try {
       if (!executorService.awaitTermination(secondsToWaitOnShutdown, TimeUnit.SECONDS)) {
-        log.warn("Timeout during shutdown of async job executor. " + "The current running jobs could not end within " + secondsToWaitOnShutdown + " seconds after shutdown operation.");
+        log.warn("Timeout during shutdown of async job executor. " + "The current running jobs could not end within " + secondsToWaitOnShutdown
+                + " seconds after shutdown operation.");
       }
     } catch (InterruptedException e) {
       log.warn("Interrupted while shutting down the async job executor. ", e);
@@ -209,26 +236,31 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
     executorService = null;
   }
 
-  /** Starts the acquisition thread */
+  /**
+   * Starts the acquisition thread
+   */
   protected void startJobAcquisitionThread() {
-    if (timerJobAcquisitionThread == null) {
-      timerJobAcquisitionThread = new Thread(timerJobRunnable);
-    }
-    timerJobAcquisitionThread.start();
 
     if (asyncJobAcquisitionThread == null) {
-      asyncJobAcquisitionThread = new Thread(asyncJobsDueRunnable);
+      asyncJobAcquisitionThread = new Thread(jobsDueRunnable);
     }
     asyncJobAcquisitionThread.start();
+
+    if (timerJobMoveThread == null) {
+      timerJobMoveThread = new Thread(timerJobMoveRunnable);
+    }
+    timerJobMoveThread.start();
+
+    if (cleanupJobsThread == null) {
+      cleanupJobsThread = new Thread(cleanupJobsRunnable);
+    }
+    cleanupJobsThread.start();
   }
 
-  /** Stops the acquisition thread */
+  /**
+   * Stops the acquisition thread
+   */
   protected void stopJobAcquisitionThread() {
-    try {
-      timerJobAcquisitionThread.join();
-    } catch (InterruptedException e) {
-      log.warn("Interrupted while waiting for the timer job acquisition thread to terminate", e);
-    }
 
     try {
       asyncJobAcquisitionThread.join();
@@ -236,8 +268,22 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
       log.warn("Interrupted while waiting for the async job acquisition thread to terminate", e);
     }
 
-    timerJobAcquisitionThread = null;
+    try {
+      timerJobMoveThread.join();
+    } catch (InterruptedException e) {
+      log.warn("Interrupted while waiting for the async job acquisition thread to terminate", e);
+    }
+
+    try {
+      cleanupJobsThread.join();
+    } catch (InterruptedException e) {
+      log.warn("Interrupted while waiting for the async job acquisition thread to terminate", e);
+    }
+
+    //    timerJobAcquisitionThread = null;
     asyncJobAcquisitionThread = null;
+    timerJobMoveThread = null;
+    cleanupJobsThread = null;
   }
 
   /* getters and setters */
@@ -366,6 +412,18 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
     this.defaultTimerJobAcquireWaitTimeInMillis = defaultTimerJobAcquireWaitTimeInMillis;
   }
 
+  public int getDefaultCleanupJobsWaitTimeInMillis() {
+    return defaultCleanupJobsWaitTimeInMillis;
+  }
+  public void setDefaultCleanupJobsWaitTimeInMillis(int defaultCleanupJobsWaitTimeInMillis) {
+    this.defaultCleanupJobsWaitTimeInMillis = defaultCleanupJobsWaitTimeInMillis;
+  }
+  public int getDefaultMoveTimerJobsWaitTimeInMillis() {
+    return defaultMoveTimerJobsWaitTimeInMillis;
+  }
+  public void setDefaultMoveTimerJobsWaitTimeInMillis(int defaultMoveTimerJobsWaitTimeInMillis) {
+    this.defaultMoveTimerJobsWaitTimeInMillis = defaultMoveTimerJobsWaitTimeInMillis;
+  }
   public int getDefaultAsyncJobAcquireWaitTimeInMillis() {
     return defaultAsyncJobAcquireWaitTimeInMillis;
   }
@@ -374,10 +432,6 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
     this.defaultAsyncJobAcquireWaitTimeInMillis = defaultAsyncJobAcquireWaitTimeInMillis;
   }
 
-  public void setTimerJobRunnable(AcquireTimerJobsRunnable timerJobRunnable) {
-    this.timerJobRunnable = timerJobRunnable;
-  }
-  
   public int getDefaultQueueSizeFullWaitTimeInMillis() {
     return defaultQueueSizeFullWaitTime;
   }
@@ -386,17 +440,17 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
     this.defaultQueueSizeFullWaitTime = defaultQueueSizeFullWaitTime;
   }
 
-  public void setAsyncJobsDueRunnable(AcquireAsyncJobsDueRunnable asyncJobsDueRunnable) {
-    this.asyncJobsDueRunnable = asyncJobsDueRunnable;
+  public void setJobsDueRunnable(AcquireJobsDueRunnable jobsDueRunnable) {
+    this.jobsDueRunnable = jobsDueRunnable;
   }
 
-	public int getRetryWaitTimeInMillis() {
-		return retryWaitTimeInMillis;
-	}
+  public int getRetryWaitTimeInMillis() {
+    return retryWaitTimeInMillis;
+  }
 
-	public void setRetryWaitTimeInMillis(int retryWaitTimeInMillis) {
-		this.retryWaitTimeInMillis = retryWaitTimeInMillis;
-	}
+  public void setRetryWaitTimeInMillis(int retryWaitTimeInMillis) {
+    this.retryWaitTimeInMillis = retryWaitTimeInMillis;
+  }
 
   public ExecuteAsyncRunnableFactory getExecuteAsyncRunnableFactory() {
     return executeAsyncRunnableFactory;

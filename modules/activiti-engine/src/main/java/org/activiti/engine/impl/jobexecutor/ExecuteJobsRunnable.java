@@ -18,6 +18,7 @@ import org.activiti.engine.impl.cmd.ExecuteJobsCmd;
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +31,11 @@ public class ExecuteJobsRunnable implements Runnable {
 
   private static Logger log = LoggerFactory.getLogger(ExecuteJobsRunnable.class);
 
-  protected JobEntity job;
+  protected LockedJobEntity job;
   protected List<String> jobIds;
   protected JobExecutor jobExecutor;
 
-  public ExecuteJobsRunnable(JobExecutor jobExecutor, JobEntity job) {
+  public ExecuteJobsRunnable(JobExecutor jobExecutor, LockedJobEntity job) {
     this.jobExecutor = jobExecutor;
     this.job = job;
   }
@@ -55,7 +56,7 @@ public class ExecuteJobsRunnable implements Runnable {
 
   protected void handleSingleJob() {
     final SingleJobExecutorContext jobExecutorContext = new SingleJobExecutorContext();
-    final List<JobEntity> currentProcessorJobQueue = jobExecutorContext.getCurrentProcessorJobQueue();
+    final List<LockedJobEntity> currentProcessorJobQueue = jobExecutorContext.getCurrentProcessorJobQueue();
     final CommandExecutor commandExecutor = jobExecutor.getCommandExecutor();
 
     currentProcessorJobQueue.add(job);
@@ -64,7 +65,7 @@ public class ExecuteJobsRunnable implements Runnable {
     try {
       while (!currentProcessorJobQueue.isEmpty()) {
 
-        JobEntity currentJob = currentProcessorJobQueue.remove(0);
+        LockedJobEntity currentJob = currentProcessorJobQueue.remove(0);
         try {
           commandExecutor.execute(new ExecuteJobsCmd(currentJob));
         } catch (Throwable e) {

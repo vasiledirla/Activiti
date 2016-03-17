@@ -19,9 +19,11 @@ import org.activiti.engine.delegate.DelegateExecution;
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.jobexecutor.TimerEventHandler;
 import org.activiti.engine.impl.jobexecutor.TriggerTimerEventJobHandler;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.activiti.engine.impl.persistence.entity.JobEntityManager;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.impl.util.TimerUtil;
 
@@ -36,20 +38,20 @@ public class IntermediateCatchTimerEventActivityBehavior extends IntermediateCat
   }
 
   public void execute(DelegateExecution execution) {
-    TimerEntity timer = TimerUtil
+    ExecutableTimerJobEntity timer = TimerUtil
         .createTimerEntityForTimerEventDefinition(timerEventDefinition, false, (ExecutionEntity) execution, TriggerTimerEventJobHandler.TYPE, 
             TimerEventHandler.createConfiguration(execution.getCurrentActivityId(), timerEventDefinition.getEndDate()));
     if (timer != null) {
-      Context.getCommandContext().getJobEntityManager().schedule(timer);
+      Context.getCommandContext().getExecutableJobEntityManager().schedule(timer);
     }
   }
   
   @Override
   public void cancelEvent(DelegateExecution execution) {
-    JobEntityManager jobEntityManager = Context.getCommandContext().getJobEntityManager();
-    List<JobEntity> jobEntities = jobEntityManager.findJobsByExecutionId(execution.getId());
+    ExecutableJobEntityManager jobEntityManager = Context.getCommandContext().getExecutableJobEntityManager();
+    List<ExecutableJobEntity> jobEntities = jobEntityManager.findJobsByExecutionId(execution.getId());
     
-    for (JobEntity jobEntity : jobEntities) { // Should be only one
+    for (ExecutableJobEntity jobEntity : jobEntities) { // Should be only one
       jobEntityManager.delete(jobEntity);
     }
     

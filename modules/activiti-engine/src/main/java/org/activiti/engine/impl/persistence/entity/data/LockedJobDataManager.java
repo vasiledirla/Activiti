@@ -12,34 +12,37 @@
  */
 package org.activiti.engine.impl.persistence.entity.data;
 
-import java.util.Date;
-import java.util.List;
-
 import org.activiti.engine.impl.JobQueryImpl;
 import org.activiti.engine.impl.Page;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
+import org.activiti.engine.impl.persistence.entity.ExecutableMessageJobEntity;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.activiti.engine.impl.persistence.entity.MessageEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.activiti.engine.runtime.Job;
 
+import java.util.Date;
+import java.util.List;
+
 /**
- * @author Joram Barrez
+ * @author Vasile Dirla
  */
-public interface JobDataManager extends DataManager<JobEntity> {
-  
-  TimerEntity createTimer();
-  
-  MessageEntity createMessage();
+public interface LockedJobDataManager extends DataManager<LockedJobEntity> {
+
+  ExecutableTimerJobEntity createTimer();
+
+  ExecutableMessageJobEntity createMessage();
   
   List<JobEntity> findNextJobsToExecute(Page page);
 
   List<JobEntity> findNextTimerJobsToExecute(Page page);
 
-  List<JobEntity> findAsyncJobsDueToExecute(Page page);
+  List<ExecutableJobEntity> findExecutableJobsDueToExecute(Page page);
 
   List<JobEntity> findJobsByLockOwner(String lockOwner, int start, int maxNrOfJobs);
 
-  List<JobEntity> findJobsByExecutionId(final String executionId);
+  List<LockedJobEntity> findJobsByExecutionId(final String executionId);
 
   List<JobEntity> findExclusiveJobsToExecute(String processInstanceId);
 
@@ -63,4 +66,9 @@ public interface JobDataManager extends DataManager<JobEntity> {
   
   void unacquireJob(String jobId);
 
+  int moveTimerJobsToMainQueue();
+
+  List<JobEntity> selectTimerJobsToDueDate();
+
+  List<LockedJobEntity> selectExpiredJobs(long maxLockDuration, Page page);
 }

@@ -14,6 +14,7 @@ package org.activiti.engine.impl.asyncexecutor;
 
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 
 /**
  * @author Tijd Rademakers
@@ -25,7 +26,7 @@ public interface AsyncExecutor {
    * Starts the Async Executor: jobs will be acquired and executed.
    */
   void start();
-  
+
   /**
    * Stops executing jobs.
    */
@@ -33,56 +34,64 @@ public interface AsyncExecutor {
 
   /**
    * Offers the provided {@link JobEntity} to this {@link AsyncExecutor} instance
-   * to execute. If the offering does not work for some reason, false 
-   * will be returned (For example when the job queue is full in the {@link DefaultAsyncJobExecutor}). 
+   * to execute. If the offering does not work for some reason, false
+   * will be returned (For example when the job queue is full in the {@link DefaultAsyncJobExecutor}).
    */
-  boolean executeAsyncJob(JobEntity job);
+  boolean executeAsyncJob(LockedJobEntity job);
   
   
   /* Getters and Setters */
-  
+
   void setCommandExecutor(CommandExecutor commandExecutor);
-  
+
   CommandExecutor getCommandExecutor();
-  
+
   boolean isAutoActivate();
 
   void setAutoActivate(boolean isAutoActivate);
-  
-  boolean isActive();
-  
-  String getLockOwner();
-  
-  int getTimerLockTimeInMillis();
-  
-  void setTimerLockTimeInMillis(int lockTimeInMillis);
-  
-  int getAsyncJobLockTimeInMillis();
-  
-  void setAsyncJobLockTimeInMillis(int lockTimeInMillis);
-  
-  int getDefaultTimerJobAcquireWaitTimeInMillis();
-  
-  void setDefaultTimerJobAcquireWaitTimeInMillis(int waitTimeInMillis);
-  
-  int getDefaultAsyncJobAcquireWaitTimeInMillis();
-  
-  void setDefaultAsyncJobAcquireWaitTimeInMillis(int waitTimeInMillis);
-  
-  public int getDefaultQueueSizeFullWaitTimeInMillis();
 
-  public void setDefaultQueueSizeFullWaitTimeInMillis(int defaultQueueSizeFullWaitTimeInMillis);
-  
+  boolean isActive();
+
+  String getLockOwner();
+
+  int getTimerLockTimeInMillis();
+
+  void setTimerLockTimeInMillis(int lockTimeInMillis);
+
+  int getAsyncJobLockTimeInMillis();
+
+  void setAsyncJobLockTimeInMillis(int lockTimeInMillis);
+
+  int getDefaultCleanupJobsWaitTimeInMillis();
+
+  void setDefaultCleanupJobsWaitTimeInMillis(int defaultCleanupJobsWaitTimeInMillis);
+
+  int getDefaultMoveTimerJobsWaitTimeInMillis();
+
+  void setDefaultMoveTimerJobsWaitTimeInMillis(int defaultMoveTimerJobsWaitTimeInMillis);
+
+  int getDefaultTimerJobAcquireWaitTimeInMillis();
+
+  void setDefaultTimerJobAcquireWaitTimeInMillis(int waitTimeInMillis);
+
+  int getDefaultAsyncJobAcquireWaitTimeInMillis();
+
+  void setDefaultAsyncJobAcquireWaitTimeInMillis(int waitTimeInMillis);
+
+  int getDefaultQueueSizeFullWaitTimeInMillis();
+
+  void setDefaultQueueSizeFullWaitTimeInMillis(int defaultQueueSizeFullWaitTimeInMillis);
+
   int getMaxAsyncJobsDuePerAcquisition();
-  
+
   void setMaxAsyncJobsDuePerAcquisition(int maxJobs);
-  
+
   int getMaxTimerJobsPerAcquisition();
-  
+
   void setMaxTimerJobsPerAcquisition(int maxJobs);
-  
+
   int getRetryWaitTimeInMillis();
-  
+
   void setRetryWaitTimeInMillis(int retryWaitTimeInMillis);
-  
+
 }

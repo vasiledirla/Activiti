@@ -12,7 +12,7 @@
  */
 package org.activiti.engine.impl.jobexecutor;
 
-import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 
 /**
  * @author Joram Barrez
@@ -21,8 +21,8 @@ public interface JobExecutorContext {
 
   boolean isExecutingExclusiveJob();
 
-  void setCurrentJob(JobEntity currentJob);
+  void setCurrentJob(LockedJobEntity currentJob);
 
-  JobEntity getCurrentJob();
+  LockedJobEntity getCurrentJob();
 
 }

@@ -16,16 +16,17 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 
 /**
  * @author Joram Barrez
  */
 public class SingleJobExecutorContext implements JobExecutorContext {
 
-  protected List<JobEntity> currentProcessorJobQueue = new LinkedList<JobEntity>();
-  protected JobEntity currentJob;
+  protected List<LockedJobEntity> currentProcessorJobQueue = new LinkedList<LockedJobEntity>();
+  protected LockedJobEntity currentJob;
 
-  public List<JobEntity> getCurrentProcessorJobQueue() {
+  public List<LockedJobEntity> getCurrentProcessorJobQueue() {
     return currentProcessorJobQueue;
   }
 
@@ -33,11 +34,11 @@ public class SingleJobExecutorContext implements JobExecutorContext {
     return currentJob == null ? false : currentJob.isExclusive();
   }
 
-  public void setCurrentJob(JobEntity currentJob) {
+  public void setCurrentJob(LockedJobEntity currentJob) {
     this.currentJob = currentJob;
   }
 
-  public JobEntity getCurrentJob() {
+  public LockedJobEntity getCurrentJob() {
     return currentJob;
   }
 }
