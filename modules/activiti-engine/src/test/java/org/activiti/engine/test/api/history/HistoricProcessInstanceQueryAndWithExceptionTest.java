@@ -46,7 +46,7 @@ public class HistoricProcessInstanceQueryAndWithExceptionTest extends PluggableA
       assertEquals(0, queryWithException.withJobException().list().size());
 
       ProcessInstance processWithException1 = startProcessInstanceWithFailingJob(PROCESS_DEFINITION_KEY_WITH_EXCEPTION_1);
-      JobQuery jobQuery1 = managementService.createJobQuery().processInstanceId(processWithException1.getId());
+      JobQuery jobQuery1 = managementService.createJobQuery().failed().processInstanceId(processWithException1.getId());
       assertEquals(1, jobQuery1.withException().count());
       assertEquals(1, jobQuery1.withException().list().size());
       assertEquals(1, queryWithException.withJobException().count());
@@ -54,7 +54,7 @@ public class HistoricProcessInstanceQueryAndWithExceptionTest extends PluggableA
       assertEquals(processWithException1.getId(), queryWithException.withJobException().list().get(0).getId());
 
       ProcessInstance processWithException2 = startProcessInstanceWithFailingJob(PROCESS_DEFINITION_KEY_WITH_EXCEPTION_2);
-      JobQuery jobQuery2 = managementService.createJobQuery().processInstanceId(processWithException2.getId());
+      JobQuery jobQuery2 = managementService.createJobQuery().failed().processInstanceId(processWithException2.getId());
       assertEquals(2, jobQuery2.withException().count());
       assertEquals(2, jobQuery2.withException().list().size());
 

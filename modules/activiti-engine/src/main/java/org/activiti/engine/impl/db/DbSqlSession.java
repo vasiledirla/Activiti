@@ -737,17 +737,15 @@ public class DbSqlSession implements Session {
     
     // Next, in case of custom entities or we've screwed up and forgotten some entity
     if (insertedObjects.size() > 0) {
-      Iterator<Class<? extends Entity>> it = insertedObjects.keySet().iterator();
-      while (it.hasNext()) {
-        Class<? extends Entity> entityClass = it.next();
-      	flushEntities(entityClass, insertedObjects.get(entityClass), it);
-	    }
+      for (Class<? extends Entity> entityClass : insertedObjects.keySet()) {
+        flushEntities(entityClass, insertedObjects.get(entityClass));
+      }
     }
     
     insertedObjects.clear();
   }
 
-	protected void flushEntities(Class<? extends Entity> entityClass, List<Entity> entitiesToInsert, Iterator<Class<? extends Entity>> iterator) {
+	protected void flushEntities(Class<? extends Entity> entityClass, List<Entity> entitiesToInsert) {
 	  if (entitiesToInsert.size() == 1) {
 	  	flushRegularInsert(entitiesToInsert.get(0), entityClass);
 	  } else if (Boolean.FALSE.equals(dbSqlSessionFactory.isBulkInsertable(entityClass))) {

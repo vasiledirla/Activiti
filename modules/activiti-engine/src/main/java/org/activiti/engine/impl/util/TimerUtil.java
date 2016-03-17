@@ -1,8 +1,5 @@
 package org.activiti.engine.impl.util;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import org.activiti.bpmn.model.FlowElement;
 import org.activiti.bpmn.model.IntermediateCatchEvent;
 import org.activiti.bpmn.model.TimerEventDefinition;
@@ -21,6 +18,9 @@ import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * @author Joram Barrez
@@ -97,22 +97,23 @@ public class TimerUtil {
       dueDate = businessCalendar.resolveDuedate(dueDateString);
     }
 
+    if (endDateExpression != null) {
+      Object endDateValue = endDateExpression.getValue(scopeForExpression);
+      if (dueDateValue instanceof String) {
+        endDateString = (String) endDateValue;
+      } else if (dueDateValue instanceof Date) {
+        endDate = (Date) endDateValue;
+      } else if (dueDateValue instanceof DateTime) {
+        //JodaTime support
+        endDate = ((DateTime) endDateValue).toDate();
+      } else if (endDateValue != null) {
+        throw new ActivitiException("Timer '" + executionEntity.getActivityId()
+                + "' was not configured with a valid endDate, either hand in a java.util.Date or a String in format 'yyyy-MM-dd'T'hh:mm:ss'");
+      }
 
-    Object endDateValue = endDateExpression.getValue(scopeForExpression);
-    if (dueDateValue instanceof String) {
-      endDateString = (String) endDateValue;
-    } else if (dueDateValue instanceof Date) {
-      endDate = (Date) endDateValue;
-    } else if (dueDateValue instanceof DateTime) {
-      //JodaTime support
-      endDate = ((DateTime) endDateValue).toDate();
-    } else if(endDateValue!=null){
-      throw new ActivitiException("Timer '" + executionEntity.getActivityId()
-              + "' was not configured with a valid endDate, either hand in a java.util.Date or a String in format 'yyyy-MM-dd'T'hh:mm:ss'");
-    }
-
-    if (endDate == null && endDateString != null) {
-      endDate = businessCalendar.resolveEndDate(endDateString);
+      if (endDate == null && endDateString != null) {
+        endDate = businessCalendar.resolveEndDate(endDateString);
+      }
     }
 
     ExecutableTimerJobEntity timer = null;

@@ -65,7 +65,7 @@ public class SharedExecutorServiceAsyncExecutor extends DefaultAsyncJobExecutor 
 
   @Override
   public Set<String> getTenantIds() {
-    return timerJobAcquisitionRunnables.keySet();
+    return asyncJobAcquisitionRunnables.keySet();
   }
 
   public void addTenantAsyncExecutor(String tenantId, boolean startExecutor) {
@@ -100,20 +100,13 @@ public class SharedExecutorServiceAsyncExecutor extends DefaultAsyncJobExecutor 
 
   @Override
   protected void stopJobAcquisitionThread() {
-    for (String tenantId : timerJobAcquisitionRunnables.keySet()) {
+    for (String tenantId : asyncJobAcquisitionRunnables.keySet()) {
       stopThreadsForTenant(tenantId);
     }
   }
 
   protected void stopThreadsForTenant(String tenantId) {
-    timerJobAcquisitionRunnables.get(tenantId).stop();
     asyncJobAcquisitionRunnables.get(tenantId).stop();
-    
-    try {
-      timerJobAcquisitionThreads.get(tenantId).join();
-    } catch (InterruptedException e) {
-      logger.warn("Interrupted while waiting for the timer job acquisition thread to terminate", e);
-    }
 
     try {
       asyncJobAcquisitionThreads.get(tenantId).join();

@@ -91,7 +91,7 @@ public class BoundaryTimerEventRepeatWithEnd extends PluggableActivitiTestCase {
     processEngineConfiguration.getClock().setCurrentTime(nextTimeCal.getTime());
 
     try {
-      waitForJobExecutorToProcessAllJobs(400000, 200);
+      waitForJobExecutorToProcessAllJobs(2000, 200);
     } catch (Exception ex) {
       fail("Should not have any other jobs because the endDate is reached");
     }
