@@ -10,6 +10,7 @@ import org.activiti.bpmn.model.FlowElement;
 import org.activiti.bpmn.model.FlowNode;
 import org.activiti.bpmn.model.Process;
 import org.activiti.bpmn.model.SequenceFlow;
+import org.activiti.bpmn.model.SubProcess;
 import org.activiti.engine.delegate.ExecutionListener;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
@@ -19,6 +20,8 @@ import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.jobexecutor.AsyncContinuationJobHandler;
 import org.activiti.engine.impl.persistence.entity.ExecutableMessageJobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
+import org.activiti.engine.impl.persistence.entity.ExecutionEntityManager;
+import org.activiti.engine.impl.persistence.entity.MessageEntity;
 import org.activiti.engine.impl.util.CollectionUtil;
 import org.activiti.engine.impl.util.ProcessDefinitionUtil;
 import org.activiti.engine.logging.LogMDC;
@@ -55,7 +58,6 @@ public class ContinueProcessOperation extends AbstractOperation {
 
     if (currentFlowElement == null) {
       currentFlowElement = findCurrentFlowElement(execution);
-      execution.setCurrentFlowElement(currentFlowElement);
     }
     
     if (currentFlowElement instanceof FlowNode) {
@@ -82,6 +84,28 @@ public class ContinueProcessOperation extends AbstractOperation {
   }
 
   protected void continueThroughFlowNode(FlowNode flowNode) {
+    if (flowNode instanceof SubProcess) {
+      ExecutionEntity parentScopeExecution = null;
+      ExecutionEntityManager executionEntityManager = commandContext.getExecutionEntityManager();
+      ExecutionEntity currentlyExaminedExecution = executionEntityManager.findById(execution.getParentId());
+      while (currentlyExaminedExecution != null && parentScopeExecution == null) {
+        if (currentlyExaminedExecution.isScope()) {
+          parentScopeExecution = currentlyExaminedExecution;
+        } else {
+          currentlyExaminedExecution = executionEntityManager.findById(currentlyExaminedExecution.getParentId());
+        }
+      }
+
+      // Create the sub process execution that can be used to set variables
+      ExecutionEntity subProcessExecution = commandContext.getExecutionEntityManager().createChildExecution(parentScopeExecution);
+      subProcessExecution.setCurrentFlowElement(flowNode);
+      subProcessExecution.setScope(true);
+
+      executionEntityManager.deleteExecutionAndRelatedData(execution, null, false);
+
+      execution = subProcessExecution;
+    }
+
     // See if flowNode is an async activity and schedule as a job if that evaluates to true
     if (!forceSynchronousOperation) {
       boolean isAsynchronous = flowNode.isAsynchronous();
@@ -102,7 +126,7 @@ public class ContinueProcessOperation extends AbstractOperation {
       executeExecutionListeners(flowNode, ExecutionListener.EVENTNAME_START);
     }
 
-    // Execute any boundary events
+    // Execute any boundary events, sub process boundary events will be executed from the activity behavior
     if (inCompensation == false) {
       Collection<BoundaryEvent> boundaryEvents = findBoundaryEventsForFlowNode(execution.getProcessDefinitionId(), flowNode);
       if (CollectionUtil.isNotEmpty(boundaryEvents)) {
@@ -206,7 +230,6 @@ public class ContinueProcessOperation extends AbstractOperation {
       logger.debug("Executing boundary event activityBehavior {} with execution {}", boundaryEventBehavior.getClass(), childExecutionEntity.getId());
       boundaryEventBehavior.execute(childExecutionEntity);
     }
-
   }
 
   protected Collection<BoundaryEvent> findBoundaryEventsForFlowNode(final String processDefinitionId, final FlowNode flowNode) {

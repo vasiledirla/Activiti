@@ -14,6 +14,7 @@ package org.activiti.engine.impl.asyncexecutor.multitenant;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.activiti.engine.impl.asyncexecutor.AsyncExecutor;
@@ -62,6 +63,11 @@ public class SharedExecutorServiceAsyncExecutor extends DefaultAsyncJobExecutor 
     });
   }
 
+  @Override
+  public Set<String> getTenantIds() {
+    return timerJobAcquisitionRunnables.keySet();
+  }
+
   public void addTenantAsyncExecutor(String tenantId, boolean startExecutor) {
 
     TenantAwareAcquireJobsDueRunnable asyncJobsRunnable = new TenantAwareAcquireJobsDueRunnable(this, tenantInfoHolder, tenantId);
@@ -74,6 +80,11 @@ public class SharedExecutorServiceAsyncExecutor extends DefaultAsyncJobExecutor 
   }
   
   @Override
+  public void removeTenantAsyncExecutor(String tenantId) {
+    stopThreadsForTenant(tenantId);
+  }
+
+  @Override
   protected void startJobAcquisitionThread() {
     
     for (String tenantId : asyncJobAcquisitionThreads.keySet()) {
@@ -85,24 +96,29 @@ public class SharedExecutorServiceAsyncExecutor extends DefaultAsyncJobExecutor 
   protected  void startAsyncJobAcquisitionForTenant(String tenantId) {
     asyncJobAcquisitionThreads.get(tenantId).start();
   }
-  
+
+
   @Override
   protected void stopJobAcquisitionThread() {
-    
-    // Runnables
-    
-    for (String tenantId : asyncJobAcquisitionRunnables.keySet()) {
-      asyncJobAcquisitionRunnables.get(tenantId).stop();
+    for (String tenantId : timerJobAcquisitionRunnables.keySet()) {
+      stopThreadsForTenant(tenantId);
     }
-    
-    // Threads
-    for (String tenantId : asyncJobAcquisitionThreads.keySet()) {
-      try {
-        asyncJobAcquisitionThreads.get(tenantId).join();
-      } catch (InterruptedException e) {
-        logger.warn("Interrupted while waiting for the timer job acquisition thread to terminate", e);
-      }
+  }
 
+  protected void stopThreadsForTenant(String tenantId) {
+    timerJobAcquisitionRunnables.get(tenantId).stop();
+    asyncJobAcquisitionRunnables.get(tenantId).stop();
+    
+    try {
+      timerJobAcquisitionThreads.get(tenantId).join();
+    } catch (InterruptedException e) {
+      logger.warn("Interrupted while waiting for the timer job acquisition thread to terminate", e);
+    }
+
+    try {
+      asyncJobAcquisitionThreads.get(tenantId).join();
+    } catch (InterruptedException e) {
+      logger.warn("Interrupted while waiting for the timer job acquisition thread to terminate", e);
     }
   }
 
