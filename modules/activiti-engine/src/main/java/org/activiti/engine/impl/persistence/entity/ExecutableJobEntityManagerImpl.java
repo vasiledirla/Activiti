@@ -34,6 +34,7 @@ import org.activiti.engine.impl.jobexecutor.JobAddedNotification;
 import org.activiti.engine.impl.jobexecutor.JobHandler;
 import org.activiti.engine.impl.jobexecutor.TimerEventHandler;
 import org.activiti.engine.impl.jobexecutor.TimerStartEventJobHandler;
+import org.activiti.engine.impl.jobexecutor.TriggerTimerEventJobHandler;
 import org.activiti.engine.impl.persistence.entity.data.DataManager;
 import org.activiti.engine.impl.persistence.entity.data.ExecutableJobDataManager;
 import org.activiti.engine.impl.util.ProcessDefinitionUtil;
@@ -374,7 +375,8 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
   protected void restoreExtraData(TimerEntity timerEntity) {
     String activityId = timerEntity.getJobHandlerConfiguration();
 
-    if (timerEntity.getJobHandlerType().equalsIgnoreCase(TimerStartEventJobHandler.TYPE)) {
+    if (timerEntity.getJobHandlerType().equalsIgnoreCase(TimerStartEventJobHandler.TYPE) ||
+            timerEntity.getJobHandlerType().equalsIgnoreCase(TriggerTimerEventJobHandler.TYPE)) {
 
       activityId = TimerEventHandler.getActivityIdFromConfiguration(timerEntity.getJobHandlerConfiguration());
       String endDateExpressionString = TimerEventHandler.getEndDateFromConfiguration(timerEntity.getJobHandlerConfiguration());
