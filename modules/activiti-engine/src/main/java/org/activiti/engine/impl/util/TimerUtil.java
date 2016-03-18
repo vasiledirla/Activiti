@@ -57,20 +57,14 @@ public class TimerUtil {
 
     }
 
-    if (StringUtils.isNotEmpty(timerEventDefinition.getEndDate())){
-      endDateExpression = expressionManager.createExpression(timerEventDefinition.getEndDate());
-    }
-
     if (expression == null) {
       throw new ActivitiException("Timer needs configuration (either timeDate, timeCycle or timeDuration is needed) (" + timerEventDefinition.getId() + ")");
     }
 
     BusinessCalendar businessCalendar = Context.getProcessEngineConfiguration().getBusinessCalendarManager().getBusinessCalendar(businessCalendarRef);
 
-    String endDateString = null;
     String dueDateString = null;
     Date dueDate = null;
-    Date endDate = null;
 
     // ACT-1415: timer-declaration on start-event may contain expressions NOT
     // evaluating variables but other context, evaluating should happen nevertheless
@@ -96,6 +90,13 @@ public class TimerUtil {
     if (dueDate == null && dueDateString != null) {
       dueDate = businessCalendar.resolveDuedate(dueDateString);
     }
+
+    if (StringUtils.isNotEmpty(timerEventDefinition.getEndDate())){
+      endDateExpression = expressionManager.createExpression(timerEventDefinition.getEndDate());
+    }
+
+    String endDateString = null;
+    Date endDate = null;
 
     if (endDateExpression != null) {
       Object endDateValue = endDateExpression.getValue(scopeForExpression);

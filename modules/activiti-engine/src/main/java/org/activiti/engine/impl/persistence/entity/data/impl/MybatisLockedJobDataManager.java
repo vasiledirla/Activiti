@@ -203,14 +203,6 @@ public class MybatisLockedJobDataManager extends AbstractDataManager<LockedJobEn
   }
 
   @Override
-  public void unacquireJob(String jobId) {
-    Map<String, Object> params = new HashMap<String, Object>(2);
-    params.put("id", jobId);
-    params.put("dueDate", new Date(getProcessEngineConfiguration().getClock().getCurrentTime().getTime()));
-    getDbSqlSession().update("unacquireJob", params);
-  }
-
-  @Override
   public int moveTimerJobsToMainQueue() {
     Date now = getClock().getCurrentTime();
     return getDbSqlSession().update("moveTimerJobsToMainQueue", now);

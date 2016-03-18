@@ -64,8 +64,6 @@ public interface FailedJobDataManager extends DataManager<FailedJobEntity> {
 
   void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
 
-  void unacquireJob(String jobId);
-
   int moveTimerJobsToMainQueue();
 
   List<JobEntity> selectTimerJobsToDueDate();

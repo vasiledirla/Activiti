@@ -272,11 +272,6 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
   }
 
   @Override
-  public void unacquireJob(String jobId) {
-    jobDataManager.unacquireJob(jobId);
-  }
-
-  @Override
   public int moveTimerJobsToMainQueue() {
     return jobDataManager.moveTimerJobsToMainQueue();
   }
@@ -345,6 +340,14 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
       if (logger.isDebugEnabled()) {
         logger.debug("Timer {} fired. but the dueDate is after the endDate.  Deleting timer.", timerEntity.getId());
       }
+
+      // if it's a intermediate timer event (catch or boundary) the handler will be executed because
+      // it should not stop the process according to the BPMN 2.0 specs.
+      // "It will affect the flow of the Process, but will not start or (directly) terminate the Process"
+      if (timerEntity.getJobHandlerType().equalsIgnoreCase(TriggerTimerEventJobHandler.TYPE)) {
+        executeJobHandler(timerEntity);
+      }
+
       getLockedJobEntityManager().delete(timerEntity);
       return;
     }

@@ -70,8 +70,6 @@ public interface ExecutableJobEntityManager extends JobEntityManager<ExecutableJ
   
 
   void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
-  
-  void unacquireJob(String jobId);
 
   LockedJobEntity lockJob(ExecutableJobEntity job, String lockOwner, Date time);
 

@@ -116,12 +116,12 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
 
         CommandContext commandContext = Context.getCommandContext();
         if (commandContext != null) {
-          unacquireJob(job, commandContext);
+          executeUnacquireJob(commandContext, job.getId());
         } else {
           commandExecutor.execute(new Command<Void>() {
 
             public Void execute(CommandContext commandContext) {
-              unacquireJob(job, commandContext);
+              executeUnacquireJob(commandContext, job.getId());
               return null;
             }
           });
@@ -138,16 +138,19 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
     return true;
   }
 
+  protected void executeUnacquireJob(CommandContext commandContext, String id) {
+    LockedJobEntity lockedJobEntity = commandContext.getLockedJobEntityManager().findById(id);
+    commandContext.getLockedJobEntityManager().delete(lockedJobEntity);
+    commandContext.getExecutableJobEntityManager().insert(commandContext.jobFactory().getExecutableJob(lockedJobEntity));
+  }
+
+
   protected Runnable createRunnableForJob(final LockedJobEntity job) {
     if (executeAsyncRunnableFactory == null) {
       return new ExecuteAsyncRunnable(job, commandExecutor);
     } else {
       return executeAsyncRunnableFactory.createExecuteAsyncRunnable(job, commandExecutor);
     }
-  }
-
-  protected void unacquireJob(final JobEntity job, CommandContext commandContext) {
-    commandContext.getLockedJobEntityManager().unacquireJob(job.getId());
   }
 
   /**

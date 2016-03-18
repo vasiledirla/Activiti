@@ -62,8 +62,6 @@ public interface LockedJobEntityManager extends JobEntityManager<LockedJobEntity
 
   void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
 
-  void unacquireJob(String jobId);
-
   int moveTimerJobsToMainQueue();
 
   List<JobEntity> selectTimerJobsToDueDate();

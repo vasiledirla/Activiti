@@ -204,11 +204,6 @@ public class FailedJobEntityManagerImpl extends AbstractJobEntityManager<FailedJ
   }
 
   @Override
-  public void unacquireJob(String jobId) {
-    jobDataManager.unacquireJob(jobId);
-  }
-
-  @Override
   public int moveTimerJobsToMainQueue() {
     return jobDataManager.moveTimerJobsToMainQueue();
   }

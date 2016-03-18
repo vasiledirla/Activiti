@@ -204,11 +204,6 @@ public class LockedJobEntityManagerImpl extends AbstractJobEntityManager<LockedJ
   }
 
   @Override
-  public void unacquireJob(String jobId) {
-    jobDataManager.unacquireJob(jobId);
-  }
-
-  @Override
   public int moveTimerJobsToMainQueue() {
     return jobDataManager.moveTimerJobsToMainQueue();
   }

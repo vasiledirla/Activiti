@@ -63,8 +63,6 @@ public interface LockedJobDataManager extends DataManager<LockedJobEntity> {
   long findJobCountByQueryCriteria(JobQueryImpl jobQuery);
 
   void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
-  
-  void unacquireJob(String jobId);
 
   int moveTimerJobsToMainQueue();
 
