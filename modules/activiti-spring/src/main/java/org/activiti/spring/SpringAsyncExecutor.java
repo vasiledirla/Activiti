@@ -19,6 +19,7 @@ import org.activiti.engine.impl.asyncexecutor.ExecuteAsyncRunnable;
 import org.activiti.engine.impl.jobexecutor.JobExecutor;
 import org.activiti.engine.impl.jobexecutor.RejectedJobsHandler;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.springframework.core.task.TaskExecutor;
 
 /**
@@ -72,7 +73,7 @@ public class SpringAsyncExecutor extends DefaultAsyncJobExecutor {
   }
 
   @Override
-  public boolean executeAsyncJob(JobEntity job) {
+  public boolean executeAsyncJob(LockedJobEntity job) {
     try {
       taskExecutor.execute(new ExecuteAsyncRunnable(job, commandExecutor));
       return true;

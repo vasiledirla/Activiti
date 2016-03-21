@@ -45,13 +45,13 @@ public class DefaultJobFactory implements JobFactory {
     throw new ActivitiException("unknown job type: " + lockedJobEntity.getClass().getName());
   }
   @Override
-  public ExecutableJobEntity getExecutableJob(JobEntity failedJobEntity) {
-    if (failedJobEntity instanceof MessageEntity) {
-      return new ExecutableMessageJobEntityImpl((MessageEntity) failedJobEntity);
-    } else if (failedJobEntity instanceof TimerEntity) {
-      return new ExecutableTimerJobEntityImpl((TimerEntity) failedJobEntity);
+  public ExecutableJobEntity getExecutableJob(JobEntity jobEntity) {
+    if (jobEntity instanceof MessageEntity) {
+      return new ExecutableMessageJobEntityImpl((MessageEntity) jobEntity);
+    } else if (jobEntity instanceof TimerEntity) {
+      return new ExecutableTimerJobEntityImpl((TimerEntity) jobEntity);
     }
-    throw new ActivitiException("unknown job type: " + failedJobEntity.getClass().getName());
+    throw new ActivitiException("unknown job type: " + jobEntity.getClass().getName());
   }
 
   @Override

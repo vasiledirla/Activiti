@@ -14,5 +14,5 @@ public interface JobFactory {
 
   FailedJobEntity getFailedJob(LockedJobEntity lockedJobEntity);
 
-  ExecutableJobEntity getExecutableJob(JobEntity failedJobEntity);
+  ExecutableJobEntity getExecutableJob(JobEntity jobEntity);
 }

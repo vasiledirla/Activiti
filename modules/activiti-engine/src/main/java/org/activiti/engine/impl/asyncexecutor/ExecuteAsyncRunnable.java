@@ -25,11 +25,14 @@ import org.activiti.engine.impl.interceptor.CommandConfig;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.impl.jobexecutor.FailedJobCommandFactory;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.activiti.engine.impl.util.Activiti5Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Date;
 
 /**
  * @author Joram Barrez
@@ -163,7 +166,11 @@ public class ExecuteAsyncRunnable implements Runnable {
   protected void executeUnacquireJob(CommandContext commandContext, String id) {
       LockedJobEntity lockedJobEntity = commandContext.getLockedJobEntityManager().findById(id);
       commandContext.getLockedJobEntityManager().delete(lockedJobEntity);
-      commandContext.getExecutableJobEntityManager().insert(commandContext.jobFactory().getExecutableJob(lockedJobEntity));
+
+      ExecutableJobEntity executableJobEntity = commandContext.jobFactory().getExecutableJob(lockedJobEntity);
+      executableJobEntity.setDuedate(new Date(commandContext.getProcessEngineConfiguration().getClock().getCurrentTime().getTime()));
+
+      commandContext.getExecutableJobEntityManager().insert(executableJobEntity);
   }
 
   protected void handleFailedJob(final Throwable exception) {

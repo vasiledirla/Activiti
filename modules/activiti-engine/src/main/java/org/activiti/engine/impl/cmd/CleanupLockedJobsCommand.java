@@ -42,6 +42,8 @@ public class CleanupLockedJobsCommand implements Command<Integer> {
 
     for (LockedJobEntity jobEntity : expiredJobs) {
       ExecutableJobEntity executableJobEntity = commandContext.jobFactory().getExecutableJob(jobEntity);
+      executableJobEntity.setDuedate(null);
+
       commandContext.getExecutableJobEntityManager().insert(executableJobEntity);
       commandContext.getLockedJobEntityManager().delete(jobEntity);
     }

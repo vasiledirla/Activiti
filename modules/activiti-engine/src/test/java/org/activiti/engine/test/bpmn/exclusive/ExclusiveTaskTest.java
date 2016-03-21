@@ -64,7 +64,7 @@ public class ExclusiveTaskTest extends PluggableActivitiTestCase {
     // now there should be 3 exclusive jobs in the database:
     assertEquals(3, managementService.createJobQuery().locked().count());
 
-    waitForJobExecutorToProcessAllJobs(20000L, 400L);
+    waitForJobExecutorToProcessAllJobs(2000000L, 400L);
 
     // all the jobs are done
     assertEquals(0, managementService.createJobQuery().count());

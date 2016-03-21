@@ -14,7 +14,9 @@
 package org.activiti.spring;
 
 import org.activiti.engine.impl.asyncexecutor.AsyncExecutor;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 
 /**
  * <p>
@@ -25,5 +27,5 @@ import org.activiti.engine.impl.persistence.entity.JobEntity;
  */
 public interface SpringRejectedJobsHandler {
 
-  public void jobRejected(AsyncExecutor asyncExecutor, JobEntity job);
+  public void jobRejected(AsyncExecutor asyncExecutor, LockedJobEntity job);
 }
