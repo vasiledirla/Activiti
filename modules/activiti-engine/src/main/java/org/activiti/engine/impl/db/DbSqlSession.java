@@ -13,25 +13,6 @@
 
 package org.activiti.engine.impl.db;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ActivitiOptimisticLockingException;
 import org.activiti.engine.ActivitiWrongDbException;
@@ -70,6 +51,25 @@ import org.activiti.engine.impl.util.ReflectUtil;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Tom Baeyens
@@ -766,12 +766,16 @@ public class DbSqlSession implements Session {
      }
      
      log.debug("inserting: {}", entity);
-     sqlSession.insert(insertStatement, entity);
-     
-     // See https://activiti.atlassian.net/browse/ACT-1290
-     if (entity instanceof HasRevision) {
-       ((HasRevision) entity).setRevision(((HasRevision) entity).getRevisionNext());
-     }
+    try {
+      sqlSession.insert(insertStatement, entity);
+      // See https://activiti.atlassian.net/browse/ACT-1290
+      if (entity instanceof HasRevision) {
+        ((HasRevision) entity).setRevision(((HasRevision) entity).getRevisionNext());
+      }
+
+    } catch (Exception e) {
+      throw new ActivitiOptimisticLockingException(e.getMessage());
+    }
   }
 
   protected void flushBulkInsert(List<Entity> entityList, Class<? extends Entity> clazz) {

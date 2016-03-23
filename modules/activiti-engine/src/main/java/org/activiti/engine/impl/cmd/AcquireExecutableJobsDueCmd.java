@@ -40,10 +40,11 @@ public class AcquireExecutableJobsDueCmd implements Command<AcquiredExecutableJo
     AcquiredExecutableJobEntities acquiredJobs = new AcquiredExecutableJobEntities();
     List<ExecutableJobEntity> jobs = commandContext.getExecutableJobEntityManager().findExecutableJobsDueToExecute(new Page(0, asyncExecutor.getMaxAsyncJobsDuePerAcquisition()));
 
+    GregorianCalendar gregorianCalendar = new GregorianCalendar();
+    gregorianCalendar.setTime(commandContext.getProcessEngineConfiguration().getClock().getCurrentTime());
+    gregorianCalendar.add(Calendar.MILLISECOND, asyncExecutor.getAsyncJobLockTimeInMillis());
+
     for (ExecutableJobEntity job : jobs) {
-      GregorianCalendar gregorianCalendar = new GregorianCalendar();
-      gregorianCalendar.setTime(commandContext.getProcessEngineConfiguration().getClock().getCurrentTime());
-      gregorianCalendar.add(Calendar.MILLISECOND, asyncExecutor.getAsyncJobLockTimeInMillis());
       LockedJobEntity lockedJobEntity = commandContext.getExecutableJobEntityManager().lockJob(job, null, gregorianCalendar.getTime());
       acquiredJobs.addJob(lockedJobEntity);
     }

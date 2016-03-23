@@ -32,6 +32,10 @@ public class JobAddedNotification implements TransactionListener {
 
   public void execute(CommandContext commandContext) {
     log.debug("notifying job executor of new job");
-    jobExecutor.jobWasAdded();
+    if (jobExecutor !=null) {
+      jobExecutor.jobWasAdded();
+    } else {
+      log.debug("there is no JobExecutor to be notified about creation of the new job");
+    }
   }
 }
