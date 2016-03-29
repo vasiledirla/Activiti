@@ -3,10 +3,10 @@ package org.activiti.camel;
 /**
  * @author Saeid Mirzaei  
  */
-import java.util.List;
 
 import org.activiti.engine.RuntimeService;
 import org.activiti.engine.runtime.Execution;
+import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.test.Deployment;
 import org.activiti.spring.impl.test.SpringActivitiTestCase;
@@ -16,6 +16,8 @@ import org.apache.camel.builder.RouteBuilder;
 import org.junit.Assert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
+
+import java.util.List;
 
 @ContextConfiguration("classpath:generic-camel-activiti-context.xml")
 public class AsyncPingTest extends SpringActivitiTestCase {
@@ -52,7 +54,12 @@ public class AsyncPingTest extends SpringActivitiTestCase {
     List<Execution> executionList = runtimeService.createExecutionQuery().list();
     Assert.assertEquals(2, executionList.size());
 
-    managementService.executeJob(managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult().getId());
+    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).locked().singleResult();
+    Assert.assertNotNull(job);
+
+    String jobId = job.getId();
+
+    managementService.executeJob(jobId);
     Thread.sleep(1500);
 
     executionList = runtimeService.createExecutionQuery().list();

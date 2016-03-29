@@ -5,6 +5,7 @@ import java.util.Collections;
 
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.impl.cmd.ChangeDeploymentTenantIdCmd;
+import org.activiti.engine.impl.cmd.CleanupFailedJobsCommand;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.test.Deployment;
@@ -40,21 +41,23 @@ public class JobCollectionResourceTest extends BaseSpringRestTestCase {
         managementService.executeJob(timerJob.getId());
         fail();
       } catch (ActivitiException expected) {
-        // Ignore, we expect the exception
+        //we expect the exception
+        //but have to recover the job from the failed queue
+        managementService.executeCommand(new CleanupFailedJobsCommand());
       }
     }
-    timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).timers().singleResult();
+    timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).timers().failed().singleResult();
     assertEquals(0, timerJob.getRetries());
 
     // Fetch the async-job (which has retries left)
-    Job asyncJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).withRetriesLeft().singleResult();
+    Job asyncJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).locked().withRetriesLeft().singleResult();
 
-    // Test fetching all jobs
-    String url = RestUrls.createRelativeResourceUrl(RestUrls.URL_JOB_COLLECTION);
-    assertResultsPresentInDataResponse(url, asyncJob.getId(), timerJob.getId());
+    // Test fetching all jobs is not available anymore since the job table was split between multiple tables/ entities
+//    String url = RestUrls.createRelativeResourceUrl(RestUrls.URL_JOB_COLLECTION);
+//    assertResultsPresentInDataResponse(url, asyncJob.getId(), timerJob.getId());
 
     // Fetch using job-id
-    url = RestUrls.createRelativeResourceUrl(RestUrls.URL_JOB_COLLECTION) + "?id=" + asyncJob.getId();
+    String url = RestUrls.createRelativeResourceUrl(RestUrls.URL_JOB_COLLECTION) + "?id=" + asyncJob.getId();
     assertResultsPresentInDataResponse(url, asyncJob.getId());
 
     // Fetch using processInstanceId

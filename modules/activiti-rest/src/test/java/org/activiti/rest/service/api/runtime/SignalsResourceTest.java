@@ -13,8 +13,11 @@
 
 package org.activiti.rest.service.api.runtime;
 
-import java.util.List;
-
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.activiti.engine.impl.interceptor.Command;
+import org.activiti.engine.impl.interceptor.CommandContext;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.test.Deployment;
 import org.activiti.rest.service.BaseSpringRestTestCase;
@@ -23,8 +26,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.List;
 
 /**
  * @author Frederik Heremans
@@ -35,7 +37,7 @@ public class SignalsResourceTest extends BaseSpringRestTestCase {
   public void testSignalEventReceivedSync() throws Exception {
 
     org.activiti.engine.repository.Deployment tenantDeployment = repositoryService.createDeployment()
-        .addClasspathResource("org/activiti/rest/service/api/runtime/SignalsResourceTest.process-signal-start.bpmn20.xml").tenantId("my tenant").deploy();
+            .addClasspathResource("org/activiti/rest/service/api/runtime/SignalsResourceTest.process-signal-start.bpmn20.xml").tenantId("my tenant").deploy();
 
     try {
 
@@ -71,7 +73,8 @@ public class SignalsResourceTest extends BaseSpringRestTestCase {
 
       // Check if process is started as a result of the signal, in the
       // right tenant and with var set
-      assertEquals(1, runtimeService.createProcessInstanceQuery().processInstanceTenantId("my tenant").processDefinitionKey("processWithSignalStart1").variableValueEquals("testVar", "test").count());
+      assertEquals(1, runtimeService.createProcessInstanceQuery().processInstanceTenantId("my tenant").processDefinitionKey("processWithSignalStart1")
+              .variableValueEquals("testVar", "test").count());
 
       // Signal without tenant AND variables
       requestNode.remove("tenantId");
@@ -81,7 +84,8 @@ public class SignalsResourceTest extends BaseSpringRestTestCase {
 
       // Check if process is started as a result of the signal, witout
       // tenant and with var set
-      assertEquals(1, runtimeService.createProcessInstanceQuery().processInstanceWithoutTenantId().processDefinitionKey("processWithSignalStart1").variableValueEquals("testVar", "test").count());
+      assertEquals(1, runtimeService.createProcessInstanceQuery().processInstanceWithoutTenantId().processDefinitionKey("processWithSignalStart1")
+              .variableValueEquals("testVar", "test").count());
 
     } finally {
       // Clean up tenant-specific deployment
@@ -95,7 +99,7 @@ public class SignalsResourceTest extends BaseSpringRestTestCase {
   public void testSignalEventReceivedAsync() throws Exception {
 
     org.activiti.engine.repository.Deployment tenantDeployment = repositoryService.createDeployment()
-        .addClasspathResource("org/activiti/rest/service/api/runtime/SignalsResourceTest.process-signal-start.bpmn20.xml").tenantId("my tenant").deploy();
+            .addClasspathResource("org/activiti/rest/service/api/runtime/SignalsResourceTest.process-signal-start.bpmn20.xml").tenantId("my tenant").deploy();
 
     try {
 
@@ -110,7 +114,7 @@ public class SignalsResourceTest extends BaseSpringRestTestCase {
 
       // Check if job is queued as a result of the signal without tenant
       // ID set
-      assertEquals(1, managementService.createJobQuery().jobWithoutTenantId().count());
+      assertEquals(1, managementService.createJobQuery().locked().jobWithoutTenantId().count());
 
       // Signal with tenant
       requestNode.put("tenantId", "my tenant");
@@ -119,7 +123,7 @@ public class SignalsResourceTest extends BaseSpringRestTestCase {
 
       // Check if job is queued as a result of the signal, in the right
       // tenant
-      assertEquals(1, managementService.createJobQuery().jobTenantId("my tenant").count());
+      assertEquals(1, managementService.createJobQuery().locked().jobTenantId("my tenant").count());
 
       // Signal with variables and async, should fail as it's not
       // supported
@@ -136,6 +140,25 @@ public class SignalsResourceTest extends BaseSpringRestTestCase {
       if (tenantDeployment != null) {
         repositoryService.deleteDeployment(tenantDeployment.getId(), true);
       }
+
+      // unlock all the jobs.
+      managementService.executeCommand(new Command<Void>() {
+
+        @Override
+        public Void execute(CommandContext commandContext) {
+          List<Job> lockedJobs = managementService.createJobQuery().locked().list();
+
+          for (Job jobEntity : lockedJobs) {
+            ExecutableJobEntity executableJobEntity = commandContext.jobFactory().getExecutableJob(jobEntity);
+            executableJobEntity.setDuedate(null);
+
+            commandContext.getExecutableJobEntityManager().insert(executableJobEntity);
+            commandContext.getLockedJobEntityManager().delete(jobEntity.getId());
+          }
+
+          return null;
+        }
+      });
 
       // Clear jobs
       List<Job> jobs = managementService.createJobQuery().list();

@@ -27,6 +27,7 @@ import org.activiti.engine.impl.persistence.entity.LockedTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.LockedTimerJobEntityImpl;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
+import org.activiti.engine.runtime.Job;
 
 import java.util.Date;
 
@@ -45,7 +46,7 @@ public class DefaultJobFactory implements JobFactory {
     throw new ActivitiException("unknown job type: " + lockedJobEntity.getClass().getName());
   }
   @Override
-  public ExecutableJobEntity getExecutableJob(JobEntity jobEntity) {
+  public ExecutableJobEntity getExecutableJob(Job jobEntity) {
     if (jobEntity instanceof MessageEntity) {
       return new ExecutableMessageJobEntityImpl((MessageEntity) jobEntity);
     } else if (jobEntity instanceof TimerEntity) {

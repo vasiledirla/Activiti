@@ -74,7 +74,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
-public class BaseSpringRestTestCase extends AbstractTestCase {
+public abstract class BaseSpringRestTestCase extends AbstractTestCase {
 
   private static Logger log = LoggerFactory.getLogger(BaseSpringRestTestCase.class);
   

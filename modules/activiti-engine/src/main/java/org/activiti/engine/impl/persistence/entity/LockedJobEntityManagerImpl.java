@@ -204,11 +204,6 @@ public class LockedJobEntityManagerImpl extends AbstractJobEntityManager<LockedJ
   }
 
   @Override
-  public int moveTimerJobsToMainQueue() {
-    return jobDataManager.moveTimerJobsToMainQueue();
-  }
-
-  @Override
   public List<JobEntity> selectTimerJobsToDueDate() {
     return jobDataManager.selectTimerJobsToDueDate();
   }

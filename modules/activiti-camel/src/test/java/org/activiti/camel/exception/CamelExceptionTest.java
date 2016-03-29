@@ -28,6 +28,7 @@ import org.activiti.spring.impl.test.SpringActivitiTestCase;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Route;
 import org.apache.camel.builder.RouteBuilder;
+import org.junit.Assert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
@@ -121,7 +122,8 @@ public class CamelExceptionTest extends SpringActivitiTestCase {
     ThrowBpmnExceptionBean.setExceptionType(ThrowBpmnExceptionBean.ExceptionType.NO_EXCEPTION);
     runtimeService.startProcessInstanceByKey("exceptionInRouteSynchron");
 
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().locked().singleResult();
+    Assert.assertNotNull(job);
 
     managementService.executeJob(job.getId());
 
@@ -139,7 +141,7 @@ public class CamelExceptionTest extends SpringActivitiTestCase {
     runtimeService.startProcessInstanceByKey("exceptionInRouteSynchron");
     assertTrue(JobTestHelper.areJobsAvailable(managementService));
 
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().locked().singleResult();
 
     try {
       managementService.executeJob(job.getId());
@@ -148,7 +150,7 @@ public class CamelExceptionTest extends SpringActivitiTestCase {
       // expected
     }
 
-    job = managementService.createJobQuery().singleResult();
+    job = managementService.createJobQuery().failed().singleResult();
     assertEquals("Unhandled exception on camel route", job.getExceptionMessage());
 
     assertFalse(ExceptionServiceMock.isCalled());

@@ -64,8 +64,6 @@ public interface LockedJobDataManager extends DataManager<LockedJobEntity> {
 
   void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
 
-  int moveTimerJobsToMainQueue();
-
   List<JobEntity> selectTimerJobsToDueDate();
 
   List<LockedJobEntity> selectExpiredJobs(long maxLockDuration, Page page);

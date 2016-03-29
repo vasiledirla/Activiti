@@ -48,7 +48,7 @@ public class MultiInstanceTest extends SpringActivitiTestCase {
   @Deployment(resources = {"process/multiinstanceReceive.bpmn20.xml"})
   public void testRunProcess() throws Exception {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("miProcessExample");
-    List<Job> jobList = managementService.createJobQuery().list();
+    List<Job> jobList = managementService.createJobQuery().locked().list();
     assertEquals(5, jobList.size());
     
     assertEquals(5, runtimeService.createExecutionQuery()

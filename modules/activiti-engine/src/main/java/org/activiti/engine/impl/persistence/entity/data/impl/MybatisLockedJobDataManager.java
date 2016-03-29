@@ -203,12 +203,6 @@ public class MybatisLockedJobDataManager extends AbstractDataManager<LockedJobEn
   }
 
   @Override
-  public int moveTimerJobsToMainQueue() {
-    Date now = getClock().getCurrentTime();
-    return getDbSqlSession().update("moveTimerJobsToMainQueue", now);
-  }
-
-  @Override
   public List<JobEntity> selectTimerJobsToDueDate() {
     Date now = getClock().getCurrentTime();
     return getDbSqlSession().selectList("selectTimerJobsToDueDate", now);

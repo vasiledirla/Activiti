@@ -48,7 +48,7 @@ public class ErrorHandlingTest extends SpringActivitiTestCase {
 
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("ErrorHandling", variables);
 
-    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).locked().singleResult();
     assertNotNull(job);
     managementService.executeJob(job.getId());
 
@@ -86,7 +86,7 @@ public class ErrorHandlingTest extends SpringActivitiTestCase {
 
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("ErrorHandling", variables);
 
-    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).locked().singleResult();
     assertNotNull(job);
     managementService.executeJob(job.getId());
 

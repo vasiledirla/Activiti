@@ -27,7 +27,7 @@ import org.springframework.security.ldap.server.ApacheDSContainer;
  * 
  * @author Joram Barrez
  */
-public class LDAPTestCase extends SpringActivitiTestCase {
+public abstract class LDAPTestCase extends SpringActivitiTestCase {
 
   private static int testCount = 0;
   private static int totalTestCount = -1;

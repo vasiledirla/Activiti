@@ -82,6 +82,16 @@ public class JobCollectionResource {
         query.executable();
       }
     }
+    if (allRequestParams.containsKey("failed")) {
+      if (Boolean.valueOf(allRequestParams.get("failed"))) {
+        query.failed();
+      }
+    }
+    if (allRequestParams.containsKey("locked")) {
+      if (Boolean.valueOf(allRequestParams.get("locked"))) {
+        query.locked();
+      }
+    }
     if (allRequestParams.containsKey("timersOnly")) {
       if (allRequestParams.containsKey("messagesOnly")) {
         throw new ActivitiIllegalArgumentException("Only one of 'timersOnly' or 'messagesOnly' can be provided.");
