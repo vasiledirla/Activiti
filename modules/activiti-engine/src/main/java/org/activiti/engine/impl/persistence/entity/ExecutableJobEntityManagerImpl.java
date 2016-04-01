@@ -37,6 +37,7 @@ import org.activiti.engine.impl.jobexecutor.TimerStartEventJobHandler;
 import org.activiti.engine.impl.jobexecutor.TriggerTimerEventJobHandler;
 import org.activiti.engine.impl.persistence.entity.data.DataManager;
 import org.activiti.engine.impl.persistence.entity.data.ExecutableJobDataManager;
+import org.activiti.engine.impl.persistence.entity.data.JobDataManager;
 import org.activiti.engine.impl.util.ProcessDefinitionUtil;
 import org.activiti.engine.runtime.Job;
 import org.slf4j.Logger;
@@ -66,7 +67,7 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
   }
 
   @Override
-  protected DataManager<ExecutableJobEntity> getDataManager() {
+  protected JobDataManager<ExecutableJobEntity> getDataManager() {
     return jobDataManager;
   }
 
@@ -75,29 +76,6 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
     return jobDataManager.createMessage();
   }
 
-  @Override
-  public ExecutableTimerJobEntity createTimer() {
-    return jobDataManager.createTimer();
-  }
-
-  @Override
-  public ExecutableTimerJobEntity createTimer(TimerEntity te) {
-    ExecutableTimerJobEntity newTimerEntity = createTimer();
-    newTimerEntity.setJobHandlerConfiguration(te.getJobHandlerConfiguration());
-    newTimerEntity.setJobHandlerType(te.getJobHandlerType());
-    newTimerEntity.setExclusive(te.isExclusive());
-    newTimerEntity.setRepeat(te.getRepeat());
-    newTimerEntity.setRetries(te.getRetries());
-    newTimerEntity.setEndDate(te.getEndDate());
-    newTimerEntity.setExecutionId(te.getExecutionId());
-    newTimerEntity.setProcessInstanceId(te.getProcessInstanceId());
-    newTimerEntity.setProcessDefinitionId(te.getProcessDefinitionId());
-
-    // Inherit tenant
-    newTimerEntity.setTenantId(te.getTenantId());
-    newTimerEntity.setJobType("timer");
-    return newTimerEntity;
-  }
 
   @Override
   public void insert(ExecutableJobEntity jobEntity, boolean fireCreateEvent) {
@@ -170,6 +148,20 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
   }
 
   @Override
+  public void schedule(ExecutableTimerJobEntity timer, Boolean fireEvents) {
+    Date duedate = timer.getDuedate();
+    if (duedate == null) {
+      throw new ActivitiIllegalArgumentException("duedate is null");
+    }
+
+    insert(timer, fireEvents);
+
+    if (getProcessEngineConfiguration().isAsyncExecutorEnabled() == false && timer.getDuedate().getTime() <= (getClock().getCurrentTime().getTime())) {
+      hintJobExecutor(timer);
+    }
+  }
+
+  @Override
   public void retryAsyncJob(LockedJobEntity job) {
     try {
 
@@ -197,7 +189,7 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
   }
 
   @Override
-  public List<JobEntity> findNextJobsToExecute(Page page) {
+  public List<ExecutableJobEntity> findNextJobsToExecute(Page page) {
     return jobDataManager.findNextJobsToExecute(page);
   }
 
@@ -222,13 +214,8 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
   }
 
   @Override
-  public List<JobEntity> findExclusiveJobsToExecute(String processInstanceId) {
+  public List<ExecutableJobEntity> findExclusiveJobsToExecute(String processInstanceId) {
     return jobDataManager.findExclusiveJobsToExecute(processInstanceId);
-  }
-
-  @Override
-  public List<TimerEntity> findUnlockedTimersByDuedate(Date duedate, Page page) {
-    return jobDataManager.findUnlockedTimersByDuedate(duedate, page);
   }
 
   @Override
@@ -247,16 +234,6 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
   }
 
   @Override
-  public List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey) {
-    return jobDataManager.findJobsByTypeAndProcessDefinitionKeyNoTenantId(jobHandlerType, processDefinitionKey);
-  }
-
-  @Override
-  public List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId) {
-    return jobDataManager.findJobsByTypeAndProcessDefinitionKeyAndTenantId(jobHandlerType, processDefinitionKey, tenantId);
-  }
-
-  @Override
   public List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId) {
     return jobDataManager.findJobsByTypeAndProcessDefinitionId(jobHandlerType, processDefinitionId);
   }
@@ -264,21 +241,6 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
   @Override
   public long findJobCountByQueryCriteria(JobQueryImpl jobQuery) {
     return jobDataManager.findJobCountByQueryCriteria(jobQuery);
-  }
-
-  @Override
-  public void updateJobTenantIdForDeployment(String deploymentId, String newTenantId) {
-    jobDataManager.updateJobTenantIdForDeployment(deploymentId, newTenantId);
-  }
-
-  @Override
-  public int moveTimerJobsToMainQueue() {
-    return jobDataManager.moveTimerJobsToMainQueue();
-  }
-
-  @Override
-  public List<ExecutableJobEntity> selectTimerJobsToDueDate() {
-    return jobDataManager.selectTimerJobsToDueDate();
   }
 
   @Override
@@ -292,11 +254,12 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
     }
 
     if (lockedEntity != null) {
+      getLockedJobEntityManager().insert(lockedEntity, false);
+
       if (jobEntity.getId() != null) {
         delete(jobEntity, false);
       }
 
-      getLockedJobEntityManager().insert(lockedEntity, false);
       jobEntity.setId(lockedEntity.getId());
     }
 
@@ -367,9 +330,9 @@ public class ExecutableJobEntityManagerImpl extends AbstractJobEntityManager<Exe
         }
         final Date newTimer = calculateNextTimer(timerEntity);
         if (newTimer != null && isValidTime(timerEntity, newTimer)) {
-          ExecutableTimerJobEntity te = createTimer(timerEntity);
+          WaitingTimerJobEntity te = getWaitingTimerJobEntityManager().createTimer(timerEntity);
           te.setDuedate(newTimer);
-          getExecutableJobEntityManager().schedule(te);
+          getWaitingTimerJobEntityManager().insert(te);
         }
       }
     }

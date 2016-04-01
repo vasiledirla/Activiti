@@ -15,6 +15,10 @@ package org.activiti.engine.impl.persistence.entity;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.delegate.event.impl.ActivitiEventBuilder;
 import org.activiti.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.activiti.engine.impl.persistence.entity.data.JobDataManager;
+import org.activiti.engine.runtime.Job;
+
+import java.util.List;
 
 public abstract class AbstractJobEntityManager<T extends JobEntity> extends AbstractEntityManager<T> implements JobEntityManager<T> {
 
@@ -70,4 +74,23 @@ public abstract class AbstractJobEntityManager<T extends JobEntity> extends Abst
       exceptionByteArrayRef.delete();
     }
   }
+
+  @Override
+  public List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId) {
+    return getDataManager().findJobsByTypeAndProcessDefinitionKeyAndTenantId(jobHandlerType, processDefinitionKey, tenantId);
+  }
+
+  @Override
+  public List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey) {
+    return getDataManager().findJobsByTypeAndProcessDefinitionKeyNoTenantId(jobHandlerType, processDefinitionKey);
+  }
+
+  @Override
+  public void updateJobTenantIdForDeployment(String deploymentId, String newTenantId) {
+    getDataManager().updateJobTenantIdForDeployment(deploymentId, newTenantId);
+  }
+
+  @Override
+  protected abstract JobDataManager<T> getDataManager();
+
 }

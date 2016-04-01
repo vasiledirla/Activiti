@@ -59,7 +59,7 @@ public class BoundaryTimerEventRepeatCompatibilityTest extends TimerEventCompati
     // complete will cause timer to be created
     taskService.complete(task.getId());
 
-    List<Job> jobs = managementService.createJobQuery().list();
+    List<Job> jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, jobs.size());
 
     // change the job in old mode (the configuration should not be json in

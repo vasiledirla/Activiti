@@ -98,7 +98,7 @@ public class ProcessDefinitionEventsTest extends PluggableActivitiTestCase {
     ProcessDefinitionEntity processDefinition = (ProcessDefinitionEntity) repositoryService.createProcessDefinitionQuery().processDefinitionKey("startTimerEventExample").singleResult();
     ActivitiEntityEvent processDefinitionCreated = ActivitiEventBuilder.createEntityEvent(ActivitiEventType.ENTITY_CREATED, processDefinition);
 
-    TimerEntity timer = (TimerEntity) managementService.createJobQuery().singleResult();
+    TimerEntity timer = (TimerEntity) managementService.createJobQuery().waitingTimers().singleResult();
     ActivitiEntityEvent timerCreated = ActivitiEventBuilder.createEntityEvent(ActivitiEventType.ENTITY_CREATED, timer);
     assertSequence(processDefinitionCreated, timerCreated);
     listener.clearEventsReceived();

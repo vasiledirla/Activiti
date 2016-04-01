@@ -12,20 +12,19 @@
  */
 package org.activiti.engine.impl.asyncexecutor.multitenant;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-
 import org.activiti.engine.impl.asyncexecutor.AsyncExecutor;
 import org.activiti.engine.impl.asyncexecutor.DefaultAsyncJobExecutor;
 import org.activiti.engine.impl.asyncexecutor.ExecuteAsyncRunnableFactory;
 import org.activiti.engine.impl.cfg.multitenant.TenantInfoHolder;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
-import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Multi tenant {@link AsyncExecutor}.
@@ -44,6 +43,15 @@ public class SharedExecutorServiceAsyncExecutor extends DefaultAsyncJobExecutor 
   protected Map<String, Thread> asyncJobAcquisitionThreads = new HashMap<String, Thread>();
   protected Map<String, TenantAwareAcquireJobsDueRunnable> asyncJobAcquisitionRunnables
     = new HashMap<String, TenantAwareAcquireJobsDueRunnable>();
+
+  protected Map<String, Thread> cleanupJobsThreads = new HashMap<String, Thread>();
+  protected Map<String, TenantAwareCleanupJobsRunnable> cleanupJobsRunables
+    = new HashMap<String, TenantAwareCleanupJobsRunnable>();
+
+
+  protected Map<String, Thread> timerJobMoveThreads = new HashMap<String, Thread>();
+  protected Map<String, TenantAwareTimerJobsMoveRunnable> timerJobMoveRunables
+          = new HashMap<String, TenantAwareTimerJobsMoveRunnable>();
   
   public SharedExecutorServiceAsyncExecutor(TenantInfoHolder tenantInfoHolder) {
     this.tenantInfoHolder = tenantInfoHolder;
@@ -73,15 +81,25 @@ public class SharedExecutorServiceAsyncExecutor extends DefaultAsyncJobExecutor 
     TenantAwareAcquireJobsDueRunnable asyncJobsRunnable = new TenantAwareAcquireJobsDueRunnable(this, tenantInfoHolder, tenantId);
     asyncJobAcquisitionRunnables.put(tenantId, asyncJobsRunnable);
     asyncJobAcquisitionThreads.put(tenantId, new Thread(asyncJobsRunnable));
-    
+
+    TenantAwareCleanupJobsRunnable cleanupJobsRunnable = new TenantAwareCleanupJobsRunnable(this, tenantInfoHolder, tenantId);
+    cleanupJobsRunables.put(tenantId, cleanupJobsRunnable);
+    cleanupJobsThreads.put(tenantId, new Thread(asyncJobsRunnable));
+
+    TenantAwareTimerJobsMoveRunnable timerJobsMoveRunnable = new TenantAwareTimerJobsMoveRunnable(this, tenantInfoHolder, tenantId);
+    timerJobMoveRunables.put(tenantId, timerJobsMoveRunnable);
+    timerJobMoveThreads.put(tenantId, new Thread(timerJobsMoveRunnable));
+
     if (startExecutor) {
       startAsyncJobAcquisitionForTenant(tenantId);
+      startCleanupJobsForTenant(tenantId);
+      startTimerJobMoveProcessorForTenant(tenantId);
     }
   }
   
   @Override
   public void removeTenantAsyncExecutor(String tenantId) {
-    stopThreadsForTenant(tenantId);
+    stopJobAcquisitionThreadsForTenant(tenantId);
   }
 
   @Override
@@ -93,25 +111,83 @@ public class SharedExecutorServiceAsyncExecutor extends DefaultAsyncJobExecutor 
   }
 
 
+  @Override
+  protected void startCleanupJobsThread() {
+
+    for (String tenantId : cleanupJobsThreads.keySet()) {
+      cleanupJobsThreads.get(tenantId).start();
+    }
+  }
+
+  @Override
+  protected void startTimerJobsMoveThread() {
+
+    for (String tenantId : timerJobMoveThreads.keySet()) {
+      timerJobMoveThreads.get(tenantId).start();
+    }
+  }
+
   protected  void startAsyncJobAcquisitionForTenant(String tenantId) {
     asyncJobAcquisitionThreads.get(tenantId).start();
+  }
+
+  protected  void startCleanupJobsForTenant(String tenantId) {
+    cleanupJobsThreads.get(tenantId).start();
+  }
+
+  protected  void startTimerJobMoveProcessorForTenant(String tenantId) {
+    timerJobMoveThreads.get(tenantId).start();
   }
 
 
   @Override
   protected void stopJobAcquisitionThread() {
     for (String tenantId : asyncJobAcquisitionRunnables.keySet()) {
-      stopThreadsForTenant(tenantId);
+      stopJobAcquisitionThreadsForTenant(tenantId);
     }
   }
 
-  protected void stopThreadsForTenant(String tenantId) {
+  @Override
+  protected void stopCleanupJobsThread() {
+    for (String tenantId : cleanupJobsRunables.keySet()) {
+      stopCleanupJobsThreadsForTenant(tenantId);
+    }
+  }
+
+  @Override
+  protected void stopTimerJobMoveThread() {
+    for (String tenantId : timerJobMoveRunables.keySet()) {
+      stopJobMoveThreadsForTenant(tenantId);
+    }
+  }
+
+  protected void stopJobAcquisitionThreadsForTenant(String tenantId) {
     asyncJobAcquisitionRunnables.get(tenantId).stop();
 
     try {
       asyncJobAcquisitionThreads.get(tenantId).join();
     } catch (InterruptedException e) {
       logger.warn("Interrupted while waiting for the timer job acquisition thread to terminate", e);
+    }
+  }
+
+  protected void stopJobMoveThreadsForTenant(String tenantId) {
+    timerJobMoveRunables.get(tenantId).stop();
+
+    try {
+      timerJobMoveThreads.get(tenantId).join();
+    } catch (InterruptedException e) {
+      logger.warn("Interrupted while waiting for the timer job move thread to terminate", e);
+    }
+  }
+
+  protected void stopCleanupJobsThreadsForTenant(String tenantId) {
+    cleanupJobsRunables.get(tenantId).stop();
+
+    try {
+      cleanupJobsThreads.get(tenantId).join();
+    } catch (InterruptedException e) {
+      logger.warn("Interrupted while waiting for the cleanup jobs thread to terminate", e);
     }
   }
 

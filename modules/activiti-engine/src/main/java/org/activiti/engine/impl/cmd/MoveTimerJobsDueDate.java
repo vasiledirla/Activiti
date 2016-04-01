@@ -13,9 +13,8 @@ package org.activiti.engine.impl.cmd;/* Licensed under the Apache License, Versi
 
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
-import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
-import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntityImpl;
-import org.activiti.engine.impl.persistence.entity.TimerEntity;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntity;
 
 import java.util.List;
 
@@ -23,11 +22,11 @@ public class MoveTimerJobsDueDate implements Command<Integer> {
 
   @Override
   public Integer execute(CommandContext commandContext) {
-    List<ExecutableJobEntity> timerJobs = commandContext.getExecutableJobEntityManager().selectTimerJobsToDueDate();
-    for (ExecutableJobEntity jobEntity : timerJobs) {
-      ExecutableJobEntity executableJobEntity = new ExecutableTimerJobEntityImpl((TimerEntity) jobEntity);
-      commandContext.getExecutableJobEntityManager().insert(executableJobEntity);
-      commandContext.getExecutableJobEntityManager().delete(jobEntity);
+    List<WaitingTimerJobEntity> timerJobs = commandContext.getWaitingTimerJobEntityManager().selectTimerJobsToDueDate();
+    for (WaitingTimerJobEntity jobEntity : timerJobs) {
+      ExecutableTimerJobEntity executableJobEntity = (ExecutableTimerJobEntity) commandContext.jobFactory().getExecutableJob(jobEntity);
+      commandContext.getExecutableJobEntityManager().schedule(executableJobEntity);
+      commandContext.getWaitingTimerJobEntityManager().delete(jobEntity);
     }
     return timerJobs.size();
   }

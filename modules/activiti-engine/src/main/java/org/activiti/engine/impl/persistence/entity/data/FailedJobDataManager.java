@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * @author Vasile Dirla
  */
-public interface FailedJobDataManager extends DataManager<FailedJobEntity> {
+public interface FailedJobDataManager extends JobDataManager<FailedJobEntity> {
 
   ExecutableTimerJobEntity createTimer();
 
@@ -54,17 +54,9 @@ public interface FailedJobDataManager extends DataManager<FailedJobEntity> {
 
   List<Job> findJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds);
 
-  List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey);
-
-  List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId);
-
   List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId);
 
   long findJobCountByQueryCriteria(JobQueryImpl jobQuery);
-
-  void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
-
-  int moveTimerJobsToMainQueue();
 
   List<JobEntity> selectTimerJobsToDueDate();
 

@@ -71,7 +71,8 @@ public class ExecutorPerTenantAsyncExecutor implements TenantAwareAsyncExecutor 
     if (tenantExecutor instanceof DefaultAsyncJobExecutor) {
       DefaultAsyncJobExecutor defaultAsyncJobExecutor = (DefaultAsyncJobExecutor) tenantExecutor;
       defaultAsyncJobExecutor.setJobsDueRunnable(new TenantAwareAcquireJobsDueRunnable(defaultAsyncJobExecutor, tenantInfoHolder, tenantId));
-//      defaultAsyncJobExecutor.setTimerJobRunnable(new TenantAwareAcquireTimerJobsRunnable(defaultAsyncJobExecutor, tenantInfoHolder, tenantId));
+      defaultAsyncJobExecutor.setCleanupJobsRunnable(new TenantAwareCleanupJobsRunnable(defaultAsyncJobExecutor, tenantInfoHolder, tenantId));
+      defaultAsyncJobExecutor.setTimerJobMoveRunnable(new TenantAwareTimerJobsMoveRunnable(defaultAsyncJobExecutor, tenantInfoHolder, tenantId));
       defaultAsyncJobExecutor.setExecuteAsyncRunnableFactory(new TenantAwareExecuteAsyncRunnableFactory(tenantInfoHolder, tenantId));
     }
     

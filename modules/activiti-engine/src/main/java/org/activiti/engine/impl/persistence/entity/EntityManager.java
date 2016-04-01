@@ -32,6 +32,8 @@ public interface EntityManager<EntityImpl extends Entity> {
   EntityImpl update(EntityImpl entity, boolean fireUpdateEvent);
 
   void delete(String id);
+
+  void delete(String id, boolean fireDeleteEvent);
   
   void delete(EntityImpl entity);
   

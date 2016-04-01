@@ -62,7 +62,7 @@ public class BoundaryTimerEventRepeatWithEnd extends PluggableActivitiTestCase {
     // complete will cause timer to be created
     taskService.complete(task.getId());
 
-    List<Job> jobs = managementService.createJobQuery().list();
+    List<Job> jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, jobs.size());
     // boundary events
 

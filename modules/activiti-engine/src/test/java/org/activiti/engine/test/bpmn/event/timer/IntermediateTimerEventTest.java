@@ -34,7 +34,7 @@ public class IntermediateTimerEventTest extends PluggableActivitiTestCase {
 
     // After process start, there should be timer created
     ProcessInstance pi = runtimeService.startProcessInstanceByKey("intermediateTimerEventExample");
-    JobQuery jobQuery = managementService.createJobQuery().processInstanceId(pi.getId());
+    JobQuery jobQuery = managementService.createJobQuery().processInstanceId(pi.getId()).waitingTimers();
     assertEquals(1, jobQuery.count());
 
     // After setting the clock to time '50minutes and 5 seconds', the second
@@ -66,14 +66,14 @@ public class IntermediateTimerEventTest extends PluggableActivitiTestCase {
     runtimeService.setVariable(pi.getId(), "StartDate", startDate);
     taskService.complete(task.getId());
 
-    jobQuery = managementService.createJobQuery().processInstanceId(pi.getId());
+    jobQuery = managementService.createJobQuery().processInstanceId(pi.getId()).waitingTimers();
     assertEquals(1, jobQuery.count());
 
     processEngineConfiguration.getClock().setCurrentTime(new Date(startDate.getTime() + 7000L));
 
-    jobQuery = managementService.createJobQuery().processInstanceId(pi.getId());
+    jobQuery = managementService.createJobQuery().processInstanceId(pi.getId()).waitingTimers();
     assertEquals(1, jobQuery.count());
-    jobQuery = managementService.createJobQuery().processInstanceId(pi.getId()).executable();
+    jobQuery = managementService.createJobQuery().processInstanceId(pi.getId()).waitingTimers().executable();
     assertEquals(0, jobQuery.count());
 
     processEngineConfiguration.getClock().setCurrentTime(new Date(startDate.getTime() + 11000L));
@@ -104,19 +104,19 @@ public class IntermediateTimerEventTest extends PluggableActivitiTestCase {
     ProcessInstance pi1 = runtimeService.startProcessInstanceByKey("intermediateTimerEventExample", variables1);
     ProcessInstance pi2 = runtimeService.startProcessInstanceByKey("intermediateTimerEventExample", variables2);
 
-    assertEquals(1, managementService.createJobQuery().processInstanceId(pi1.getId()).count());
-    assertEquals(1, managementService.createJobQuery().processInstanceId(pi2.getId()).count());
+    assertEquals(1, managementService.createJobQuery().processInstanceId(pi1.getId()).waitingTimers().count());
+    assertEquals(1, managementService.createJobQuery().processInstanceId(pi2.getId()).waitingTimers().count());
 
     // After setting the clock to one second in the future the timers should
     // fire
-    List<Job> jobs = managementService.createJobQuery().executable().list();
+    List<Job> jobs = managementService.createJobQuery().waitingTimers().executable().list();
     assertEquals(2, jobs.size());
     for (Job job : jobs) {
       managementService.executeJob(job.getId());
     }
 
-    assertEquals(0, managementService.createJobQuery().processInstanceId(pi1.getId()).count());
-    assertEquals(0, managementService.createJobQuery().processInstanceId(pi2.getId()).count());
+    assertEquals(0, managementService.createJobQuery().waitingTimers().processInstanceId(pi1.getId()).count());
+    assertEquals(0, managementService.createJobQuery().waitingTimers().processInstanceId(pi2.getId()).count());
 
     assertProcessEnded(pi1.getProcessInstanceId());
     assertProcessEnded(pi2.getProcessInstanceId());
@@ -128,7 +128,7 @@ public class IntermediateTimerEventTest extends PluggableActivitiTestCase {
 
     // After looping 3 times, the process should end
     for (int i = 0; i < 3; i++) {
-      Job timer = managementService.createJobQuery().singleResult();
+      Job timer = managementService.createJobQuery().waitingTimers().singleResult();
       managementService.executeJob(timer.getId());
     }
 
@@ -141,7 +141,7 @@ public class IntermediateTimerEventTest extends PluggableActivitiTestCase {
 
     // After looping 3 times, the process should end. Cycle should NOT repeat itself
     for (int i = 0; i < 3; i++) {
-      Job timer = managementService.createJobQuery().singleResult();
+      Job timer = managementService.createJobQuery().waitingTimers().singleResult();
       managementService.executeJob(timer.getId());
     }
 

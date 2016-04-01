@@ -497,6 +497,15 @@ public class ExecutionEntityManagerImpl extends AbstractEntityManager<ExecutionE
     }
 
     // Delete jobs
+    WaitingTimerJobEntityManager waitingTimerJobEntityManager = getWaitingTimerJobEntityManager();
+    Collection<WaitingTimerJobEntity> waitingTimerJobsForExecution = waitingTimerJobEntityManager.findJobsByExecutionId(executionEntity.getId());
+    for (WaitingTimerJobEntity job : waitingTimerJobsForExecution) {
+      getWaitingTimerJobEntityManager().delete(job);
+      if (getEventDispatcher().isEnabled()) {
+        getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, job));
+      }
+    }
+
     ExecutableJobEntityManager executableJobEntityManager = getExecutableJobEntityManager();
     Collection<ExecutableJobEntity> executableJobsForExecution = executableJobEntityManager.findJobsByExecutionId(executionEntity.getId());
     for (ExecutableJobEntity job : executableJobsForExecution) {

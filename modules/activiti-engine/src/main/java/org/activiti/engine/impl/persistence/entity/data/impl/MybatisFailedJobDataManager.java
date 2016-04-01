@@ -164,7 +164,7 @@ public class MybatisFailedJobDataManager extends AbstractDataManager<FailedJobEn
     Map<String, String> params = new HashMap<String, String>(2);
     params.put("handlerType", jobHandlerType);
     params.put("processDefinitionKey", processDefinitionKey);
-    return getDbSqlSession().selectList("selectJobByTypeAndProcessDefinitionKeyNoTenantId", params);
+    return getDbSqlSession().selectList("selectFailedJobByTypeAndProcessDefinitionKeyNoTenantId", params);
   }
 
   @Override
@@ -174,7 +174,7 @@ public class MybatisFailedJobDataManager extends AbstractDataManager<FailedJobEn
     params.put("handlerType", jobHandlerType);
     params.put("processDefinitionKey", processDefinitionKey);
     params.put("tenantId", tenantId);
-    return getDbSqlSession().selectList("selectJobByTypeAndProcessDefinitionKeyAndTenantId", params);
+    return getDbSqlSession().selectList("selectFailedJobByTypeAndProcessDefinitionKeyAndTenantId", params);
   }
 
   @Override
@@ -196,14 +196,9 @@ public class MybatisFailedJobDataManager extends AbstractDataManager<FailedJobEn
     HashMap<String, Object> params = new HashMap<String, Object>();
     params.put("deploymentId", deploymentId);
     params.put("tenantId", newTenantId);
-    getDbSqlSession().update("updateJobTenantIdForDeployment", params);
+    getDbSqlSession().update("updateFailedJobTenantIdForDeployment", params);
   }
 
-  @Override
-  public int moveTimerJobsToMainQueue() {
-    Date now = getClock().getCurrentTime();
-    return getDbSqlSession().update("moveTimerJobsToMainQueue", now);
-  }
 
   @Override
   public List<JobEntity> selectTimerJobsToDueDate() {

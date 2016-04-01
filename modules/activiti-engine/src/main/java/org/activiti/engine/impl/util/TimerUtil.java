@@ -16,6 +16,7 @@ import org.activiti.engine.impl.el.NoExecutionVariableScope;
 import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntity;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 
@@ -32,7 +33,7 @@ public class TimerUtil {
    * 
    * Takes in an optional execution, if missing the {@link NoExecutionVariableScope} will be used (eg Timer start event)
    */
-  public static ExecutableTimerJobEntity createTimerEntityForTimerEventDefinition(TimerEventDefinition timerEventDefinition, boolean isInterruptingTimer,
+  public static WaitingTimerJobEntity createTimerEntityForTimerEventDefinition(TimerEventDefinition timerEventDefinition, boolean isInterruptingTimer,
       ExecutionEntity executionEntity, String jobHandlerType, String jobHandlerConfig) {
 
     String businessCalendarRef = null;
@@ -117,9 +118,9 @@ public class TimerUtil {
       }
     }
 
-    ExecutableTimerJobEntity timer = null;
+    WaitingTimerJobEntity timer = null;
     if (dueDate != null) {
-      timer = Context.getCommandContext().getExecutableJobEntityManager().createTimer();
+      timer = Context.getCommandContext().getWaitingTimerJobEntityManager().createTimer();
       timer.setJobHandlerType(jobHandlerType);
       timer.setJobHandlerConfiguration(jobHandlerConfig);
       timer.setExclusive(true);

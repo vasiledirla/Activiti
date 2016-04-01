@@ -25,6 +25,7 @@ import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutableJobEntityManager;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntity;
 import org.activiti.engine.impl.util.TimerUtil;
 
 public class IntermediateCatchTimerEventActivityBehavior extends IntermediateCatchEventActivityBehavior {
@@ -38,11 +39,11 @@ public class IntermediateCatchTimerEventActivityBehavior extends IntermediateCat
   }
 
   public void execute(DelegateExecution execution) {
-    ExecutableTimerJobEntity timer = TimerUtil
+    WaitingTimerJobEntity timer = TimerUtil
         .createTimerEntityForTimerEventDefinition(timerEventDefinition, false, (ExecutionEntity) execution, TriggerTimerEventJobHandler.TYPE, 
             TimerEventHandler.createConfiguration(execution.getCurrentActivityId(), timerEventDefinition.getEndDate()));
     if (timer != null) {
-      Context.getCommandContext().getExecutableJobEntityManager().schedule(timer);
+      Context.getCommandContext().getWaitingTimerJobEntityManager().insert(timer);
     }
   }
   

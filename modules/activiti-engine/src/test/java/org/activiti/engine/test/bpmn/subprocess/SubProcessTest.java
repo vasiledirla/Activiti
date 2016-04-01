@@ -68,7 +68,7 @@ public class SubProcessTest extends PluggableActivitiTestCase {
 
     // Setting the clock forward 2 hours 1 second (timer fires in 2 hours) and fire up the job executor
     processEngineConfiguration.getClock().setCurrentTime(new Date(startTime.getTime() + (2 * 60 * 60 * 1000) + 1000));
-    assertEquals(1, managementService.createJobQuery().executable().count());
+    assertEquals(1, managementService.createJobQuery().waitingTimers().executable().count());
     waitForJobExecutorToProcessAllJobs(5000L, 500L);
 
     // The subprocess should be left, and the escalated task should be active
@@ -210,7 +210,7 @@ public class SubProcessTest extends PluggableActivitiTestCase {
     assertEquals("Task A", taskA.getName());
     assertEquals("Task B", taskB.getName());
 
-    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).waitingTimers().singleResult();
 
     managementService.executeJob(job.getId());
 
@@ -300,7 +300,7 @@ public class SubProcessTest extends PluggableActivitiTestCase {
     // processEngineConfiguration.getClock().setCurrentTime(new
     // Date(startTime.getTime() + (2 * 60 * 60 * 1000 ) + 1000));
     // waitForJobExecutorToProcessAllJobs(5000L, 50L);
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().waitingTimers().singleResult();
     managementService.executeJob(job.getId());
 
     Task taskAfterTimer = taskQuery.singleResult();

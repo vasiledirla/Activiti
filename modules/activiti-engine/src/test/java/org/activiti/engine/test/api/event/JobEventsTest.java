@@ -50,7 +50,7 @@ public class JobEventsTest extends PluggableActivitiTestCase {
   @Deployment
   public void testJobEntityEvents() throws Exception {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("testJobEvents");
-    Job theJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job theJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(theJob);
 
     // Check if create-event has been dispatched
@@ -82,7 +82,10 @@ public class JobEventsTest extends PluggableActivitiTestCase {
     tomorrow.add(Calendar.DAY_OF_YEAR, 1);
     processEngineConfiguration.getClock().setCurrentTime(tomorrow.getTime());
 //    waitForJobExecutorToProcessAllJobs(2000, 100);
-    String jobId = managementService.createJobQuery().singleResult().getId();
+    String jobId = managementService.createJobQuery().waitingTimers().singleResult().getId();
+
+    managementService.executeCommand(new MoveTimerJobsDueDate());
+    listener.clearEventsReceived();
 
     managementService.executeJob(jobId);
 
@@ -112,7 +115,7 @@ public class JobEventsTest extends PluggableActivitiTestCase {
   @Deployment
   public void testJobEntityEvents2() throws Exception {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("testJobEvents");
-    Job theJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job theJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(theJob);
 
     // Check if create-event has been dispatched
@@ -143,6 +146,9 @@ public class JobEventsTest extends PluggableActivitiTestCase {
     Calendar tomorrow = Calendar.getInstance();
     tomorrow.add(Calendar.DAY_OF_YEAR, 1);
     processEngineConfiguration.getClock().setCurrentTime(tomorrow.getTime());
+    managementService.executeCommand(new MoveTimerJobsDueDate());
+    listener.clearEventsReceived();
+
     //    waitForJobExecutorToProcessAllJobs(2000, 100);
     managementService.executeJob(managementService.createJobQuery().singleResult().getId());
 
@@ -179,7 +185,7 @@ public class JobEventsTest extends PluggableActivitiTestCase {
     Date now = new Date();
     testClock.setCurrentTime(now);
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("testRepetitionJobEvents");
-    Job theJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job theJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(theJob);
 
     // Check if create-event has been dispatched
@@ -260,7 +266,7 @@ public class JobEventsTest extends PluggableActivitiTestCase {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("testTimerCancelledEvent");
     listener.clearEventsReceived();
 
-    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job job = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
 
     // WHEN
     managementService.deleteJob(job.getId());
@@ -309,6 +315,10 @@ public class JobEventsTest extends PluggableActivitiTestCase {
     Calendar tomorrow = Calendar.getInstance();
     tomorrow.add(Calendar.DAY_OF_YEAR, 1);
     processEngineConfiguration.getClock().setCurrentTime(tomorrow.getTime());
+
+    processEngineConfiguration.getCommandExecutor().execute(new MoveTimerJobsDueDate());
+    listener.clearEventsReceived();
+
     waitForJobExecutorToProcessAllJobs(4000, 100);
 
     // Check Timer fired event has been dispatched
@@ -340,18 +350,20 @@ public class JobEventsTest extends PluggableActivitiTestCase {
   @Deployment
   public void testJobEntityEventsException() throws Exception {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("testJobEvents");
-    Job theJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job theJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(theJob);
 
     // Set retries to 1, to prevent multiple chains of events being thrown
     managementService.setJobRetries(theJob.getId(), 1);
 
-    listener.clearEventsReceived();
-
     // Force timer to fire
     Calendar tomorrow = Calendar.getInstance();
     tomorrow.add(Calendar.DAY_OF_YEAR, 1);
     processEngineConfiguration.getClock().setCurrentTime(tomorrow.getTime());
+
+    managementService.executeCommand(new MoveTimerJobsDueDate());
+    listener.clearEventsReceived();
+
     try {
       managementService.executeJob(theJob.getId());
       fail("Expected exception");

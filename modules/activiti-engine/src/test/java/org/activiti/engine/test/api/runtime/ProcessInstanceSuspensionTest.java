@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.activiti.engine.ActivitiException;
+import org.activiti.engine.impl.cmd.MoveTimerJobsDueDate;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.runtime.Execution;
@@ -574,9 +575,9 @@ public class ProcessInstanceSuspensionTest extends PluggableActivitiTestCase {
     // jobs for that process instance
     ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().singleResult();
     ProcessInstance processInstance = runtimeService.startProcessInstanceById(processDefinition.getId());
-    assertEquals(1, managementService.createJobQuery().count());
+    assertEquals(1, managementService.createJobQuery().waitingTimers().count());
     runtimeService.suspendProcessInstanceById(processInstance.getId());
-    assertEquals(1, managementService.createJobQuery().count());
+    assertEquals(1, managementService.createJobQuery().waitingTimers().count());
 
     // The jobs should not be executed now
     processEngineConfiguration.getClock().setCurrentTime(new Date(now.getTime() + (60 * 60 * 1000))); // Timer
@@ -587,6 +588,8 @@ public class ProcessInstanceSuspensionTest extends PluggableActivitiTestCase {
                                                                                                       // on
                                                                                                       // 5
                                                                                                       // minutes
+    managementService.executeCommand(new MoveTimerJobsDueDate());
+
     Job job = managementService.createJobQuery().executable().singleResult();
     assertNull(job);
 

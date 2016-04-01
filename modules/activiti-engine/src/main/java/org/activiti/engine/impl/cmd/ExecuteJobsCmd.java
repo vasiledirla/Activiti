@@ -24,8 +24,10 @@ import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandContextCloseListener;
 import org.activiti.engine.impl.jobexecutor.FailedJobListener;
 import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntity;
 import org.activiti.engine.impl.util.Activiti5Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,9 +71,17 @@ public class ExecuteJobsCmd implements Command<Object>, Serializable {
       // try to find it in the list of unlocked jobs and then lock it and execute it.
       ExecutableJobEntity executableJob = commandContext.getExecutableJobEntityManager().findById(jobId);
       if (executableJob == null) {
-        throw new JobNotFoundException(jobId);
+        WaitingTimerJobEntity waitingTimerJobEntity = commandContext.getWaitingTimerJobEntityManager().findById(jobId);
+        if (waitingTimerJobEntity == null) {
+          throw new JobNotFoundException(jobId);
+        } else {
+          job = commandContext.jobFactory().getLockedJob(waitingTimerJobEntity,new Date(), UUID.randomUUID().toString());
+          commandContext.getLockedJobEntityManager().insert(job);
+          commandContext.getWaitingTimerJobEntityManager().delete(waitingTimerJobEntity, false);
+        }
+      } else {
+        job = commandContext.getExecutableJobEntityManager().lockJob(executableJob, UUID.randomUUID().toString(), new Date());
       }
-      job = commandContext.getExecutableJobEntityManager().lockJob(executableJob, UUID.randomUUID().toString(), new Date());
     }
 
     if (log.isDebugEnabled()) {

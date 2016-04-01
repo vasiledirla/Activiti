@@ -37,11 +37,11 @@ import java.util.Date;
 public class DefaultJobFactory implements JobFactory {
 
   @Override
-  public FailedJobEntity getFailedJob(LockedJobEntity lockedJobEntity) {
+  public FailedJobEntity getFailedJob(JobEntity lockedJobEntity) {
     if (lockedJobEntity instanceof MessageEntity) {
-      return new FailedMessageJobEntityImpl((LockedMessageJobEntity) lockedJobEntity);
+      return new FailedMessageJobEntityImpl((MessageEntity) lockedJobEntity);
     } else if (lockedJobEntity instanceof TimerEntity) {
-      return new FailedTimerJobEntityImpl((LockedTimerJobEntity) lockedJobEntity);
+      return new FailedTimerJobEntityImpl((TimerEntity) lockedJobEntity);
     }
     throw new ActivitiException("unknown job type: " + lockedJobEntity.getClass().getName());
   }
@@ -56,7 +56,7 @@ public class DefaultJobFactory implements JobFactory {
   }
 
   @Override
-  public LockedJobEntity getLockedJob(ExecutableJobEntity jobEntity, Date time, String lockOwner) {
+  public LockedJobEntity getLockedJob(JobEntity jobEntity, Date time, String lockOwner) {
     if (jobEntity instanceof MessageEntity) {
       return new LockedMessageJobEntityImpl((MessageEntity) jobEntity, time, lockOwner);
     } else if (jobEntity instanceof TimerEntity) {

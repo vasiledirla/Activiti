@@ -59,6 +59,12 @@ public class CancelJobsCmd implements Command<Void>, Serializable {
         if (jobToDelete ==null){
           jobManager = commandContext.getFailedJobEntityManager();
           jobToDelete = jobManager.findById(jobId);
+
+          if (jobToDelete ==null){
+            jobManager = commandContext.getWaitingTimerJobEntityManager();
+            jobToDelete = jobManager.findById(jobId);
+          }
+
         }
       }
 

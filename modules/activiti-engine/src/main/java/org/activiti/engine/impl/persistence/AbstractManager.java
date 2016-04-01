@@ -47,6 +47,7 @@ import org.activiti.engine.impl.persistence.entity.ResourceEntityManager;
 import org.activiti.engine.impl.persistence.entity.TaskEntityManager;
 import org.activiti.engine.impl.persistence.entity.UserEntityManager;
 import org.activiti.engine.impl.persistence.entity.VariableInstanceEntityManager;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntityManager;
 import org.activiti.engine.runtime.Clock;
 
 /**
@@ -195,6 +196,10 @@ public abstract class AbstractManager {
   
   protected ExecutableJobEntityManager getExecutableJobEntityManager() {
     return getProcessEngineConfiguration().getExecutableJobEntityManager();
+  }
+
+  protected WaitingTimerJobEntityManager getWaitingTimerJobEntityManager() {
+    return getProcessEngineConfiguration().getWaitingTimerJobEntityManager();
   }
 
 

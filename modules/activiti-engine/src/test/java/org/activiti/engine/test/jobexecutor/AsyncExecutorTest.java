@@ -63,7 +63,12 @@ public class AsyncExecutorTest {
       }
       Assert.assertEquals(1, processEngine.getTaskService().createTaskQuery().taskName("The Task").count());
       Assert.assertEquals(0, processEngine.getTaskService().createTaskQuery().taskName("Task after timer").count());
-      Assert.assertEquals(1, processEngine.getManagementService().createJobQuery().count());
+
+      Assert.assertEquals(0, processEngine.getManagementService().createJobQuery().count());
+      Assert.assertEquals(0, processEngine.getManagementService().createJobQuery().failed().count());
+      Assert.assertEquals(0, processEngine.getManagementService().createJobQuery().locked().count());
+      Assert.assertEquals(1, processEngine.getManagementService().createJobQuery().waitingTimers().count());
+
       Assert.assertEquals(0, getAsyncExecutorJobCount(processEngine));
 
       // Move clock 3 minutes and 1 second. Triggers the timer
@@ -108,7 +113,10 @@ public class AsyncExecutorTest {
       addSecondsToCurrentTime(firstProcessEngine, 301); // 301 = 5m01s
       Assert.assertEquals(1, firstProcessEngine.getTaskService().createTaskQuery().taskName("The Task").count());
       Assert.assertEquals(0, firstProcessEngine.getTaskService().createTaskQuery().taskName("Task after timer").count());
-      Assert.assertEquals(1, firstProcessEngine.getManagementService().createJobQuery().count());
+      Assert.assertEquals(0, firstProcessEngine.getManagementService().createJobQuery().count());
+      Assert.assertEquals(1, firstProcessEngine.getManagementService().createJobQuery().waitingTimers().count());
+      Assert.assertEquals(0, firstProcessEngine.getManagementService().createJobQuery().failed().count());
+      Assert.assertEquals(0, firstProcessEngine.getManagementService().createJobQuery().locked().count());
 
       // Create second engine, with async executor enabled. Same time as
       // the first engine to start, then add 301 seconds
@@ -120,6 +128,9 @@ public class AsyncExecutorTest {
       Assert.assertEquals(0, firstProcessEngine.getTaskService().createTaskQuery().taskName("The Task").count());
       Assert.assertEquals(1, firstProcessEngine.getTaskService().createTaskQuery().taskName("Task after timer").count());
       Assert.assertEquals(0, firstProcessEngine.getManagementService().createJobQuery().count());
+      Assert.assertEquals(0, firstProcessEngine.getManagementService().createJobQuery().waitingTimers().count());
+      Assert.assertEquals(0, firstProcessEngine.getManagementService().createJobQuery().failed().count());
+      Assert.assertEquals(0, firstProcessEngine.getManagementService().createJobQuery().locked().count());
 
       Assert.assertEquals(0, getAsyncExecutorJobCount(firstProcessEngine));
       Assert.assertEquals(1, getAsyncExecutorJobCount(secondProcessEngine));

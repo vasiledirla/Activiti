@@ -52,17 +52,9 @@ public interface FailedJobEntityManager extends JobEntityManager<FailedJobEntity
 
   List<Job> findJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds);
 
-  List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey);
-
-  List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId);
-
   List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId);
 
   long findJobCountByQueryCriteria(JobQueryImpl jobQuery);
-
-  void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
-
-  int moveTimerJobsToMainQueue();
 
   List<JobEntity> selectTimerJobsToDueDate();
 

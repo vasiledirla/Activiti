@@ -16,6 +16,7 @@ package org.activiti.engine.test.api.mgmt;
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.impl.cmd.CancelJobsCmd;
+import org.activiti.engine.impl.cmd.MoveTimerJobsDueDate;
 import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
@@ -26,6 +27,8 @@ import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.FailedJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntityManager;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.JobQuery;
@@ -48,7 +51,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
   private String deploymentId;
   private String messageId;
   private CommandExecutor commandExecutor;
-  private ExecutableTimerJobEntity timerEntity;
+  private WaitingTimerJobEntity timerEntity;
 
   private Date testStartTime;
   private Date timerOneFireTime;
@@ -118,17 +121,28 @@ public class JobQueryTest extends PluggableActivitiTestCase {
 
   public void testQueryByNoCriteria() {
     JobQuery query = managementService.createJobQuery();
+    verifyQueryResults(query, 0);
+
+    query = managementService.createJobQuery().waitingTimers();
     verifyQueryResults(query, 3);
   }
 
   public void testQueryByProcessInstanceId() {
     JobQuery query = managementService.createJobQuery().processInstanceId(processInstanceIdOne);
-    verifyQueryResults(query, 1);
+
+    verifyQueryResults(query, 0);
+    verifyQueryResults(query.waitingTimers(), 1);
+    verifyQueryResults(query.failed(), 0);
+    verifyQueryResults(query.locked(), 0);
+
   }
 
   public void testQueryByInvalidProcessInstanceId() {
     JobQuery query = managementService.createJobQuery().processInstanceId("invalid");
     verifyQueryResults(query, 0);
+    verifyQueryResults(query.waitingTimers(), 0);
+    verifyQueryResults(query.failed(), 0);
+    verifyQueryResults(query.locked(), 0);
 
     try {
       managementService.createJobQuery().processInstanceId(null);
@@ -138,25 +152,25 @@ public class JobQueryTest extends PluggableActivitiTestCase {
   }
 
   public void testQueryByExecutionId() {
-    Job job = managementService.createJobQuery().processInstanceId(processInstanceIdOne).singleResult();
-    JobQuery query = managementService.createJobQuery().executionId(job.getExecutionId());
+    Job job = managementService.createJobQuery().waitingTimers().processInstanceId(processInstanceIdOne).singleResult();
+    JobQuery query = managementService.createJobQuery().waitingTimers().executionId(job.getExecutionId());
     assertEquals(query.singleResult().getId(), job.getId());
     verifyQueryResults(query, 1);
   }
 
   public void testQueryByInvalidExecutionId() {
-    JobQuery query = managementService.createJobQuery().executionId("invalid");
+    JobQuery query = managementService.createJobQuery().waitingTimers().executionId("invalid");
     verifyQueryResults(query, 0);
 
     try {
-      managementService.createJobQuery().executionId(null).list();
+      managementService.createJobQuery().waitingTimers().executionId(null).list();
       fail();
     } catch (ActivitiIllegalArgumentException e) {
     }
   }
 
   public void testQueryByRetriesLeft() {
-    JobQuery query = managementService.createJobQuery().withRetriesLeft();
+    JobQuery query = managementService.createJobQuery().waitingTimers().withRetriesLeft();
     verifyQueryResults(query, 3);
 
     setRetries(processInstanceIdOne, 0);
@@ -168,7 +182,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
   public void testQueryByExecutable() {
     processEngineConfiguration.getClock()
             .setCurrentTime(new Date(timerThreeFireTime.getTime() + ONE_SECOND)); // all obs should be executable at t3 + 1hour.1second
-    JobQuery query = managementService.createJobQuery().executable();
+    JobQuery query = managementService.createJobQuery().waitingTimers().executable();
     verifyQueryResults(query, 3);
 
     // Setting retries of one job to 0, makes it non-executable
@@ -185,7 +199,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
   }
 
   public void testQueryByOnlyTimers() {
-    JobQuery query = managementService.createJobQuery().timers();
+    JobQuery query = managementService.createJobQuery().waitingTimers().timers();
     verifyQueryResults(query, 3);
   }
 
@@ -207,13 +221,13 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     JobQuery query = managementService.createJobQuery().duedateLowerThan(testStartTime);
     verifyQueryResults(query, 0);
 
-    query = managementService.createJobQuery().duedateLowerThan(new Date(timerOneFireTime.getTime() + ONE_SECOND));
+    query = managementService.createJobQuery().waitingTimers().duedateLowerThan(new Date(timerOneFireTime.getTime() + ONE_SECOND));
     verifyQueryResults(query, 1);
 
-    query = managementService.createJobQuery().duedateLowerThan(new Date(timerTwoFireTime.getTime() + ONE_SECOND));
+    query = managementService.createJobQuery().waitingTimers().duedateLowerThan(new Date(timerTwoFireTime.getTime() + ONE_SECOND));
     verifyQueryResults(query, 2);
 
-    query = managementService.createJobQuery().duedateLowerThan(new Date(timerThreeFireTime.getTime() + ONE_SECOND));
+    query = managementService.createJobQuery().waitingTimers().duedateLowerThan(new Date(timerThreeFireTime.getTime() + ONE_SECOND));
     verifyQueryResults(query, 3);
 
     query = managementService.createJobQuery().locked().duedateLowerThan(new Date(timerThreeFireTime.getTime() + ONE_SECOND));
@@ -222,7 +236,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
   }
 
   public void testQueryByDuedateHigherThan() {
-    JobQuery query = managementService.createJobQuery().duedateHigherThan(testStartTime);
+    JobQuery query = managementService.createJobQuery().waitingTimers().duedateHigherThan(testStartTime);
     verifyQueryResults(query, 3);
 
     query = managementService.createJobQuery().failed().duedateHigherThan(testStartTime);
@@ -231,19 +245,19 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     query = managementService.createJobQuery().locked().duedateHigherThan(testStartTime);
     verifyQueryResults(query, 1);
 
-    query = managementService.createJobQuery().duedateHigherThan(timerOneFireTime);
+    query = managementService.createJobQuery().waitingTimers().duedateHigherThan(timerOneFireTime);
     verifyQueryResults(query, 2);
 
     query = managementService.createJobQuery().locked().duedateHigherThan(timerOneFireTime);
     verifyQueryResults(query, 1);
 
-    query = managementService.createJobQuery().duedateHigherThan(timerTwoFireTime);
+    query = managementService.createJobQuery().waitingTimers().duedateHigherThan(timerTwoFireTime);
     verifyQueryResults(query, 1);
 
     query = managementService.createJobQuery().locked().duedateHigherThan(timerTwoFireTime);
     verifyQueryResults(query, 1);
 
-    query = managementService.createJobQuery().duedateHigherThan(timerThreeFireTime);
+    query = managementService.createJobQuery().waitingTimers().duedateHigherThan(timerThreeFireTime);
     verifyQueryResults(query, 0);
   }
 
@@ -326,18 +340,18 @@ public class JobQueryTest extends PluggableActivitiTestCase {
 
   public void testQuerySorting() {
     // asc
-    assertEquals(3, managementService.createJobQuery().orderByJobId().asc().count());
-    assertEquals(3, managementService.createJobQuery().orderByJobDuedate().asc().count());
-    assertEquals(3, managementService.createJobQuery().orderByExecutionId().asc().count());
-    assertEquals(3, managementService.createJobQuery().orderByProcessInstanceId().asc().count());
-    assertEquals(3, managementService.createJobQuery().orderByJobRetries().asc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByJobId().asc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByJobDuedate().asc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByExecutionId().asc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByProcessInstanceId().asc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByJobRetries().asc().count());
 
     // desc
-    assertEquals(3, managementService.createJobQuery().orderByJobId().desc().count());
-    assertEquals(3, managementService.createJobQuery().orderByJobDuedate().desc().count());
-    assertEquals(3, managementService.createJobQuery().orderByExecutionId().desc().count());
-    assertEquals(3, managementService.createJobQuery().orderByProcessInstanceId().desc().count());
-    assertEquals(3, managementService.createJobQuery().orderByJobRetries().desc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByJobId().desc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByJobDuedate().desc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByExecutionId().desc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByProcessInstanceId().desc().count());
+    assertEquals(3, managementService.createJobQuery().waitingTimers().orderByJobRetries().desc().count());
 
     // sorting on multiple fields
     setRetries(processInstanceIdTwo, 2);
@@ -348,7 +362,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     // can
     // fire
 
-    JobQuery query = managementService.createJobQuery().timers().executable().orderByJobRetries().asc().orderByJobDuedate().desc();
+    JobQuery query = managementService.createJobQuery().waitingTimers().executable().orderByJobRetries().asc().orderByJobDuedate().desc();
 
     List<Job> jobs = query.list();
     assertEquals(3, jobs.size());
@@ -381,11 +395,11 @@ public class JobQueryTest extends PluggableActivitiTestCase {
   // helper ////////////////////////////////////////////////////////////
 
   private void setRetries(final String processInstanceId, final int retries) {
-    final Job job = managementService.createJobQuery().processInstanceId(processInstanceId).singleResult();
+    final Job job = managementService.createJobQuery().waitingTimers().processInstanceId(processInstanceId).singleResult();
     commandExecutor.execute(new Command<Void>() {
 
       public Void execute(CommandContext commandContext) {
-        JobEntity timer = commandContext.getDbSqlSession().selectById(ExecutableJobEntity.class, job.getId());
+        JobEntity timer = commandContext.getDbSqlSession().selectById(WaitingTimerJobEntity.class, job.getId());
         timer.setRetries(retries);
         return null;
       }
@@ -399,9 +413,20 @@ public class JobQueryTest extends PluggableActivitiTestCase {
 
     // The execution is waiting in the first usertask. This contains a boundary
     // timer event which we will execute manual for testing purposes.
-    Job timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    final Job timerJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
 
     assertNotNull("No job found for process instance", timerJob);
+
+    managementService.executeCommand(new Command<Object>() {
+
+      @Override
+      public Object execute(CommandContext commandContext) {
+        ExecutableTimerJobEntity executableJobEntity = (ExecutableTimerJobEntity) commandContext.jobFactory().getExecutableJob(timerJob);
+        commandContext.getExecutableJobEntityManager().schedule(executableJobEntity);
+        commandContext.getWaitingTimerJobEntityManager().delete((WaitingTimerJobEntity) timerJob, false);
+        return null;
+      }
+    });
 
     try {
       managementService.executeJob(timerJob.getId());
@@ -448,7 +473,7 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     commandExecutor.execute(new Command<Void>() {
 
       public Void execute(CommandContext commandContext) {
-        ExecutableJobEntityManager jobManager = commandContext.getExecutableJobEntityManager();
+        WaitingTimerJobEntityManager jobManager = commandContext.getWaitingTimerJobEntityManager();
 
         timerEntity = jobManager.createTimer();
         timerEntity.setDuedate(new Date());
@@ -459,14 +484,13 @@ public class JobQueryTest extends PluggableActivitiTestCase {
         exception.printStackTrace(new PrintWriter(stringWriter));
         timerEntity.setExceptionStacktrace(stringWriter.toString());
 
-        commandContext.getExecutableJobEntityManager().insert(timerEntity);
 
-        LockedJobEntity lockedJobEntity = commandContext.getExecutableJobEntityManager().lockJob(timerEntity, UUID.randomUUID().toString(), new Date());
+        commandContext.getWaitingTimerJobEntityManager().insert(timerEntity);
 
-        FailedJobEntity failedJobEntity = commandContext.jobFactory().getFailedJob(lockedJobEntity);
+        FailedJobEntity failedJobEntity = commandContext.jobFactory().getFailedJob(timerEntity);
 
-        commandContext.getLockedJobEntityManager().delete(lockedJobEntity);
         commandContext.getFailedJobEntityManager().insert(failedJobEntity);
+        commandContext.getWaitingTimerJobEntityManager().delete(timerEntity);
 
         assertNotNull(failedJobEntity.getId());
         return null;
@@ -481,17 +505,18 @@ public class JobQueryTest extends PluggableActivitiTestCase {
     commandExecutor.execute(new Command<Void>() {
 
       public Void execute(CommandContext commandContext) {
-        ExecutableJobEntityManager jobManager = commandContext.getExecutableJobEntityManager();
+        WaitingTimerJobEntityManager jobManager = commandContext.getWaitingTimerJobEntityManager();
 
         timerEntity = jobManager.createTimer();
         timerEntity.setDuedate(new Date());
         timerEntity.setRetries(0);
         timerEntity.setExceptionMessage("I'm supposed to fail");
 
-        LockedJobEntity lockedJobEntity = commandContext.jobFactory().getLockedJob(timerEntity, new Date(), UUID.randomUUID().toString());
-        FailedJobEntity failedJobEntity = commandContext.jobFactory().getFailedJob(lockedJobEntity);
+        commandContext.getWaitingTimerJobEntityManager().insert(timerEntity);
+        FailedJobEntity failedJobEntity = commandContext.jobFactory().getFailedJob(timerEntity);
 
         commandContext.getFailedJobEntityManager().insert(failedJobEntity);
+        commandContext.getWaitingTimerJobEntityManager().delete(timerEntity);
 
         assertNotNull(failedJobEntity.getId());
 

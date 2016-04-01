@@ -167,7 +167,7 @@ public class MybatisLockedJobDataManager extends AbstractDataManager<LockedJobEn
     Map<String, String> params = new HashMap<String, String>(2);
     params.put("handlerType", jobHandlerType);
     params.put("processDefinitionKey", processDefinitionKey);
-    return getDbSqlSession().selectList("selectJobByTypeAndProcessDefinitionKeyNoTenantId", params);
+    return getDbSqlSession().selectList("selectLockedJobByTypeAndProcessDefinitionKeyNoTenantId", params);
   }
 
   @Override
@@ -177,7 +177,7 @@ public class MybatisLockedJobDataManager extends AbstractDataManager<LockedJobEn
     params.put("handlerType", jobHandlerType);
     params.put("processDefinitionKey", processDefinitionKey);
     params.put("tenantId", tenantId);
-    return getDbSqlSession().selectList("selectJobByTypeAndProcessDefinitionKeyAndTenantId", params);
+    return getDbSqlSession().selectList("selectLockedJobByTypeAndProcessDefinitionKeyAndTenantId", params);
   }
 
   @Override
@@ -199,8 +199,9 @@ public class MybatisLockedJobDataManager extends AbstractDataManager<LockedJobEn
     HashMap<String, Object> params = new HashMap<String, Object>();
     params.put("deploymentId", deploymentId);
     params.put("tenantId", newTenantId);
-    getDbSqlSession().update("updateJobTenantIdForDeployment", params);
+    getDbSqlSession().update("updateLockedJobTenantIdForDeployment", params);
   }
+
 
   @Override
   public List<JobEntity> selectTimerJobsToDueDate() {

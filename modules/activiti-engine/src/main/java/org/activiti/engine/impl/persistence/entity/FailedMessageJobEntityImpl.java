@@ -17,7 +17,7 @@ package org.activiti.engine.impl.persistence.entity;
  */
 public class FailedMessageJobEntityImpl extends FailedJobEntityImpl implements FailedMessageJobEntity {
 
-  public FailedMessageJobEntityImpl(LockedMessageJobEntity jobEntity) {
+  public FailedMessageJobEntityImpl(MessageEntity jobEntity) {
     super(jobEntity);
   }
 

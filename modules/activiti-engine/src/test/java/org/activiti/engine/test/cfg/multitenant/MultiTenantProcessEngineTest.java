@@ -24,6 +24,7 @@ import org.activiti.engine.ProcessEngine;
 import org.activiti.engine.impl.asyncexecutor.multitenant.ExecutorPerTenantAsyncExecutor;
 import org.activiti.engine.impl.asyncexecutor.multitenant.SharedExecutorServiceAsyncExecutor;
 import org.activiti.engine.impl.cfg.multitenant.MultiSchemaMultiTenantProcessEngineConfiguration;
+import org.activiti.engine.impl.test.JobTestHelper;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Task;
@@ -120,7 +121,7 @@ public class MultiTenantProcessEngineTest {
     tenantInfoHolder.addUser("dailyplanet", "clark");
     
     config.registerTenant("dailyplanet", createDataSource("jdbc:h2:mem:activiti-mt-daily;DB_CLOSE_DELAY=1000", "sa", ""));
-    
+
     // Start process instance for new tenant
     startProcessInstances("clark");
     startProcessInstances("clark");
@@ -182,7 +183,11 @@ public class MultiTenantProcessEngineTest {
     
     Assert.assertEquals(nrOfActiveProcessInstances, processEngine.getRuntimeService().createExecutionQuery().onlyProcessInstanceExecutions().count());
     Assert.assertEquals(nrOfActiveProcessInstances, processEngine.getHistoryService().createHistoricProcessInstanceQuery().unfinished().count());
-    Assert.assertEquals(nrOfActiveJobs, processEngine.getManagementService().createJobQuery().count());
+    long activeJobs = processEngine.getManagementService().createJobQuery().count() +
+            processEngine.getManagementService().createJobQuery().waitingTimers().count()+
+            processEngine.getManagementService().createJobQuery().failed().count()+
+            processEngine.getManagementService().createJobQuery().locked().count();
+    Assert.assertEquals(nrOfActiveJobs, activeJobs);
     
     tenantInfoHolder.clearCurrentUserId();
     tenantInfoHolder.clearCurrentTenantId();

@@ -11,6 +11,16 @@ package org.activiti.engine.impl.persistence.entity;/* Licensed under the Apache
  * limitations under the License.
  */
 
+import org.activiti.engine.runtime.Job;
+
+import java.util.List;
+
 public interface JobEntityManager<T extends JobEntity> extends EntityManager<T>{
+
+  List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId);
+
+  List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String type, String key);
+
+  void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
 
 }

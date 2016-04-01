@@ -25,7 +25,7 @@ public abstract class FailedJobEntityImpl extends JobEntityImpl implements Faile
   protected Date lockExpirationTime;
 
   protected String lockOwner;
-  public FailedJobEntityImpl(LockedJobEntity jobEntity) {
+  public FailedJobEntityImpl(JobEntity jobEntity) {
     setId(jobEntity.getId());
     setRepeat(jobEntity.getRepeat());
     setExceptionStacktrace(jobEntity.getExceptionStacktrace());

@@ -173,8 +173,10 @@ public class AsyncTaskTest extends PluggableActivitiTestCase {
     // start process
     runtimeService.startProcessInstanceByKey("asyncService");
     // now there should be two jobs in the database:
-    assertEquals(1, managementService.createJobQuery().count());
+    assertEquals(0, managementService.createJobQuery().count());
+    assertEquals(1, managementService.createJobQuery().waitingTimers().count());
     assertEquals(1, managementService.createJobQuery().locked().count());
+    assertEquals(0, managementService.createJobQuery().failed().count());
     // the service was not invoked:
     assertFalse(INVOCATION);
 

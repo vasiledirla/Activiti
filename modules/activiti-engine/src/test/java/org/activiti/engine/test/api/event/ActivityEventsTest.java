@@ -455,14 +455,14 @@ public class ActivityEventsTest extends PluggableActivitiTestCase {
   @Deployment(resources = "org/activiti/engine/test/api/event/JobEventsTest.testJobEntityEvents.bpmn20.xml")
   public void testActivityTimeOutEvent() {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("testJobEvents");
-    Job theJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job theJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(theJob);
 
     // Force timer to fire
     Calendar tomorrow = Calendar.getInstance();
     tomorrow.add(Calendar.DAY_OF_YEAR, 1);
     processEngineConfiguration.getClock().setCurrentTime(tomorrow.getTime());
-    waitForJobExecutorToProcessAllJobs(2000, 1000);
+    waitForJobExecutorToProcessAllJobs(2000, 100);
 
     // Check timeout has been dispatched
     assertEquals(1, listener.getEventsReceived().size());
@@ -475,7 +475,7 @@ public class ActivityEventsTest extends PluggableActivitiTestCase {
   @Deployment(resources = "org/activiti/engine/test/bpmn/event/timer/BoundaryTimerEventTest.testTimerOnNestingOfSubprocesses.bpmn20.xml")
   public void testActivityTimeOutEventInSubProcess() {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("timerOnNestedSubprocesses");
-    Job theJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job theJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(theJob);
 
     // Force timer to fire
@@ -483,6 +483,7 @@ public class ActivityEventsTest extends PluggableActivitiTestCase {
     timeToFire.add(Calendar.HOUR, 2);
     timeToFire.add(Calendar.SECOND, 5);
     processEngineConfiguration.getClock().setCurrentTime(timeToFire.getTime());
+
 
     waitForJobExecutorToProcessAllJobs(2000, 200);
 
@@ -506,7 +507,7 @@ public class ActivityEventsTest extends PluggableActivitiTestCase {
   @Deployment
   public void testActivityTimeOutEventInCallActivity() {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("timerOnCallActivity");
-    Job theJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job theJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
     assertNotNull(theJob);
 
     // Force timer to fire
@@ -514,7 +515,7 @@ public class ActivityEventsTest extends PluggableActivitiTestCase {
     timeToFire.add(Calendar.HOUR, 2);
     timeToFire.add(Calendar.MINUTE, 5);
     processEngineConfiguration.getClock().setCurrentTime(timeToFire.getTime());
-    waitForJobExecutorToProcessAllJobs(5000, 500);
+    waitForJobExecutorToProcessAllJobs(10000, 500);
 
     // Check timeout-events have been dispatched
     assertEquals(4, listener.getEventsReceived().size());

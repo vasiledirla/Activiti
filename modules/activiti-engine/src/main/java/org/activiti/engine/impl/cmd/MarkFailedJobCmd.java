@@ -30,7 +30,7 @@ import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.FailedJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
-import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
+import org.activiti.engine.impl.persistence.entity.JobEntityManager;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,17 +58,24 @@ public class MarkFailedJobCmd implements Command<Object> {
   }
 
   public Object execute(CommandContext commandContext) {
-    LockedJobEntity job = commandContext.getLockedJobEntityManager().findById(jobId);
+    JobEntityManager<? extends JobEntity> originalJobManager = null;
+    originalJobManager = commandContext.getLockedJobEntityManager();
+    JobEntity job = originalJobManager.findById(jobId);
     if (job == null) {
-      JobEntity executableJob = commandContext.getExecutableJobEntityManager().findById(jobId);
-      job = commandContext.getExecutableJobEntityManager().lockJob((ExecutableJobEntity)executableJob,null, null);
-      if (job ==null) {
-        return null;
+      originalJobManager = commandContext.getExecutableJobEntityManager();
+      ExecutableJobEntity executableJob = (ExecutableJobEntity) originalJobManager.findById(jobId);
+      job = commandContext.getExecutableJobEntityManager().lockJob(executableJob, null, null);
+      originalJobManager = commandContext.getLockedJobEntityManager();
+      if (job == null) {
+        originalJobManager = commandContext.getWaitingTimerJobEntityManager();
+        job = originalJobManager.findById(jobId);
+        if (job == null) {
+          return null;
+        }
       }
     }
 
     FailedJobEntity failedJob = commandContext.jobFactory().getFailedJob(job);
-
 
     ProcessEngineConfiguration processEngineConfig = commandContext.getProcessEngineConfiguration();
 
@@ -102,7 +109,8 @@ public class MarkFailedJobCmd implements Command<Object> {
         failedJob.setDuedate(durationHelper.getDateAfter());
 
         if (failedJob.getExceptionMessage() == null) { // is it the first exception
-          log.debug("Applying JobRetryStrategy '" + failedJobRetryTimeCycleValue + "' the first time for job " + job.getId() + " with " + durationHelper.getTimes() + " retries");
+          log.debug("Applying JobRetryStrategy '" + failedJobRetryTimeCycleValue + "' the first time for job " + job.getId() + " with " + durationHelper
+                  .getTimes() + " retries");
           // then change default retries to the ones configured
           failedJob.setRetries(durationHelper.getTimes());
 
@@ -135,8 +143,8 @@ public class MarkFailedJobCmd implements Command<Object> {
       transactionContext.addTransactionListener(TransactionState.COMMITTED, messageAddedNotification);
     }
 
-    commandContext.getLockedJobEntityManager().delete(job, false);
     commandContext.getFailedJobEntityManager().insert(failedJob, false);
+    originalJobManager.delete(job.getId(), false);
     return null;
   }
 

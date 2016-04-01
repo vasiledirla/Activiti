@@ -141,14 +141,13 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
 
   protected void executeUnacquireJob(CommandContext commandContext, String id) {
     LockedJobEntity lockedJobEntity = commandContext.getLockedJobEntityManager().findById(id);
-    commandContext.getLockedJobEntityManager().delete(lockedJobEntity);
 
     ExecutableJobEntity executableJobEntity = commandContext.jobFactory().getExecutableJob(lockedJobEntity);
     executableJobEntity.setDuedate(new Date(commandContext.getProcessEngineConfiguration().getClock().getCurrentTime().getTime()));
 
     commandContext.getExecutableJobEntityManager().insert(executableJobEntity);
+    commandContext.getLockedJobEntityManager().delete(lockedJobEntity);
   }
-
 
   protected Runnable createRunnableForJob(final LockedJobEntity job) {
     if (executeAsyncRunnableFactory == null) {
@@ -223,10 +222,14 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
     }
 
     startJobAcquisitionThread();
+    startCleanupJobsThread();
+    startTimerJobsMoveThread();
   }
 
   protected void stopExecutingAsyncJobs() {
     stopJobAcquisitionThread();
+    stopCleanupJobsThread();
+    stopTimerJobMoveThread();
 
     // Ask the thread pool to finish and exit
     executorService.shutdown();
@@ -253,16 +256,29 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
       asyncJobAcquisitionThread = new Thread(jobsDueRunnable);
     }
     asyncJobAcquisitionThread.start();
+  }
+
+  /**
+   * Starts the acquisition thread
+   */
+  protected void startCleanupJobsThread() {
+
+    if (cleanupJobsThread == null) {
+      cleanupJobsThread = new Thread(cleanupJobsRunnable);
+    }
+    cleanupJobsThread.start();
+  }
+
+  /**
+   * Starts the acquisition thread
+   */
+  protected void startTimerJobsMoveThread() {
 
     if (timerJobMoveThread == null) {
       timerJobMoveThread = new Thread(timerJobMoveRunnable);
     }
     timerJobMoveThread.start();
 
-    if (cleanupJobsThread == null) {
-      cleanupJobsThread = new Thread(cleanupJobsRunnable);
-    }
-    cleanupJobsThread.start();
   }
 
   /**
@@ -276,11 +292,10 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
       log.warn("Interrupted while waiting for the async job acquisition thread to terminate", e);
     }
 
-    try {
-      timerJobMoveThread.join();
-    } catch (InterruptedException e) {
-      log.warn("Interrupted while waiting for the async job acquisition thread to terminate", e);
-    }
+    asyncJobAcquisitionThread = null;
+  }
+
+  protected void stopCleanupJobsThread() {
 
     try {
       cleanupJobsThread.join();
@@ -288,10 +303,19 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
       log.warn("Interrupted while waiting for the async job acquisition thread to terminate", e);
     }
 
-    //    timerJobAcquisitionThread = null;
-    asyncJobAcquisitionThread = null;
-    timerJobMoveThread = null;
     cleanupJobsThread = null;
+
+  }
+
+  protected void stopTimerJobMoveThread() {
+
+    try {
+      timerJobMoveThread.join();
+    } catch (InterruptedException e) {
+      log.warn("Interrupted while waiting for the async job acquisition thread to terminate", e);
+    }
+
+    timerJobMoveThread = null;
   }
 
   /* getters and setters */
@@ -450,6 +474,14 @@ public class DefaultAsyncJobExecutor implements AsyncExecutor {
 
   public void setJobsDueRunnable(AcquireJobsDueRunnable jobsDueRunnable) {
     this.jobsDueRunnable = jobsDueRunnable;
+  }
+
+  public void setCleanupJobsRunnable(CleanupJobsRunnable jobsDueRunnable) {
+    this.cleanupJobsRunnable = jobsDueRunnable;
+  }
+
+  public void setTimerJobMoveRunnable(TimerJobsMoveRunnable jobsDueRunnable) {
+    this.timerJobMoveRunnable = jobsDueRunnable;
   }
 
   public int getRetryWaitTimeInMillis() {

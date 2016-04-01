@@ -17,11 +17,13 @@ import org.activiti.engine.RepositoryService;
 import org.activiti.engine.RuntimeService;
 import org.activiti.engine.TaskService;
 import org.activiti.engine.test.ActivitiRule;
+import org.activiti.engine.ProcessEngineConfiguration;
 import org.junit.Before;
 import org.junit.Rule;
 
 public abstract class AbstractActiviti6CompatibilityTest {
-  
+
+  protected ProcessEngineConfiguration processEngineConfiguration;
   protected RepositoryService repositoryService;
   protected RuntimeService runtimeService;
   protected TaskService taskService;
@@ -36,6 +38,7 @@ public abstract class AbstractActiviti6CompatibilityTest {
     this.runtimeService = activitiRule.getRuntimeService();
     this.taskService = activitiRule.getTaskService();
     this.managementService = activitiRule.getManagementService();
+    this.processEngineConfiguration = activitiRule.getProcessEngine().getProcessEngineConfiguration();
   }
 
 }

@@ -13,8 +13,6 @@
 
 package org.activiti.engine.impl.cmd;
 
-import java.io.Serializable;
-
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.ActivitiObjectNotFoundException;
 import org.activiti.engine.compatibility.Activiti5CompatibilityHandler;
@@ -25,6 +23,8 @@ import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
 import org.activiti.engine.impl.util.Activiti5Util;
 import org.activiti.engine.runtime.Job;
+
+import java.io.Serializable;
 
 /**
  * @author Falko Menge
@@ -49,14 +49,26 @@ public class SetJobRetriesCmd implements Command<Void>, Serializable {
 
   public Void execute(CommandContext commandContext) {
     JobEntity job = commandContext.getExecutableJobEntityManager().findById(jobId);
+    if (job == null) {
+      job = commandContext.getWaitingTimerJobEntityManager().findById(jobId);
+
+      if (job == null) {
+        job = commandContext.getLockedJobEntityManager().findById(jobId);
+
+        if (job == null) {
+          job = commandContext.getFailedJobEntityManager().findById(jobId);
+        }
+      }
+    }
+
     if (job != null) {
-      
+
       if (Activiti5Util.isActiviti5ProcessDefinitionId(commandContext, job.getProcessDefinitionId())) {
-        Activiti5CompatibilityHandler activiti5CompatibilityHandler = Activiti5Util.getActiviti5CompatibilityHandler(); 
+        Activiti5CompatibilityHandler activiti5CompatibilityHandler = Activiti5Util.getActiviti5CompatibilityHandler();
         activiti5CompatibilityHandler.setJobRetries(job.getId(), retries);
         return null;
       }
-      
+
       job.setRetries(retries);
 
       if (commandContext.getEventDispatcher().isEnabled()) {

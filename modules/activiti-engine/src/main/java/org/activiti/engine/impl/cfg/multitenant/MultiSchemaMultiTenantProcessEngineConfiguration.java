@@ -135,6 +135,9 @@ public class MultiSchemaMultiTenantProcessEngineConfiguration extends ProcessEng
     // Create tenant schema
     for (String tenantId : tenantInfoHolder.getAllTenants()) {
       createTenantSchema(tenantId);
+      if (isAsyncExecutorEnabled()) {
+        createTenantAsyncJobExecutor(tenantId);
+      }
     }
     
     // Start async executor

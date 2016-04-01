@@ -30,14 +30,20 @@ public class ExclusiveTimerEventTest extends PluggableActivitiTestCase {
     // After process start, there should be 3 timers created
     ProcessInstance pi = runtimeService.startProcessInstanceByKey("exclusiveTimers");
     JobQuery jobQuery = managementService.createJobQuery().processInstanceId(pi.getId());
-    assertEquals(3, jobQuery.count());
+    assertEquals(0, jobQuery.count());
+    assertEquals(3, jobQuery.waitingTimers().count());
+    assertEquals(0, jobQuery.failed().count());
+    assertEquals(0, jobQuery.locked().count());
 
     // After setting the clock to time '50minutes and 5 seconds', the timers
     // should fire
     processEngineConfiguration.getClock().setCurrentTime(new Date(startTime.getTime() + ((50 * 60 * 1000) + 5000)));
-    waitForJobExecutorToProcessAllJobs(15000L, 100L);
+    waitForJobExecutorToProcessAllJobs(20000L, 100L);
 
     assertEquals(0, jobQuery.count());
+    assertEquals(0, jobQuery.waitingTimers().count());
+    assertEquals(0, jobQuery.failed().count());
+    assertEquals(0, jobQuery.locked().count());
     assertProcessEnded(pi.getProcessInstanceId());
   }
 }

@@ -954,8 +954,8 @@ public class DefaultActiviti5CompatibilityHandler implements Activiti5Compatibil
     activity5Job.setJobHandlerConfiguration(job.getJobHandlerConfiguration());
     activity5Job.setJobHandlerType(job.getJobHandlerType());
     activity5Job.setJobType(job.getJobType());
-    activity5Job.setLockExpirationTime(job.getLockExpirationTime());
-    activity5Job.setLockOwner(job.getLockOwner());
+//    activity5Job.setLockExpirationTime(job.getLockExpirationTime());
+//    activity5Job.setLockOwner(job.getLockOwner());
     activity5Job.setProcessDefinitionId(job.getProcessDefinitionId());
     activity5Job.setProcessInstanceId(job.getProcessInstanceId());
     activity5Job.setRetries(job.getRetries());

@@ -64,7 +64,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
     // After process start, there should be 3 timers created
     ProcessInstance pi = runtimeService.startProcessInstanceByKey("multipleTimersOnUserTask");
     JobQuery jobQuery = managementService.createJobQuery().processInstanceId(pi.getId());
-    List<Job> jobs = jobQuery.list();
+    List<Job> jobs = jobQuery.waitingTimers().list();
     assertEquals(3, jobs.size());
 
     // After setting the clock to time '1 hour and 5 seconds', the second
@@ -91,7 +91,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
 
     // Timer will fire in 2 hours
     processEngineConfiguration.getClock().setCurrentTime(new Date(testStartTime.getTime() + ((2 * 60 * 60 * 1000) + 5000)));
-    Job timer = managementService.createJobQuery().timers().singleResult();
+    Job timer = managementService.createJobQuery().waitingTimers().timers().singleResult();
     managementService.executeJob(timer.getId());
 
     Task task = taskService.createTaskQuery().singleResult();
@@ -109,7 +109,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
     // After process start, there should be a timer created
     ProcessInstance pi = runtimeService.startProcessInstanceByKey("testExpressionOnTimer", variables);
 
-    JobQuery jobQuery = managementService.createJobQuery().processInstanceId(pi.getId());
+    JobQuery jobQuery = managementService.createJobQuery().processInstanceId(pi.getId()).waitingTimers();
     List<Job> jobs = jobQuery.list();
     assertEquals(1, jobs.size());
 
@@ -164,7 +164,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
   @Deployment
   public void testRepeatingTimerWithCancelActivity() {
     runtimeService.startProcessInstanceByKey("repeatingTimerAndCallActivity");
-    assertEquals(1, managementService.createJobQuery().count());
+    assertEquals(1, managementService.createJobQuery().waitingTimers().count());
     assertEquals(1, taskService.createTaskQuery().count());
 
     // Firing job should cancel the user task, destroy the scope,
@@ -172,9 +172,9 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
     // created.
     // This didn't happen before 5.11 (new jobs kept being created). See
     // ACT-1427
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().waitingTimers().singleResult();
     managementService.executeJob(job.getId());
-    assertEquals(1, managementService.createJobQuery().count());
+    assertEquals(1, managementService.createJobQuery().waitingTimers().count());
     assertEquals(1, taskService.createTaskQuery().count());
   }
   
@@ -195,7 +195,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
 		
 		// Move clock, job should fire
 		for (int i=0; i<30; i++) {
-			Job job = managementService.createJobQuery().singleResult();
+			Job job = managementService.createJobQuery().waitingTimers().singleResult();
 			
 			// Verify due date
 			if (previousDueDate != null) {
@@ -205,7 +205,7 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
 			
 			currentTime = new Date(currentTime.getTime() + twentyFourHours + (60 * 1000));
 			processEngineConfiguration.getClock().setCurrentTime(currentTime);
-			managementService.executeJob(managementService.createJobQuery().executable().singleResult().getId());
+			managementService.executeJob(managementService.createJobQuery().waitingTimers().executable().singleResult().getId());
 		}
 		
 	}

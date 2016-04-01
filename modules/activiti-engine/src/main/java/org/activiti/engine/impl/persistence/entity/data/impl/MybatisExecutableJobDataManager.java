@@ -81,7 +81,7 @@ public class MybatisExecutableJobDataManager extends AbstractDataManager<Executa
   
   @Override
   @SuppressWarnings("unchecked")
-  public List<JobEntity> findNextJobsToExecute(Page page) {
+  public List<ExecutableJobEntity> findNextJobsToExecute(Page page) {
     Date now = getClock().getCurrentTime();
     return getDbSqlSession().selectList("selectNextJobsToExecute", now, page);
   }
@@ -118,18 +118,11 @@ public class MybatisExecutableJobDataManager extends AbstractDataManager<Executa
 
   @Override
   @SuppressWarnings("unchecked")
-  public List<JobEntity> findExclusiveJobsToExecute(String processInstanceId) {
+  public List<ExecutableJobEntity> findExclusiveJobsToExecute(String processInstanceId) {
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("pid", processInstanceId);
     params.put("now", getClock().getCurrentTime());
     return getDbSqlSession().selectList("selectExclusiveJobsToExecute", params);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public List<TimerEntity> findUnlockedTimersByDuedate(Date duedate, Page page) {
-    final String query = "selectUnlockedTimersByDuedate";
-    return getDbSqlSession().selectList(query, duedate, page);
   }
 
   @Override
@@ -196,18 +189,6 @@ public class MybatisExecutableJobDataManager extends AbstractDataManager<Executa
     params.put("deploymentId", deploymentId);
     params.put("tenantId", newTenantId);
     getDbSqlSession().update("updateJobTenantIdForDeployment", params);
-  }
-
-  @Override
-  public int moveTimerJobsToMainQueue() {
-    Date now = getClock().getCurrentTime();
-    return getDbSqlSession().update("moveTimerJobsToMainQueue", now);
-  }
-
-  @Override
-  public List<ExecutableJobEntity> selectTimerJobsToDueDate() {
-    Date now = getClock().getCurrentTime();
-    return getDbSqlSession().selectList("selectTimerJobsToDueDate", now);
   }
 
 }

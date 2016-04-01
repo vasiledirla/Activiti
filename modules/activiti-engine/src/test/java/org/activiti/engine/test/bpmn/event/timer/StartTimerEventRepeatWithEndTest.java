@@ -71,7 +71,7 @@ public class StartTimerEventRepeatWithEndTest extends PluggableActivitiTestCase 
     // AFTER DEPLOYMENT
     // when the process is deployed there will be created a timerStartEvent
     // job which will wait to be executed.
-    List<Job> jobs = managementService.createJobQuery().list();
+    List<Job> jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, jobs.size());
 
     // dueDate should be after 24 hours from the process deployment
@@ -99,7 +99,7 @@ public class StartTimerEventRepeatWithEndTest extends PluggableActivitiTestCase 
       // expected failure
     }
     
-    jobs = managementService.createJobQuery().list();
+    jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, jobs.size());
 
     // After the first startEvent Execution should be one process instance
@@ -113,7 +113,7 @@ public class StartTimerEventRepeatWithEndTest extends PluggableActivitiTestCase 
 
     // one new job will be created (and the old one will be deleted after
     // execution)
-    jobs = managementService.createJobQuery().list();
+    jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, jobs.size());
 
     dueDateCalendar = Calendar.getInstance();
@@ -171,8 +171,8 @@ public class StartTimerEventRepeatWithEndTest extends PluggableActivitiTestCase 
       }
     }
     assertEquals(2, timerFiredCount); // 2 timers fired
-    assertEquals(2, eventCreatedCount); // 2 jobs created
-    assertEquals(2, eventDeletedCount); // 2 jobs deleted
+    assertEquals(4, eventCreatedCount); // 2 jobs created (2 events for each timer job)
+    assertEquals(4, eventDeletedCount); // 2 jobs deleted (2 events for each timer job)
 
     // for each processInstance
     // let's complete the userTasks where the process is hanging in order to

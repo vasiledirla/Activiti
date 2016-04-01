@@ -13,16 +13,16 @@
 
 package org.activiti.engine.impl;
 
-import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
-
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.impl.context.Context;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.interceptor.CommandExecutor;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.JobQuery;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
 
 /**
  * @author Joram Barrez
@@ -52,6 +52,7 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   protected boolean withoutTenantId;
   protected boolean noRetriesLeft;
   protected boolean locked;
+  protected boolean waitingTimers;
 
   public JobQueryImpl() {
   }
@@ -174,6 +175,8 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
 
   public JobQuery failed() {
     this.failed = true;
+    this.locked = false;
+    this.waitingTimers = false;
     return this;
   }
 
@@ -182,7 +185,7 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
       throw new ActivitiIllegalArgumentException("Provided exception message is null");
     }
     this.exceptionMessage = exceptionMessage;
-    this.withException = (exceptionMessage !=null);
+    this.withException = (exceptionMessage != null);
     return this;
   }
 
@@ -235,6 +238,16 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   @Override
   public JobQuery locked() {
     this.locked = true;
+    this.failed = false;
+    this.waitingTimers = false;
+    return this;
+  }
+
+  @Override
+  public JobQuery waitingTimers() {
+    this.waitingTimers = true;
+    this.locked = false;
+    this.failed = false;
     return this;
   }
   public boolean isLocked() {
@@ -243,17 +256,24 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   public boolean isFailed() {
     return failed;
   }
+  public boolean isWaitingTimers() {
+    return waitingTimers;
+  }
 
   // results //////////////////////////////////////////
 
   public long executeCount(CommandContext commandContext) {
     checkQueryOk();
-    if (isLocked()){
+    if (isLocked()) {
       return commandContext.getLockedJobEntityManager().findJobCountByQueryCriteria(this);
     }
 
-    if (isFailed()){
+    if (isFailed()) {
       return commandContext.getFailedJobEntityManager().findJobCountByQueryCriteria(this);
+    }
+
+    if (isWaitingTimers()) {
+      return commandContext.getWaitingTimerJobEntityManager().findJobCountByQueryCriteria(this);
     }
 
     return commandContext.getExecutableJobEntityManager().findJobCountByQueryCriteria(this);
@@ -261,12 +281,16 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
 
   public List<Job> executeList(CommandContext commandContext, Page page) {
     checkQueryOk();
-    if (isLocked()){
+    if (isLocked()) {
       return commandContext.getLockedJobEntityManager().findJobsByQueryCriteria(this, page);
     }
 
-    if (isFailed()){
+    if (isFailed()) {
       return commandContext.getFailedJobEntityManager().findJobsByQueryCriteria(this, page);
+    }
+
+    if (isWaitingTimers()) {
+      return commandContext.getWaitingTimerJobEntityManager().findJobsByQueryCriteria(this, page);
     }
 
     return commandContext.getExecutableJobEntityManager().findJobsByQueryCriteria(this, page);
@@ -353,5 +377,5 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   public boolean isNoRetriesLeft() {
     return noRetriesLeft;
   }
-  
+
 }

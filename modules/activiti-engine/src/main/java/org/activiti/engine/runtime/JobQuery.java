@@ -122,4 +122,6 @@ public interface JobQuery extends Query<JobQuery, Job> {
   JobQuery locked();
 
   boolean isLocked();
+
+  JobQuery waitingTimers();
 }

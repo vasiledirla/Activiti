@@ -58,7 +58,11 @@ public class DeleteJobCmd implements Command<Object>, Serializable {
         jobEntityManager = commandContext.getFailedJobEntityManager();
         jobToDelete = jobEntityManager.findById(jobId);
         if (jobToDelete == null) {
-          throw new ActivitiObjectNotFoundException("No job found with id '" + jobId + "'", Job.class);
+            jobEntityManager = commandContext.getWaitingTimerJobEntityManager();
+            jobToDelete = jobEntityManager.findById(jobId);
+            if (jobToDelete == null) {
+              throw new ActivitiObjectNotFoundException("No job found with id '" + jobId + "'", Job.class);
+            }
         }
       } else {
         throw new ActivitiException("Cannot delete job when the job is being executed. Try again later.");

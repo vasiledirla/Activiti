@@ -17,6 +17,7 @@ import org.activiti.engine.delegate.event.ActivitiEvent;
 import org.activiti.engine.delegate.event.ActivitiEventType;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.impl.util.DefaultClockImpl;
+import org.activiti.engine.query.Query;
 import org.activiti.engine.runtime.Clock;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.ProcessInstance;
@@ -71,7 +72,7 @@ public class StartTimerEventRepeatWithoutEndDateTest extends PluggableActivitiTe
     // AFTER DEPLOYMENT
     // when the process is deployed there will be created a timerStartEvent
     // job which will wait to be executed.
-    List<Job> jobs = managementService.createJobQuery().list();
+    List<Job> jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, jobs.size());
 
     // dueDate should be after 24 hours from the process deployment
@@ -111,7 +112,7 @@ public class StartTimerEventRepeatWithoutEndDateTest extends PluggableActivitiTe
 
     // one new job will be created (and the old one will be deleted after
     // execution)
-    jobs = managementService.createJobQuery().list();
+    jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, jobs.size());
 
     // check if the last job to be executed has the dueDate set correctly
@@ -170,8 +171,8 @@ public class StartTimerEventRepeatWithoutEndDateTest extends PluggableActivitiTe
       }
     }
     assertEquals(10, timerFiredCount); // 10 timers fired
-    assertEquals(10, eventCreatedCount); // 10 jobs created
-    assertEquals(10, eventDeletedCount); // 10 jobs deleted
+    assertEquals(20, eventCreatedCount); // 10 jobs created (2 events for each timer job)
+    assertEquals(20, eventDeletedCount); // 10 jobs deleted (2 events for each timer job)
 
     // for each processInstance
     // let's complete the userTasks where the process is hanging in order to

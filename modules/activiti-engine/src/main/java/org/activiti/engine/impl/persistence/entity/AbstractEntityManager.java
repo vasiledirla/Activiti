@@ -70,6 +70,12 @@ public abstract class AbstractEntityManager<EntityImpl extends Entity> extends A
     EntityImpl entity = findById(id);
     delete(entity);
   }
+
+  @Override
+  public void delete(String id,  boolean fireDeleteEvent) {
+    EntityImpl entity = findById(id);
+    delete(entity, fireDeleteEvent);
+  }
   
   @Override
   public void delete(EntityImpl entity) {

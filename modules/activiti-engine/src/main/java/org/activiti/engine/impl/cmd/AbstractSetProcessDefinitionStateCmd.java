@@ -34,6 +34,7 @@ import org.activiti.engine.impl.persistence.entity.ProcessDefinitionEntityManage
 import org.activiti.engine.impl.persistence.entity.SuspensionState;
 import org.activiti.engine.impl.persistence.entity.SuspensionState.SuspensionStateUtil;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntity;
 import org.activiti.engine.impl.util.Activiti5Util;
 import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.runtime.ProcessInstance;
@@ -148,7 +149,7 @@ public abstract class AbstractSetProcessDefinitionStateCmd implements Command<Vo
       
       if (Activiti5Util.isActiviti5ProcessDefinition(commandContext, processDefinition)) continue;
 
-      ExecutableTimerJobEntity timer = commandContext.getExecutableJobEntityManager().createTimer();
+      WaitingTimerJobEntity timer = commandContext.getWaitingTimerJobEntityManager().createTimer();
       timer.setProcessDefinitionId(processDefinition.getId());
 
       // Inherit tenant identifier (if applicable)
@@ -159,7 +160,7 @@ public abstract class AbstractSetProcessDefinitionStateCmd implements Command<Vo
       timer.setDuedate(executionDate);
       timer.setJobHandlerType(getDelayedExecutionJobHandlerType());
       timer.setJobHandlerConfiguration(TimerChangeProcessDefinitionSuspensionStateJobHandler.createJobHandlerConfiguration(includeProcessInstances));
-      commandContext.getExecutableJobEntityManager().schedule(timer);
+      commandContext.getWaitingTimerJobEntityManager().insert(timer);
     }
   }
 

@@ -26,8 +26,8 @@ import org.activiti.engine.impl.cfg.TransactionListener;
 import org.activiti.engine.impl.cfg.TransactionState;
 import org.activiti.engine.impl.jobexecutor.AsyncJobAddedNotification;
 import org.activiti.engine.impl.jobexecutor.JobAddedNotification;
-import org.activiti.engine.impl.persistence.entity.data.DataManager;
 import org.activiti.engine.impl.persistence.entity.data.FailedJobDataManager;
+import org.activiti.engine.impl.persistence.entity.data.JobDataManager;
 import org.activiti.engine.runtime.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ public class FailedJobEntityManagerImpl extends AbstractJobEntityManager<FailedJ
   }
 
   @Override
-  protected DataManager<FailedJobEntity> getDataManager() {
+  protected JobDataManager<FailedJobEntity> getDataManager() {
     return jobDataManager;
   }
 
@@ -179,16 +179,6 @@ public class FailedJobEntityManagerImpl extends AbstractJobEntityManager<FailedJ
   }
 
   @Override
-  public List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey) {
-    return jobDataManager.findJobsByTypeAndProcessDefinitionKeyNoTenantId(jobHandlerType, processDefinitionKey);
-  }
-
-  @Override
-  public List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId) {
-    return jobDataManager.findJobsByTypeAndProcessDefinitionKeyAndTenantId(jobHandlerType, processDefinitionKey, tenantId);
-  }
-
-  @Override
   public List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId) {
     return jobDataManager.findJobsByTypeAndProcessDefinitionId(jobHandlerType, processDefinitionId);
   }
@@ -196,16 +186,6 @@ public class FailedJobEntityManagerImpl extends AbstractJobEntityManager<FailedJ
   @Override
   public long findJobCountByQueryCriteria(JobQueryImpl jobQuery) {
     return jobDataManager.findJobCountByQueryCriteria(jobQuery);
-  }
-
-  @Override
-  public void updateJobTenantIdForDeployment(String deploymentId, String newTenantId) {
-    jobDataManager.updateJobTenantIdForDeployment(deploymentId, newTenantId);
-  }
-
-  @Override
-  public int moveTimerJobsToMainQueue() {
-    return jobDataManager.moveTimerJobsToMainQueue();
   }
 
   @Override

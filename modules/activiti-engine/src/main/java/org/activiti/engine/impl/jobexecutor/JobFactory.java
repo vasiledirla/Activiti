@@ -10,9 +10,9 @@ import java.util.Date;
 
 public interface JobFactory {
 
-  LockedJobEntity getLockedJob(ExecutableJobEntity executableJobEntity, Date time, String lockOwner);
+  LockedJobEntity getLockedJob(JobEntity jobEntity, Date time, String lockOwner);
 
-  FailedJobEntity getFailedJob(LockedJobEntity lockedJobEntity);
+  FailedJobEntity getFailedJob(JobEntity lockedJobEntity);
 
   ExecutableJobEntity getExecutableJob(Job jobEntity);
 }

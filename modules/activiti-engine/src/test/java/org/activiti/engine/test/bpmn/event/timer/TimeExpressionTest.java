@@ -25,9 +25,12 @@ public class TimeExpressionTest extends PluggableActivitiTestCase {
 
     // After process start, there should be timer created
     ProcessInstance pi1 = runtimeService.startProcessInstanceByKey("intermediateTimerEventExample", variables1);
-    assertEquals(1, managementService.createJobQuery().processInstanceId(pi1.getId()).count());
+    assertEquals(0, managementService.createJobQuery().processInstanceId(pi1.getId()).count());
+    assertEquals(1, managementService.createJobQuery().processInstanceId(pi1.getId()).waitingTimers().count());
+    assertEquals(0, managementService.createJobQuery().processInstanceId(pi1.getId()).failed().count());
+    assertEquals(0, managementService.createJobQuery().processInstanceId(pi1.getId()).locked().count());
 
-    List<Job> jobs = managementService.createJobQuery().executable().list();
+    List<Job> jobs = managementService.createJobQuery().waitingTimers().executable().list();
     assertEquals(1, jobs.size());
     return jobs.get(0).getDuedate();
   }

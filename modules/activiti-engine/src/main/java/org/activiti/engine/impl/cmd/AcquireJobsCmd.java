@@ -22,7 +22,9 @@ import org.activiti.engine.impl.interceptor.Command;
 import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.jobexecutor.AcquiredJobs;
 import org.activiti.engine.impl.jobexecutor.JobExecutor;
+import org.activiti.engine.impl.persistence.entity.ExecutableJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.LockedJobEntity;
 import org.activiti.engine.impl.persistence.entity.MessageEntity;
 
 /**
@@ -44,9 +46,9 @@ public class AcquireJobsCmd implements Command<AcquiredJobs> {
     int maxNonExclusiveJobsPerAcquisition = jobExecutor.getMaxJobsPerAcquisition();
 
     AcquiredJobs acquiredJobs = new AcquiredJobs();
-    List<JobEntity> jobs = commandContext.getExecutableJobEntityManager().findNextJobsToExecute(new Page(0, maxNonExclusiveJobsPerAcquisition));
+    List<ExecutableJobEntity> jobs = commandContext.getExecutableJobEntityManager().findNextJobsToExecute(new Page(0, maxNonExclusiveJobsPerAcquisition));
 
-    for (JobEntity job : jobs) {
+    for (ExecutableJobEntity job : jobs) {
       List<String> jobIds = new ArrayList<String>();
       if (job != null && !acquiredJobs.contains(job.getId())) {
         if (job instanceof MessageEntity && job.isExclusive() && job.getProcessInstanceId() != null) {
@@ -58,8 +60,8 @@ public class AcquireJobsCmd implements Command<AcquiredJobs> {
 
           // acquire all exclusive jobs in the same process instance
           // (includes the current job)
-          List<JobEntity> exclusiveJobs = commandContext.getExecutableJobEntityManager().findExclusiveJobsToExecute(job.getProcessInstanceId());
-          for (JobEntity exclusiveJob : exclusiveJobs) {
+          List<ExecutableJobEntity> exclusiveJobs = commandContext.getExecutableJobEntityManager().findExclusiveJobsToExecute(job.getProcessInstanceId());
+          for (ExecutableJobEntity exclusiveJob : exclusiveJobs) {
             if (exclusiveJob != null) {
               lockJob(commandContext, exclusiveJob, lockOwner, lockTimeInMillis);
               jobIds.add(exclusiveJob.getId());
@@ -79,11 +81,12 @@ public class AcquireJobsCmd implements Command<AcquiredJobs> {
     return acquiredJobs;
   }
 
-  protected void lockJob(CommandContext commandContext, JobEntity job, String lockOwner, int lockTimeInMillis) {
-//    job.setLockOwner(lockOwner);
+  protected LockedJobEntity lockJob(CommandContext commandContext, ExecutableJobEntity job, String lockOwner, int lockTimeInMillis) {
+
     GregorianCalendar gregorianCalendar = new GregorianCalendar();
     gregorianCalendar.setTime(commandContext.getProcessEngineConfiguration().getClock().getCurrentTime());
     gregorianCalendar.add(Calendar.MILLISECOND, lockTimeInMillis);
-//    job.setLockExpirationTime(gregorianCalendar.getTime());
+
+    return commandContext.getExecutableJobEntityManager().lockJob(job, lockOwner, gregorianCalendar.getTime());
   }
 }

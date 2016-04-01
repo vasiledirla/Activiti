@@ -136,6 +136,18 @@ public class DeploymentEntityManagerImpl extends AbstractEntityManager<Deploymen
   }
   
   protected void removeTimerStartJobs(ProcessDefinition processDefinition) {
+    List<Job> waitingTimersJobs = getWaitingTimerJobEntityManager()
+            .findJobsByTypeAndProcessDefinitionId(TimerStartEventJobHandler.TYPE, processDefinition.getId());
+    if (waitingTimersJobs != null && waitingTimersJobs.size() > 0) {
+      for (Job timerStartJob : waitingTimersJobs) {
+        if (getEventDispatcher().isEnabled()) {
+          getEventDispatcher().dispatchEvent(ActivitiEventBuilder.createEntityEvent(ActivitiEventType.JOB_CANCELED, timerStartJob, null, null, processDefinition.getId()));
+        }
+
+        getWaitingTimerJobEntityManager().delete((WaitingTimerJobEntity) timerStartJob);
+      }
+    }
+
     List<Job> executableTimerStartJobs = getExecutableJobEntityManager()
         .findJobsByTypeAndProcessDefinitionId(TimerStartEventJobHandler.TYPE, processDefinition.getId());
     if (executableTimerStartJobs != null && executableTimerStartJobs.size() > 0) {
@@ -213,7 +225,7 @@ public class DeploymentEntityManagerImpl extends AbstractEntityManager<Deploymen
 
   protected void restoreTimerStartEvent(ProcessDefinition previousProcessDefinition, StartEvent startEvent, EventDefinition eventDefinition) {
     TimerEventDefinition timerEventDefinition = (TimerEventDefinition) eventDefinition;
-    ExecutableTimerJobEntity timer = TimerUtil.createTimerEntityForTimerEventDefinition((TimerEventDefinition) eventDefinition, false, null, TimerStartEventJobHandler.TYPE,
+    WaitingTimerJobEntity timer = TimerUtil.createTimerEntityForTimerEventDefinition((TimerEventDefinition) eventDefinition, false, null, TimerStartEventJobHandler.TYPE,
         TimerEventHandler.createConfiguration(startEvent.getId(), timerEventDefinition.getEndDate()));
     
     if (timer != null) {
@@ -223,7 +235,7 @@ public class DeploymentEntityManagerImpl extends AbstractEntityManager<Deploymen
         timer.setTenantId(previousProcessDefinition.getTenantId());
       }
  
-      getExecutableJobEntityManager().schedule(timer);
+      getWaitingTimerJobEntityManager().insert(timer);
     }
   }
 

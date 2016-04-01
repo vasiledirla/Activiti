@@ -71,7 +71,7 @@ public class StartTimerEventRepeatWithEndExpressionTest extends PluggableActivit
     // AFTER DEPLOYMENT
     // when the process is deployed there will be created a timerStartEvent
     // job which will wait to be executed.
-    List<Job> jobs = managementService.createJobQuery().list();
+    List<Job> jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, jobs.size());
 
     // dueDate should be after 24 hours from the process deployment
@@ -111,7 +111,7 @@ public class StartTimerEventRepeatWithEndExpressionTest extends PluggableActivit
 
     // one new job will be created (and the old one will be deleted after
     // execution)
-    jobs = managementService.createJobQuery().list();
+    jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, jobs.size());
 
     dueDateCalendar = Calendar.getInstance();
@@ -136,7 +136,7 @@ public class StartTimerEventRepeatWithEndExpressionTest extends PluggableActivit
     // Because the endDate 12.dec.2025 is reached
     // the current job will be deleted after execution and a new one will
     // not be created.
-    jobs = managementService.createJobQuery().list();
+    jobs = managementService.createJobQuery().waitingTimers().list();
     assertEquals(0, jobs.size());
 
     // 2 tasks to be executed (the userTask "Task A")
@@ -169,8 +169,8 @@ public class StartTimerEventRepeatWithEndExpressionTest extends PluggableActivit
       }
     }
     assertEquals(2, timerFiredCount); // 2 timers fired
-    assertEquals(2, eventCreatedCount); // 2 jobs created
-    assertEquals(2, eventDeletedCount); // 2 jobs deleted
+    assertEquals(4, eventCreatedCount); // 2 jobs created (2 events for each timer job)
+    assertEquals(4, eventDeletedCount); // 2 jobs deleted (2 events for each timer job)
 
     // for each processInstance
     // let's complete the userTasks where the process is hanging in order to

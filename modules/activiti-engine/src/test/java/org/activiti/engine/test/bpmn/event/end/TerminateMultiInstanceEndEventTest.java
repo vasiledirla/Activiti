@@ -222,7 +222,7 @@ public class TerminateMultiInstanceEndEventTest extends PluggableActivitiTestCas
     assertEquals(72 - nrOfBTasksCompleted, bTasks.size());
     
     // Firing the timer --> inner MI gets destroyed
-    List<Job> timers = managementService.createJobQuery().list();
+    List<Job> timers = managementService.createJobQuery().waitingTimers().list();
     assertEquals(nrOfBTasksCompleted, timers.size());
     managementService.executeJob(timers.get(0).getId());
     
@@ -275,7 +275,7 @@ public class TerminateMultiInstanceEndEventTest extends PluggableActivitiTestCas
     assertEquals(0, bTasks.size());
     
     // Firing the timer --> inner MI gets destroyed
-    List<Job> timers = managementService.createJobQuery().list();
+    List<Job> timers = managementService.createJobQuery().waitingTimers().list();
     assertEquals(1, timers.size());
     managementService.executeJob(timers.get(0).getId());
     

@@ -12,6 +12,10 @@
  */
 package org.activiti.examples.bpmn.event.timer;
 
+import org.activiti.engine.impl.interceptor.Command;
+import org.activiti.engine.impl.interceptor.CommandContext;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntity;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.ProcessInstance;
@@ -34,7 +38,20 @@ public class BoundaryTimerEventTest extends PluggableActivitiTestCase {
     assertEquals("First line support", task.getName());
 
     // Manually execute the job
-    Job timer = managementService.createJobQuery().singleResult();
+    Job timer = managementService.createJobQuery().waitingTimers().singleResult();
+
+    final Job finalJob = timer;
+    managementService.executeCommand(new Command<Object>() {
+
+      @Override
+      public Object execute(CommandContext commandContext) {
+        ExecutableTimerJobEntity executableJobEntity = (ExecutableTimerJobEntity) commandContext.jobFactory().getExecutableJob(finalJob);
+        commandContext.getExecutableJobEntityManager().schedule(executableJobEntity);
+        commandContext.getWaitingTimerJobEntityManager().delete((WaitingTimerJobEntity) finalJob, false);
+        return null;
+      }
+    });
+
     managementService.executeJob(timer.getId());
 
     // The timer has fired, and the second task (secondlinesupport) now

@@ -1,9 +1,5 @@
 package org.activiti.engine.test.api.tenant;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-
 import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ProcessEngineConfiguration;
 import org.activiti.engine.history.HistoricActivityInstance;
@@ -18,6 +14,9 @@ import org.activiti.engine.runtime.Job;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Task;
 import org.junit.Assert;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A test case for the various implications of the tenancy support (tenant id column to entities + query support)
@@ -223,12 +222,12 @@ public class TenancyTest extends PluggableActivitiTestCase {
         .getId();
 
     // verify job (timer start)
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().waitingTimers().singleResult();
     assertEquals(TEST_TENANT_ID, job.getTenantId());
     managementService.executeJob(job.getId());
 
     // Verify Job tenancy (process intermediary timer)
-    job = managementService.createJobQuery().singleResult();
+    job = managementService.createJobQuery().waitingTimers().singleResult();
     assertEquals(TEST_TENANT_ID, job.getTenantId());
 
     // Start process, and verify async job has correct tenant id
@@ -242,10 +241,10 @@ public class TenancyTest extends PluggableActivitiTestCase {
     // Do the same, but now without a tenant
     String deploymentId2 = repositoryService.createDeployment().addClasspathResource("org/activiti/engine/test/api/tenant/TenancyTest.testJobTenancy.bpmn20.xml").deploy().getId();
 
-    job = managementService.createJobQuery().singleResult();
+    job = managementService.createJobQuery().waitingTimers().singleResult();
     assertEquals("", job.getTenantId());
     managementService.executeJob(job.getId());
-    job = managementService.createJobQuery().singleResult();
+    job = managementService.createJobQuery().waitingTimers().singleResult();
     assertEquals("", job.getTenantId());
     managementService.executeJob(job.getId());
     job = managementService.createJobQuery().locked().singleResult();
@@ -384,12 +383,12 @@ public class TenancyTest extends PluggableActivitiTestCase {
     repositoryService.changeDeploymentTenantId(deploymentId, newTenant);
 
     // verify job (timer start)
-    Job job = managementService.createJobQuery().singleResult();
+    Job job = managementService.createJobQuery().waitingTimers().singleResult();
     assertEquals(newTenant, job.getTenantId());
     managementService.executeJob(job.getId());
 
     // Verify Job tenancy (process intermediary timer)
-    job = managementService.createJobQuery().singleResult();
+    job = managementService.createJobQuery().waitingTimers().singleResult();
     assertEquals(newTenant, job.getTenantId());
 
     // Start process, and verify async job has correct tenant id

@@ -22,6 +22,7 @@ import org.activiti.engine.impl.jobexecutor.TriggerTimerEventJobHandler;
 import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.ExecutionEntity;
 import org.activiti.engine.impl.persistence.entity.TimerEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntity;
 import org.activiti.engine.impl.util.TimerUtil;
 
 /**
@@ -48,9 +49,9 @@ public class BoundaryTimerEventActivityBehavior extends BoundaryEventActivityBeh
 
     String jobConfiguration = TimerEventHandler.createConfiguration(execution.getCurrentActivityId(), timerEventDefinition.getEndDate());
 
-    ExecutableTimerJobEntity timer = TimerUtil.createTimerEntityForTimerEventDefinition(timerEventDefinition, interrupting, executionEntity, TriggerTimerEventJobHandler.TYPE, jobConfiguration);
+    WaitingTimerJobEntity timer = TimerUtil.createTimerEntityForTimerEventDefinition(timerEventDefinition, interrupting, executionEntity, TriggerTimerEventJobHandler.TYPE, jobConfiguration);
     if (timer != null) {
-      Context.getCommandContext().getExecutableJobEntityManager().schedule(timer);
+      Context.getCommandContext().getWaitingTimerJobEntityManager().insert(timer);
     }
   }
 

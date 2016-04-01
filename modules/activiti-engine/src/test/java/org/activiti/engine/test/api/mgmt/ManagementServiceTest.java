@@ -13,17 +13,15 @@
 
 package org.activiti.engine.test.api.mgmt;
 
-import java.util.Date;
-
-import org.activiti.engine.ActivitiException;
 import org.activiti.engine.ActivitiIllegalArgumentException;
 import org.activiti.engine.ActivitiObjectNotFoundException;
 import org.activiti.engine.JobNotFoundException;
-import org.activiti.engine.impl.ProcessEngineImpl;
-import org.activiti.engine.impl.cmd.AcquireJobsCmd;
-import org.activiti.engine.impl.interceptor.CommandExecutor;
+import org.activiti.engine.impl.interceptor.Command;
+import org.activiti.engine.impl.interceptor.CommandContext;
 import org.activiti.engine.impl.persistence.entity.EventSubscriptionEntity;
+import org.activiti.engine.impl.persistence.entity.ExecutableTimerJobEntity;
 import org.activiti.engine.impl.persistence.entity.JobEntity;
+import org.activiti.engine.impl.persistence.entity.WaitingTimerJobEntity;
 import org.activiti.engine.impl.test.PluggableActivitiTestCase;
 import org.activiti.engine.management.TableMetaData;
 import org.activiti.engine.runtime.Job;
@@ -78,9 +76,21 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     // The execution is waiting in the first usertask. This contains a
     // boundary
     // timer event which we will execute manual for testing purposes.
-    Job timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job timerJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
 
     assertNotNull("No job found for process instance", timerJob);
+
+    final Job finalTimerJob = timerJob;
+    managementService.executeCommand(new Command<Object>() {
+
+      @Override
+      public Object execute(CommandContext commandContext) {
+        ExecutableTimerJobEntity executableJobEntity = (ExecutableTimerJobEntity) commandContext.jobFactory().getExecutableJob(finalTimerJob);
+        commandContext.getExecutableJobEntityManager().schedule(executableJobEntity);
+        commandContext.getWaitingTimerJobEntityManager().delete((WaitingTimerJobEntity) finalTimerJob, false);
+        return null;
+      }
+    });
 
     try {
       managementService.executeJob(timerJob.getId());
@@ -128,14 +138,14 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
     // The execution is waiting in the first usertask. This contains a
     // boundary
     // timer event.
-    Job timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job timerJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
 
     assertNotNull("No job found for process instance", timerJob);
     assertEquals(JobEntity.DEFAULT_RETRIES, timerJob.getRetries());
 
     managementService.setJobRetries(timerJob.getId(), 5);
 
-    timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    timerJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
     assertEquals(5, timerJob.getRetries());
   }
 
@@ -198,42 +208,14 @@ public class ManagementServiceTest extends PluggableActivitiTestCase {
   @Deployment(resources = { "org/activiti/engine/test/api/mgmt/timerOnTask.bpmn20.xml" })
   public void testDeleteJobDeletion() {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("timerOnTask");
-    Job timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    Job timerJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
 
     assertNotNull("Task timer should be there", timerJob);
     managementService.deleteJob(timerJob.getId());
 
-    timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
+    timerJob = managementService.createJobQuery().waitingTimers().processInstanceId(processInstance.getId()).singleResult();
     assertNull("There should be no job now. It was deleted", timerJob);
   }
-
- /* @Deployment(resources = { "org/activiti/engine/test/api/mgmt/timerOnTask.bpmn20.xml" })
-  public void testDeleteJobThatWasAlreadyAcquired() {
-    processEngineConfiguration.getClock().setCurrentTime(new Date());
-
-    ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("timerOnTask");
-    Job timerJob = managementService.createJobQuery().processInstanceId(processInstance.getId()).singleResult();
-
-    // We need to move time at least one hour to make the timer executable
-    processEngineConfiguration.getClock().setCurrentTime(new Date(processEngineConfiguration.getClock().getCurrentTime().getTime() + 7200000L));
-
-    // Acquire job by running the acquire command manually
-    ProcessEngineImpl processEngineImpl = (ProcessEngineImpl) processEngine;
-    AcquireJobsCmd acquireJobsCmd = new AcquireJobsCmd("testLockOwner", 60000, 5);
-    CommandExecutor commandExecutor = processEngineImpl.getProcessEngineConfiguration().getCommandExecutor();
-    commandExecutor.execute(acquireJobsCmd);
-
-    // Try to delete the job. This should fail.
-    try {
-      managementService.deleteJob(timerJob.getId());
-      fail();
-    } catch (ActivitiException e) {
-      // Exception is expected
-    }
-
-    // Clean up
-    managementService.executeJob(timerJob.getId());
-  }*/
 
   // https://jira.codehaus.org/browse/ACT-1816:
   // ManagementService doesn't seem to give actual table Name for

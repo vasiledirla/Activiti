@@ -22,7 +22,7 @@ public class FailedTimerJobEntityImpl extends FailedJobEntityImpl implements Fai
   protected int maxIterations;
   protected Date endDate;
 
-  public FailedTimerJobEntityImpl(LockedTimerJobEntity jobEntity) {
+  public FailedTimerJobEntityImpl(TimerEntity jobEntity) {
     super(jobEntity);
     setEndDate(jobEntity.getEndDate());
     setMaxIterations(jobEntity.getMaxIterations());

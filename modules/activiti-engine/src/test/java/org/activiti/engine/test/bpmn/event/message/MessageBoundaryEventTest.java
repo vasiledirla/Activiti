@@ -509,7 +509,7 @@ public class MessageBoundaryEventTest extends PluggableActivitiTestCase {
 
     // ///////////////////////////////////
     // Advance the clock to trigger the timer.
-    final JobQuery jobQuery = managementService.createJobQuery().processInstanceId(userTask.getProcessInstanceId());
+    final JobQuery jobQuery = managementService.createJobQuery().waitingTimers().processInstanceId(userTask.getProcessInstanceId());
     assertEquals(1, jobQuery.count());
 
     // After setting the clock to time '1 hour and 5 seconds', the timer should fire.
@@ -574,7 +574,8 @@ public class MessageBoundaryEventTest extends PluggableActivitiTestCase {
 
     // After setting the clock to time '2 hours and 5 seconds', the timer
     // should fire.
-    processEngineConfiguration.getClock().setCurrentTime(new Date(startTime.getTime() + ((2 * 60 * 60 * 1000) + 5000)));
+    processEngineConfiguration.getClock().setCurrentTime(new Date(startTime.getTime() + ((2 * 60 * 60 * 1000) + 5001)));
+
     waitForJobExecutorOnCondition(2000L, 100L, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {

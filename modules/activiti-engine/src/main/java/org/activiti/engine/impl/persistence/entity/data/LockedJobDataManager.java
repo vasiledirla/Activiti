@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * @author Vasile Dirla
  */
-public interface LockedJobDataManager extends DataManager<LockedJobEntity> {
+public interface LockedJobDataManager extends JobDataManager<LockedJobEntity> {
 
   ExecutableTimerJobEntity createTimer();
 
@@ -53,16 +53,10 @@ public interface LockedJobDataManager extends DataManager<LockedJobEntity> {
   List<Job> findJobsByQueryCriteria(JobQueryImpl jobQuery, Page page);
   
   List<Job> findJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds);
-  
-  List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey);
-  
-  List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId);
-  
+
   List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId);
   
   long findJobCountByQueryCriteria(JobQueryImpl jobQuery);
-
-  void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
 
   List<JobEntity> selectTimerJobsToDueDate();
 

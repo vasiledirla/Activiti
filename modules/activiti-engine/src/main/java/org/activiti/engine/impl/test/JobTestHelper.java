@@ -186,7 +186,8 @@ public class JobTestHelper {
   public static boolean areJobsAvailable(ManagementService managementService) {
     return !managementService.createJobQuery().list().isEmpty()
             || !managementService.createJobQuery().locked().list().isEmpty()
-            || !managementService.createJobQuery().failed().list().isEmpty();
+            || !managementService.createJobQuery().failed().list().isEmpty()
+            || !managementService.createJobQuery().waitingTimers().list().isEmpty();
   }
 
   private static class InteruptTask extends TimerTask {

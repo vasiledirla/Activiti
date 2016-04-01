@@ -23,13 +23,8 @@ import org.activiti.engine.runtime.Job;
  * @author Joram Barrez
  */
 public interface ExecutableJobEntityManager extends JobEntityManager<ExecutableJobEntity> {
-
-  ExecutableTimerJobEntity createTimer();
-
-  ExecutableTimerJobEntity createTimer(TimerEntity timerEntity);
   
   ExecutableMessageJobEntity createMessage();
-  
 
   void execute(LockedJobEntity jobEntity);
   
@@ -37,10 +32,12 @@ public interface ExecutableJobEntityManager extends JobEntityManager<ExecutableJ
 
   void schedule(ExecutableTimerJobEntity timer);
 
+  void schedule(ExecutableTimerJobEntity timer, Boolean fireEvents);
+
   void retryAsyncJob(LockedJobEntity job);
   
 
-  List<JobEntity> findNextJobsToExecute(Page page);
+  List<ExecutableJobEntity> findNextJobsToExecute(Page page);
 
   List<JobEntity> findNextTimerJobsToExecute(Page page);
 
@@ -50,9 +47,7 @@ public interface ExecutableJobEntityManager extends JobEntityManager<ExecutableJ
 
   List<ExecutableJobEntity> findJobsByExecutionId(String executionId);
 
-  List<JobEntity> findExclusiveJobsToExecute(String processInstanceId);
-
-  List<TimerEntity> findUnlockedTimersByDuedate(Date duedate, Page page);
+  List<ExecutableJobEntity> findExclusiveJobsToExecute(String processInstanceId);
 
   List<TimerEntity> findTimersByExecutionId(String executionId);
 
@@ -60,21 +55,10 @@ public interface ExecutableJobEntityManager extends JobEntityManager<ExecutableJ
 
   List<Job> findJobsByTypeAndProcessDefinitionIds(String jobHandlerType, List<String> processDefinitionIds);
 
-  List<Job> findJobsByTypeAndProcessDefinitionKeyNoTenantId(String jobHandlerType, String processDefinitionKey);
-
-  List<Job> findJobsByTypeAndProcessDefinitionKeyAndTenantId(String jobHandlerType, String processDefinitionKey, String tenantId);
-
   List<Job> findJobsByTypeAndProcessDefinitionId(String jobHandlerType, String processDefinitionId);
 
   long findJobCountByQueryCriteria(JobQueryImpl jobQuery);
-  
-
-  void updateJobTenantIdForDeployment(String deploymentId, String newTenantId);
 
   LockedJobEntity lockJob(ExecutableJobEntity job, String lockOwner, Date time);
-
-  int moveTimerJobsToMainQueue();
-
-  List<ExecutableJobEntity> selectTimerJobsToDueDate();
 
 }
