@@ -16,6 +16,7 @@ package org.activiti.engine.impl.cfg;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -32,9 +33,12 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
+import javax.xml.namespace.QName;
 
 import org.activiti.dmn.api.DmnRepositoryService;
 import org.activiti.dmn.api.DmnRuleService;
@@ -789,6 +793,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected int historicProcessInstancesQueryLimit = 20000;
 
   protected String wsSyncFactoryClassName = DEFAULT_WS_SYNC_FACTORY;
+  protected ConcurrentMap<QName, URL> wsOverridenEndpointAddresses = new ConcurrentHashMap<QName, URL>();
 
   protected CommandContextFactory commandContextFactory;
   protected TransactionContextFactory transactionContextFactory;
@@ -856,9 +861,11 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
    * Tweak this parameter in case of exceptions indicating too much is being put into one bulk insert,
    * or make it higher if your database can cope with it and there are inserts with a huge amount of data.
    * 
-   * By default: 100.
+   * By default: 100 (75 for mssql server as it has a hard limit of 2000 parameters in a statement)
    */
   protected int maxNrOfStatementsInBulkInsert = 100;
+
+  public int DEFAULT_MAX_NR_OF_STATEMENTS_BULK_INSERT_SQL_SERVER = 70; // currently Execution has most params (28). 2000 / 28 = 71.
   
   protected ObjectMapper objectMapper = new ObjectMapper();
   
@@ -1205,6 +1212,12 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
       }
       log.debug("using database type: {}", databaseType);
 
+      // Special care for MSSQL, as it has a hard limit of 2000 params per statement (incl bulk statement).
+      // Especially with executions, with 100 as default, this limit is passed.
+      if (DATABASE_TYPE_MSSQL.equals(databaseType)) {
+        maxNrOfStatementsInBulkInsert = DEFAULT_MAX_NR_OF_STATEMENTS_BULK_INSERT_SQL_SERVER;
+      }
+      
     } catch (SQLException e) {
       log.error("Exception while initializing Database connection", e);
     } finally {
@@ -1241,6 +1254,11 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
         Reader reader = new InputStreamReader(inputStream);
         Properties properties = new Properties();
         properties.put("prefix", databaseTablePrefix);
+        String wildcardEscapeClause = "";
+        if ((databaseWildcardEscapeCharacter != null) && (databaseWildcardEscapeCharacter.length() != 0)) {
+          wildcardEscapeClause = " escape '" + databaseWildcardEscapeCharacter + "'";
+        }
+        properties.put("wildcardEscapeClause", wildcardEscapeClause);
         //set default properties
         properties.put("limitBefore" , "");
         properties.put("limitAfter" , "");
@@ -2599,6 +2617,34 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   public ProcessEngineConfigurationImpl setWsSyncFactoryClassName(String wsSyncFactoryClassName) {
     this.wsSyncFactoryClassName = wsSyncFactoryClassName;
+    return this;
+  }
+  
+  /**
+   * Add or replace the address of the given web-service endpoint with the given value
+   * @param endpointName The endpoint name for which a new address must be set
+   * @param address The new address of the endpoint
+   */
+  public ProcessEngineConfiguration addWsEndpointAddress(QName endpointName, URL address) {
+      this.wsOverridenEndpointAddresses.put(endpointName, address);
+      return this;
+  }
+  
+  /**
+   * Remove the address definition of the given web-service endpoint
+   * @param endpointName The endpoint name for which the address definition must be removed
+   */
+  public ProcessEngineConfiguration removeWsEndpointAddress(QName endpointName) {
+      this.wsOverridenEndpointAddresses.remove(endpointName);
+      return this;
+  }
+  
+  public ConcurrentMap<QName, URL> getWsOverridenEndpointAddresses() {
+      return this.wsOverridenEndpointAddresses;
+  }
+  
+  public ProcessEngineConfiguration setWsOverridenEndpointAddresses(final ConcurrentMap<QName, URL> wsOverridenEndpointAdress) {
+    this.wsOverridenEndpointAddresses.putAll(wsOverridenEndpointAdress);
     return this;
   }
 
