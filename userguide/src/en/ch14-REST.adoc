@@ -421,14 +421,14 @@ GET repository/deployments/{deploymentId}/resources
   {
     "id": "diagrams/my-process.bpmn20.xml",
     "url": "http://localhost:8081/activiti-rest/service/repository/deployments/10/resources/diagrams%2Fmy-process.bpmn20.xml",
-    "dataUrl": "http://localhost:8081/activiti-rest/service/repository/deployments/10/resourcedata/diagrams%2Fmy-process.bpmn20.xml",
+    "contentUrl": "http://localhost:8081/activiti-rest/service/repository/deployments/10/resourcedata/diagrams%2Fmy-process.bpmn20.xml",
     "mediaType": "text/xml",
     "type": "processDefinition"
   },
   {
     "id": "image.png",
     "url": "http://localhost:8081/activiti-rest/service/repository/deployments/10/resources/image.png",
-    "dataUrl": "http://localhost:8081/activiti-rest/service/repository/deployments/10/resourcedata/image.png",
+    "contentUrl": "http://localhost:8081/activiti-rest/service/repository/deployments/10/resourcedata/image.png",
     "mediaType": "image/png",
     "type": "resource"
   }
@@ -442,7 +442,7 @@ GET repository/deployments/{deploymentId}/resources
 * ++processDefinition++: Resource that contains one or more process-definitions. This resource is picked up by the deployer.
 * ++processImage++: Resource that represents a deployed process definition's graphical layout.
 
-_The dataUrl property in the resulting JSON for a single resource contains the actual URL to use for retrieving the binary resource._
+_The contentUrl property in the resulting JSON for a single resource contains the actual URL to use for retrieving the binary resource._
 
 
 ==== Get a deployment resource
@@ -478,7 +478,7 @@ GET repository/deployments/{deploymentId}/resources/{resourceId}
 {
   "id": "diagrams/my-process.bpmn20.xml",
   "url": "http://localhost:8081/activiti-rest/service/repository/deployments/10/resources/diagrams%2Fmy-process.bpmn20.xml",
-  "dataUrl": "http://localhost:8081/activiti-rest/service/repository/deployments/10/resourcedata/diagrams%2Fmy-process.bpmn20.xml",
+  "contentUrl": "http://localhost:8081/activiti-rest/service/repository/deployments/10/resourcedata/diagrams%2Fmy-process.bpmn20.xml",
   "mediaType": "text/xml",
   "type": "processDefinition"
 }
@@ -2966,15 +2966,21 @@ GET runtime/tasks/{taskId}
   "delegationState" : "pending",
   "description" : "Task description",
   "dueDate" : "2013-04-17T10:17:43.902+0000",
-  "execution" : "http://localhost:8182/runtime/executions/5",
+  "executionUrl" : "http://localhost:8182/runtime/executions/5",
+  "executionId" : "5",
   "id" : "8",
   "name" : "My task",
   "owner" : "owner",
-  "parentTask" : "http://localhost:8182/runtime/tasks/9",
+  "parentTaskUrl" : "http://localhost:8182/runtime/tasks/9",
+  "parentTaskId" : "9",
   "priority" : 50,
-  "processDefinition" : "http://localhost:8182/repository/process-definitions/oneTaskProcess%3A1%3A4",
-  "processInstance" : "http://localhost:8182/runtime/process-instances/5",
+  "processDefinitionUrl" : "http://localhost:8182/repository/process-definitions/oneTaskProcess%3A1%3A4",
+  "processDefinitionId" : "oneTaskProcess%3A1%3A4",
+  "processInstanceUrl" : "http://localhost:8182/runtime/process-instances/5",
+  "processInstanceId" : "5",
   "suspended" : false,
+  "formKey" : null,
+  "category": "examples",
   "taskDefinitionKey" : "theTask",
   "url" : "http://localhost:8182/runtime/tasks/8",
   "tenantId" : null
@@ -3071,17 +3077,23 @@ GET runtime/tasks
       "delegationState" : "pending",
       "description" : "Task description",
       "dueDate" : "2013-04-17T10:17:43.902+0000",
-      "execution" : "http://localhost:8182/runtime/executions/5",
+      "executionUrl" : "http://localhost:8182/runtime/executions/5",
+      "executionId" : "5",
       "id" : "8",
       "name" : "My task",
       "owner" : "owner",
-      "parentTask" : "http://localhost:8182/runtime/tasks/9",
+      "parentTaskUrl" : "http://localhost:8182/runtime/tasks/9",
+      "parentTaskId" : "9",
       "priority" : 50,
-      "processDefinition" : "http://localhost:8182/repository/process-definitions/oneTaskProcess%3A1%3A4",
-      "processInstance" : "http://localhost:8182/runtime/process-instances/5",
+      "processDefinitionUrl" : "http://localhost:8182/repository/process-definitions/oneTaskProcess%3A1%3A4",
+      "processDefinitionId" : "oneTaskProcess%3A1%3A4",
+      "processInstanceUrl" : "http://localhost:8182/runtime/process-instances/5",
+      "processInstanceId" : "5",
       "suspended" : false,
       "taskDefinitionKey" : "theTask",
       "url" : "http://localhost:8182/runtime/tasks/8",
+      "formKey" : null,
+      "category": "examples",
       "tenantId" : null
     }
   ],
@@ -3158,17 +3170,23 @@ All supported JSON parameter fields allowed are exactly the same as the paramete
       "delegationState" : "pending",
       "description" : "Task description",
       "dueDate" : "2013-04-17T10:17:43.902+0000",
-      "execution" : "http://localhost:8182/runtime/executions/5",
+      "executionUrl" : "http://localhost:8182/runtime/executions/5",
+      "executionId" : "5",
       "id" : "8",
       "name" : "My task",
       "owner" : "owner",
-      "parentTask" : "http://localhost:8182/runtime/tasks/9",
+      "parentTaskUrl" : "http://localhost:8182/runtime/tasks/9",
+      "parentTaskId" : "9",
       "priority" : 50,
-      "processDefinition" : "http://localhost:8182/repository/process-definitions/oneTaskProcess%3A1%3A4",
-      "processInstance" : "http://localhost:8182/runtime/process-instances/5",
+      "processDefinitionUrl" : "http://localhost:8182/repository/process-definitions/oneTaskProcess%3A1%3A4",
+      "processDefinitionId" : "oneTaskProcess%3A1%3A4",
+      "processInstanceUrl" : "http://localhost:8182/runtime/process-instances/5",
+      "processInstanceId" : "5",
       "suspended" : false,
       "taskDefinitionKey" : "theTask",
       "url" : "http://localhost:8182/runtime/tasks/8",
+      "formKey" : null,
+      "category": "examples",
       "tenantId" : null
     }
   ],
